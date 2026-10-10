@@ -1,11 +1,13 @@
 import OatcakeLogo from "@/components/OatcakeLogo";
 import LoginForm from "./LoginForm";
+import LoginIntro, { INTRO_SCRIPT } from "./LoginIntro";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
   return (
-    <div className="login-screen">
-      <main className="auth">
+    <div className="login-screen grain">
+      <script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
+      <LoginIntro>
         <div className="login-logo">
           <OatcakeLogo height={44} />
         </div>
@@ -19,7 +21,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
                 : null
           }
         />
-      </main>
+      </LoginIntro>
     </div>
   );
 }

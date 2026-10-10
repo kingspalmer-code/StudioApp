@@ -17,7 +17,7 @@ export default async function WelcomePage() {
   if (member) redirect("/");
 
   return (
-    <div className="login-screen">
+    <div className="login-screen grain">
       <main className="auth welcome">
         <div className="login-logo">
           <OatcakeLogo height={36} />

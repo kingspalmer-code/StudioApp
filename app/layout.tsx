@@ -12,7 +12,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, view
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const theme = (await cookies()).get("theme")?.value;
   return (
-    <html lang="en-GB" data-theme={theme === "light" || theme === "dark" ? theme : undefined}>
+    <html lang="en-GB" suppressHydrationWarning data-theme={theme === "light" || theme === "dark" ? theme : undefined}>
       <body>{children}</body>
     </html>
   );
