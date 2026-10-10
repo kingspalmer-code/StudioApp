@@ -44,7 +44,14 @@ export async function requireMember(roles?: Role[]) {
   const viewing = Boolean(viewed);
   const ctx: Ctx = { stages: stages ?? [], types: types ?? [] };
   const terms = termsFor(ws.kind);
-  const shell = { member, businesses: businesses ?? [], workspace: ws, isAdmin: Boolean(isAdmin), viewing };
+  const avatar = typeof user.user_metadata?.avatar_url === "string" ? (user.user_metadata.avatar_url as string) : null;
+  const initials = (member.full_name || member.email)
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+  const shell = { member, businesses: businesses ?? [], workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials };
   return { supabase, member, businesses: businesses ?? [], workspace: ws, ctx, terms, shell, viewing };
 }
 

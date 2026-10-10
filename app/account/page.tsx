@@ -3,6 +3,7 @@ import { signOut } from "@/app/actions";
 import Shell from "@/components/Shell";
 import ThemeToggle from "@/components/ThemeToggle";
 import { requireMember } from "@/lib/session";
+import ProfilePhoto from "./ProfilePhoto";
 import SetPassword from "./SetPassword";
 
 export default async function AccountPage({ searchParams }: { searchParams: Promise<{ setup?: string }> }) {
@@ -22,6 +23,15 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             ? "Set a password so next time you can sign in straight away, without waiting for an email."
             : `Signed in as ${member.email}.`}
         </p>
+        {!setup && (
+          <>
+            <p className="eyebrow">Photo</p>
+            <ProfilePhoto
+              avatar={shell.avatar}
+              initials={shell.initials}
+            />
+          </>
+        )}
         <SetPassword hasPassword={hasPassword} skippable={Boolean(setup)} />
 
         {!setup && (

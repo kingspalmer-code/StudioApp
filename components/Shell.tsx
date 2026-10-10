@@ -42,6 +42,8 @@ export default function Shell({
   workspace,
   isAdmin = false,
   viewing = false,
+  avatar = null,
+  initials = "",
   children,
 }: {
   member: Member;
@@ -49,18 +51,14 @@ export default function Shell({
   workspace: Workspace;
   isAdmin?: boolean;
   viewing?: boolean;
+  avatar?: string | null;
+  initials?: string;
   children: React.ReactNode;
 }) {
   // Clients see their own business's identity; the workspace owner and manager see Oatcake.
   const biz = member.role === "client" ? businesses.find((b) => b.id === member.business_id) : undefined;
   const brand = biz ? brandFor(biz) : undefined;
   const links = linksFor(member, workspace, viewing);
-  const initials = (member.full_name || member.email)
-    .split(/[\s@.]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join("");
 
   return (
     <div className={brand ? "brand-theme" : undefined}>
@@ -82,15 +80,16 @@ export default function Shell({
           )}
           <NavLinks links={links} />
           <form action={signOut} className="who">
-            <Link href="/account">{member.full_name || member.email}</Link>
             {member.role === "designer" && <Link href="/settings" data-tour="settings">Settings</Link>}
             {isAdmin && <Link href="/admin">Admin</Link>}
             <button className="link" type="submit">Sign out</button>
           </form>
           <ThemeToggle />
           {member.role === "designer" && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake />}
-          {/* On phones the account links and theme switch live on the account page instead. */}
-          <Link href="/account" className="me-btn" aria-label="Your account and settings" data-tour="me">{initials}</Link>
+          {/* Your photo or initials, opening your account. On phones the account links and theme switch live there too. */}
+          <Link href="/account" className="me-btn" aria-label="Your account and settings" data-tour="me">
+            {avatar ? <img src={avatar} alt="" /> : initials}
+          </Link>
         </div>
       </header>
       {viewing && (
