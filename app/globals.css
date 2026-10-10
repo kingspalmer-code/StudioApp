@@ -144,11 +144,12 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 
 /* Oatcake sign-in screen: the brand colour, full bleed, in both themes. */
 :root { --oat-brown: #382a25; --oat-cream: #f3e9dc; }
-.login-screen { min-height: 100dvh; background: var(--oat-brown); color: var(--oat-cream); padding: 0 16px; display: flex; }
+.login-screen { min-height: 100dvh; background: #17110f; color: var(--oat-cream); padding: 0 16px; display: flex; position: relative; overflow: hidden; isolation: isolate; }
+.login-screen .auth { position: relative; z-index: 1; }
 .login-screen .auth { margin: auto; width: 100%; max-width: 400px; padding: 48px 0; }
 .login-logo { display: flex; justify-content: center; margin-bottom: 20px; }
 .login-sub { text-align: center; color: color-mix(in srgb, var(--oat-cream) 72%, transparent); margin: 0 0 26px; font-size: 14px; text-wrap: balance; }
-.login-screen .btn { background: var(--oat-cream); color: var(--oat-brown); }
+.login-screen .btn { background: var(--oat-cream); color: #17110f; }
 .login-screen .foot, .login-screen .foot .link { color: color-mix(in srgb, var(--oat-cream) 75%, transparent); }
 .login-screen .foot .link { color: var(--oat-cream); text-decoration: underline; text-underline-offset: 2px; }
 .login-screen .error { color: #ffb4a8; }
@@ -224,3 +225,14 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 .cust-edit .group { background: var(--surface-2); }
 .stage-form select { width: auto; flex: none; }
 .seg.stage-picker { flex-wrap: wrap; overflow: visible; }
+
+/* Sign-in decoration: drifting oat flakes and big slowly turning oatcakes. */
+.flakes { position: absolute; inset: 0; z-index: -1; color: #e6d4bc; opacity: .16; pointer-events: none; }
+.flakes svg { position: absolute; animation: drift 12s ease-in-out infinite alternate; }
+@keyframes drift { from { transform: translate(0, 0); } to { transform: translate(14px, -26px); } }
+.big-oatcake, .small-oatcake { position: absolute; z-index: -1; pointer-events: none; animation: turn 120s linear infinite; filter: drop-shadow(0 30px 60px rgba(0,0,0,.45)); }
+.big-oatcake { right: -170px; bottom: -190px; }
+.small-oatcake { left: -40px; top: -30px; opacity: .9; animation-duration: 80s; animation-direction: reverse; }
+@keyframes turn { to { transform: rotate(360deg); } }
+@media (max-width: 600px) { .big-oatcake { width: 340px; height: 340px; right: -130px; bottom: -140px; } .small-oatcake { width: 100px; height: 100px; } }
+@media (prefers-reduced-motion: reduce) { .flakes svg, .big-oatcake, .small-oatcake { animation: none; } }

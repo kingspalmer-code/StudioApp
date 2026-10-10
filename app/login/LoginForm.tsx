@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 
 type Mode = "password" | "link" | "sent";
 
-export default function LoginForm({ initialError }: { initialError: string | null }) {
+export default function LoginForm({ initialError, playful = false }: { initialError: string | null; playful?: boolean }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("password");
   const [email, setEmail] = useState("");
@@ -118,9 +118,9 @@ export default function LoginForm({ initialError }: { initialError: string | nul
         </div>
       </div>
       {error && <p className="error">{error}</p>}
-      <button className="btn wide" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+      <button className="btn wide" disabled={busy}>{busy ? (playful ? "Warming the oven…" : "Signing in…") : "Sign in"}</button>
       <p className="foot" style={{ textAlign: "center", marginTop: 14 }}>
-        First time here, or forgot your password?{" "}
+        {playful ? "Crumbs, forgot your password?" : "First time here, or forgot your password?"}{" "}
         <button type="button" className="link" onClick={switchTo("link")}>Email me a sign-in link</button>
       </p>
     </form>
