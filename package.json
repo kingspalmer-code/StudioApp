@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "0.128.0",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.117.1",
+    "motion": "12.43.0",
     "next": "15.5.26",
     "react": "19.2.8",
     "react-dom": "19.2.8"

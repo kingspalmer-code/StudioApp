@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import Tour from "./Tour";
 
-type Mode = "password" | "new" | "forgot" | "sent";
+type Mode = "password" | "tour" | "new" | "forgot" | "sent";
 
 export default function LoginForm({ initialError }: { initialError: string | null }) {
   const router = useRouter();
@@ -93,6 +94,8 @@ export default function LoginForm({ initialError }: { initialError: string | nul
     );
   }
 
+  if (mode === "tour") return <Tour onDone={() => setMode("new")} />;
+
   if (mode === "new" || mode === "forgot") {
     return (
       <form onSubmit={sendLink}>
@@ -129,7 +132,7 @@ export default function LoginForm({ initialError }: { initialError: string | nul
         <button type="button" className="link" onClick={switchTo("forgot")}>No password, or forgotten it? Email me a link</button>
       </p>
       <div className="login-divider"><span>New to Oatcake?</span></div>
-      <button type="button" className="btn wide outline" onClick={switchTo("new")}>Get started</button>
+      <button type="button" className="btn wide outline" onClick={switchTo("tour")}>Get started</button>
     </form>
   );
 }
