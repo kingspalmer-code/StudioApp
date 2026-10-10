@@ -51,7 +51,11 @@ export async function requireMember(roles?: Role[]) {
     .slice(0, 2)
     .map((w) => w[0].toUpperCase())
     .join("");
-  const shell = { member, businesses: businesses ?? [], workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials };
+  // Everyone new to Ask Oatcake gets a gentle pointer to it for a week, until they've used it twice.
+  const askOpens = Number(user.user_metadata?.ask_opens ?? 0);
+  const askSince = Number(user.user_metadata?.ask_since ?? 0);
+  const askHint = askOpens < 2 && (!askSince || Date.now() - askSince < 7 * 86400000);
+  const shell = { member, businesses: businesses ?? [], workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials, askHint, askOpens, askSince };
   return { supabase, member, businesses: businesses ?? [], workspace: ws, ctx, terms, shell, viewing };
 }
 

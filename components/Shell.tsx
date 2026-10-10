@@ -44,6 +44,9 @@ export default function Shell({
   viewing = false,
   avatar = null,
   initials = "",
+  askHint = false,
+  askOpens = 0,
+  askSince = 0,
   children,
 }: {
   member: Member;
@@ -53,6 +56,9 @@ export default function Shell({
   viewing?: boolean;
   avatar?: string | null;
   initials?: string;
+  askHint?: boolean;
+  askOpens?: number;
+  askSince?: number;
   children: React.ReactNode;
 }) {
   // Clients see their own business's identity; the workspace owner and manager see Oatcake.
@@ -85,7 +91,7 @@ export default function Shell({
             <button className="link" type="submit">Sign out</button>
           </form>
           <ThemeToggle />
-          {member.role === "designer" && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake />}
+          {member.role === "designer" && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake hint={askHint} opens={askOpens} since={askSince} />}
           {/* Your photo or initials, opening your account. On phones the account links and theme switch live there too. */}
           <Link href="/account" className="me-btn" aria-label="Your account and settings" data-tour="me">
             {avatar ? <img src={avatar} alt="" /> : initials}

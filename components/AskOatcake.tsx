@@ -1,7 +1,8 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, MotionConfig, useAnimate } from "motion/react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
@@ -56,7 +57,54 @@ function Answer({ text, onNav }: { text: string; onNav: () => void }) {
   );
 }
 
-export default function AskOatcake() {
+const VIEWS_KEY = "oc-ask-views";
+
+// While someone is new, the button now and then gives a little hop and says its name, so they
+// learn it's there. It stops for good after they've used it twice or after their first week.
+function useHint(enabled: boolean, paused: boolean) {
+  const [show, setShow] = useState(false);
+  const [scope, animate] = useAnimate();
+  useEffect(() => {
+    if (!enabled) return;
+    let views = 0;
+    try {
+      views = Number(localStorage.getItem(VIEWS_KEY) ?? 0) + 1;
+      localStorage.setItem(VIEWS_KEY, String(views));
+    } catch {}
+    if (views % 3 !== 1) return; // roughly every third page
+    let idle: ReturnType<typeof setTimeout>;
+    let hide: ReturnType<typeof setTimeout>;
+    let done = false;
+    const go = () => {
+      if (done || document.querySelector(".walk, .sheet-wrap")) return wait();
+      done = true;
+      stop();
+      setShow(true);
+      if (scope.current && !matchMedia("(prefers-reduced-motion: reduce)").matches) animate(scope.current, { y: [0, -6, 0, -3, 0] }, { duration: 0.7, ease: "easeOut" });
+      hide = setTimeout(() => setShow(false), 2800);
+    };
+    const wait = () => {
+      clearTimeout(idle);
+      if (!done) idle = setTimeout(go, 4000);
+    };
+    const events = ["scroll", "keydown", "pointerdown", "touchstart"] as const;
+    const stop = () => events.forEach((e) => window.removeEventListener(e, wait, true));
+    events.forEach((e) => window.addEventListener(e, wait, { capture: true, passive: true }));
+    wait();
+    return () => {
+      done = true;
+      stop();
+      clearTimeout(idle);
+      clearTimeout(hide);
+    };
+  }, [enabled, animate, scope]);
+  useEffect(() => {
+    if (paused) setShow(false);
+  }, [paused]);
+  return { show, scope };
+}
+
+export default function AskOatcake({ hint = false, opens = 0, since = 0 }: { hint?: boolean; opens?: number; since?: number }) {
   const [open, setOpen] = useState(false);
   const [wide, setWide] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -87,6 +135,19 @@ export default function AskOatcake() {
       window.removeEventListener("keydown", key);
     };
   }, []);
+
+  const { show: hinting, scope } = useHint(hint, open);
+  const counted = useRef(false);
+  useEffect(() => {
+    // The week of pointers starts the first time someone sees the button.
+    if (hint && !since) createClient().auth.updateUser({ data: { ask_since: Date.now() } });
+  }, [hint, since]);
+  useEffect(() => {
+    // Count the first couple of uses on the account, so the hint stops on every device.
+    if (!open || !hint || counted.current) return;
+    counted.current = true;
+    createClient().auth.updateUser({ data: { ask_opens: opens + 1 } });
+  }, [open, hint, opens]);
 
   useEffect(() => {
     if (!open) return;
@@ -149,10 +210,30 @@ export default function AskOatcake() {
 
   return (
     <>
-      <button type="button" className="ask-btn" onClick={() => setOpen(true)} aria-label="Ask Oatcake" data-tour="ask">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.6" fill="none" stroke="currentColor" strokeWidth="2.6" /></svg>
-        <span>Ask</span>
-      </button>
+      <MotionConfig reducedMotion="user">
+        <span className="ask-wrap">
+          <AnimatePresence>
+            {hinting && (
+              <motion.button
+                type="button"
+                className="ask-hint"
+                onClick={() => setOpen(true)}
+                tabIndex={-1}
+                initial={{ opacity: 0, x: 18, scale: 0.9, filter: "blur(4px)" }}
+                animate={{ opacity: 1, x: 0, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, x: 14, scale: 0.94, filter: "blur(3px)" }}
+                transition={{ type: "spring", stiffness: 320, damping: 24, delay: 0.12 }}
+              >
+                Ask Oatcake
+              </motion.button>
+            )}
+          </AnimatePresence>
+          <button type="button" className="ask-btn" onClick={() => setOpen(true)} aria-label="Ask Oatcake" data-tour="ask">
+            <svg ref={scope} viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.6" fill="none" stroke="currentColor" strokeWidth="2.6" /></svg>
+            <span>Ask</span>
+          </button>
+        </span>
+      </MotionConfig>
       {/* Rendered on the page body: the top bar's blur would otherwise trap the sheet inside it. */}
       {mounted && createPortal(<AnimatePresence>
         {open && (
