@@ -6,8 +6,6 @@ import { requireMember } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import type { Role, Status } from "@/lib/types";
 
-const STATUS_IDS: Status[] = ["new", "progress", "review", "waiting", "done"];
-
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
@@ -15,8 +13,8 @@ export async function signOut() {
 }
 
 export async function setStatus(id: number, status: Status) {
-  if (!STATUS_IDS.includes(status)) return;
-  const { supabase } = await requireMember(["designer"]);
+  const { supabase, ctx } = await requireMember(["designer"]);
+  if (!ctx.stages.some((s) => s.key === status)) return;
   await supabase.from("tickets").update({ status }).eq("id", id);
   revalidatePath("/", "layout");
 }
@@ -25,6 +23,25 @@ export async function setPinned(id: number, pinned: boolean) {
   const { supabase } = await requireMember(["designer"]);
   await supabase.from("tickets").update({ pinned }).eq("id", id);
   revalidatePath("/", "layout");
+}
+
+// Quote, payment and site details on a trade job.
+export async function updateJob(id: number, formData: FormData) {
+  const { supabase } = await requireMember(["designer"]);
+  const amount = (k: string) => {
+    const n = parseFloat(String(formData.get(k) ?? "").replace(/[£,\s]/g, ""));
+    return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+  };
+  await supabase
+    .from("tickets")
+    .update({
+      quote_amount: amount("quote_amount"),
+      paid_amount: amount("paid_amount"),
+      site_address: String(formData.get("site_address") ?? "").trim(),
+    })
+    .eq("id", id);
+  revalidatePath(`/tickets/${id}`);
+  revalidatePath("/queue");
 }
 
 export async function deleteTicket(id: number) {

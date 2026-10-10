@@ -1,34 +1,46 @@
 import Link from "next/link";
 import { signOut } from "@/app/actions";
 import { brandFor, brandThemeCss } from "@/lib/brands";
-import type { Business, Member } from "@/lib/types";
+import type { Business, Member, Workspace } from "@/lib/types";
 import BizBadge from "./BizBadge";
 import NavLinks from "./NavLinks";
 import { OatcakeMark } from "./OatcakeLogo";
 import ThemeToggle from "./ThemeToggle";
 
-const LINKS = {
-  designer: [
+function linksFor(member: Member, workspace: Workspace) {
+  if (member.role === "manager") return [{ href: "/overview", label: "Overview" }];
+  if (member.role === "client") return [{ href: "/portal", label: "Requests" }];
+  if (workspace.kind === "trade")
+    return [
+      { href: "/queue", label: "Jobs" },
+      { href: "/overview", label: "Overview" },
+      { href: "/portal", label: "New job" },
+      { href: "/customers", label: "Customers" },
+      { href: "/personal", label: "Personal" },
+    ];
+  return [
     { href: "/queue", label: "Queue" },
     { href: "/overview", label: "Overview" },
     { href: "/portal", label: "New request" },
     { href: "/people", label: "People" },
     { href: "/personal", label: "Personal" },
-  ],
-  manager: [{ href: "/overview", label: "Overview" }],
-  client: [{ href: "/portal", label: "Requests" }],
-};
+  ];
+}
 
 export default function Shell({
   member,
   businesses,
+  workspace,
+  isAdmin = false,
   children,
 }: {
   member: Member;
   businesses: Business[];
+  workspace: Workspace;
+  isAdmin?: boolean;
   children: React.ReactNode;
 }) {
-  // Clients see their own business's identity; Kingsley and the manager see the neutral studio.
+  // Clients see their own business's identity; the workspace owner and manager see Oatcake.
   const biz = member.role === "client" ? businesses.find((b) => b.id === member.business_id) : undefined;
   const brand = biz ? brandFor(biz) : undefined;
 
@@ -50,9 +62,11 @@ export default function Shell({
               <OatcakeMark height={22} />
             </Link>
           )}
-          <NavLinks links={LINKS[member.role]} />
+          <NavLinks links={linksFor(member, workspace)} />
           <form action={signOut} className="who">
             <Link href="/account">{member.full_name || member.email}</Link>
+            {member.role === "designer" && <Link href="/settings">Settings</Link>}
+            {isAdmin && <Link href="/admin">Admin</Link>}
             <button className="link" type="submit">Sign out</button>
           </form>
           <ThemeToggle />

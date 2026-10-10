@@ -34,7 +34,7 @@ export default function LoginForm({ initialError }: { initialError: string | nul
     const { data: allowed } = await supabase.rpc("is_member", { check_email: address() });
     if (!allowed) {
       setBusy(false);
-      setError("That email doesn't have access yet. Ask Kingsley to add you.");
+      setError("That email doesn't have access yet. Ask whoever runs your Oatcake to add you.");
       return;
     }
     const { error } = await supabase.auth.signInWithOtp({

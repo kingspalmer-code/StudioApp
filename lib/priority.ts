@@ -1,29 +1,21 @@
-import type { Priority, Status, Ticket } from "./types";
+import type { JobType, Priority, Stage, Status, Ticket } from "./types";
 
-// Working days each kind of job realistically needs. Edit these to tune the queue.
-export const TYPES = [
-  { id: "Poster", lead: 5, why: "Design, two rounds of changes, print turnaround" },
-  { id: "Social media", lead: 2, why: "Quick turnaround, one round of changes" },
-  { id: "Menu", lead: 5, why: "Copy and price checks, print" },
-  { id: "Merch", lead: 10, why: "Supplier proofs and production" },
-  { id: "Website", lead: 12, why: "Layouts, build, review" },
-  { id: "Photoshoot", lead: 4, why: "Planning, shoot day, edit" },
-  { id: "Other", lead: 3, why: "Default until the type is known" },
-] as const;
+// A workspace's stages (in order) and job types. Job types carry the working days each kind
+// of job realistically needs, which drives the start-by priority.
+export type Ctx = { stages: Stage[]; types: JobType[] };
 
 export const PRIORITIES: Priority[] = ["Standard", "High", "Urgent"];
 const PRIORITY_BUMP: Record<Priority, number> = { Standard: 0, High: 1, Urgent: 2 };
 
-export const STATUSES: { id: Status; label: string; color: string }[] = [
-  { id: "new", label: "New", color: "var(--blue)" },
-  { id: "progress", label: "In progress", color: "var(--indigo)" },
-  { id: "review", label: "With client", color: "var(--purple)" },
-  { id: "waiting", label: "Waiting on client", color: "var(--orange)" },
-  { id: "done", label: "Delivered", color: "var(--green)" },
-];
+export const STAGE_COLORS = ["blue", "indigo", "purple", "teal", "orange", "pink", "red", "green"] as const;
+export const stageColor = (c: string) => `var(--${(STAGE_COLORS as readonly string[]).includes(c) ? c : "blue"})`;
 
-export const statusLabel = (s: Status) => STATUSES.find((x) => x.id === s)?.label ?? s;
-export const leadDays = (type: string) => (TYPES.find((t) => t.id === type) ?? TYPES[TYPES.length - 1]).lead;
+export const finalStage = (ctx: Ctx): Status => ctx.stages[ctx.stages.length - 1]?.key ?? "done";
+export const firstStage = (ctx: Ctx): Status => ctx.stages[0]?.key ?? "new";
+export const isDone = (t: Pick<Ticket, "status">, ctx: Ctx) => t.status === finalStage(ctx);
+export const stageOf = (ctx: Ctx, key: Status) => ctx.stages.find((s) => s.key === key);
+export const statusLabel = (ctx: Ctx, key: Status) => stageOf(ctx, key)?.label ?? key;
+export const leadDays = (ctx: Ctx, type: string) => ctx.types.find((t) => t.name === type)?.lead_days ?? 3;
 
 const TZ = process.env.NEXT_PUBLIC_TIMEZONE || "Europe/London";
 const DAY = 86_400_000;
@@ -38,16 +30,16 @@ export function daysFromToday(date: string): number {
 }
 
 // Days until this job should start: needed-by minus lead time, brought forward for High/Urgent.
-export function startBy(t: Pick<Ticket, "deadline" | "type" | "priority">): number {
-  return daysFromToday(t.deadline) - leadDays(t.type) - PRIORITY_BUMP[t.priority];
+export function startBy(t: Pick<Ticket, "deadline" | "type" | "priority">, ctx: Ctx): number {
+  return daysFromToday(t.deadline) - leadDays(ctx, t.type) - PRIORITY_BUMP[t.priority];
 }
 
-export function sortQueue<T extends Ticket>(tickets: T[]): T[] {
+export function sortQueue<T extends Ticket>(tickets: T[], ctx: Ctx): T[] {
   return tickets
-    .filter((t) => t.status !== "done")
+    .filter((t) => !isDone(t, ctx))
     .sort(
       (a, b) =>
-        Number(b.pinned) - Number(a.pinned) || startBy(a) - startBy(b) || a.deadline.localeCompare(b.deadline)
+        Number(b.pinned) - Number(a.pinned) || startBy(a, ctx) - startBy(b, ctx) || a.deadline.localeCompare(b.deadline)
     );
 }
 
@@ -74,6 +66,10 @@ export function dueLabel(date: string): string {
   return `Due ${formatDate(date)}`;
 }
 
-export function isAtRisk(t: Ticket): boolean {
-  return t.status !== "done" && (startBy(t) < 0 || (t.status === "waiting" && daysFromToday(t.deadline) <= 5));
+export function isAtRisk(t: Ticket, ctx: Ctx): boolean {
+  return !isDone(t, ctx) && (startBy(t, ctx) < 0 || (t.status === "waiting" && daysFromToday(t.deadline) <= 5));
+}
+
+export function money(n: number | null | undefined): string {
+  return n == null ? "" : n.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: n % 1 ? 2 : 0 });
 }

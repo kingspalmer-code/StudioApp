@@ -8,12 +8,12 @@ import AddMember from "./AddMember";
 const ROLE_LABEL = { designer: "Designer", manager: "Manager", client: "Client" };
 
 export default async function PeoplePage() {
-  const { supabase, member, businesses } = await requireMember(["designer"]);
+  const { supabase, member, businesses, shell } = await requireMember(["designer"]);
   const { data } = await supabase.from("members").select("*").order("role").order("email").returns<Member[]>();
   const byId = Object.fromEntries(businesses.map((b) => [b.id, b]));
 
   return (
-    <Shell member={member} businesses={businesses}>
+    <Shell {...shell}>
       <h1 className="large">People</h1>
       <p className="sub">Only people listed here can sign in. Clients see their own business's requests; managers see the overview.</p>
       <div className="cols">

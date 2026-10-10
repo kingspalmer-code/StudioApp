@@ -1,8 +1,23 @@
 export type Role = "designer" | "manager" | "client";
-export type Status = "new" | "progress" | "review" | "waiting" | "done";
+// A stage key. Each workspace defines its own stages; the last one means finished.
+export type Status = string;
 export type Priority = "Standard" | "High" | "Urgent";
 
-export type Business = { id: string; slug: string; name: string; color: string };
+export type WorkspaceKind = "studio" | "trade";
+export type Workspace = { id: string; name: string; kind: WorkspaceKind; owner_name: string };
+export type Stage = { id: number; key: string; label: string; color: string; position: number };
+export type JobType = { id: number; name: string; lead_days: number; position: number };
+
+export type Business = {
+  id: string;
+  slug: string;
+  name: string;
+  color: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  notes?: string;
+};
 
 export type Member = {
   email: string;
@@ -32,6 +47,9 @@ export type Ticket = {
   created_at: string;
   updated_at: string;
   delivered_at: string | null;
+  quote_amount: number | null;
+  paid_amount: number | null;
+  site_address: string;
 };
 
 export type Note = {

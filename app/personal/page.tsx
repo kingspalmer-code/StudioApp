@@ -21,7 +21,7 @@ function dueText(due: string | null): string | null {
 
 export default async function PersonalPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const { view = "today" } = await searchParams;
-  const { supabase, member, businesses } = await requireMember(["designer"]);
+  const { supabase, member, businesses, shell } = await requireMember(["designer"]);
   const [{ data: taskRows }, { data: projectRows }] = await Promise.all([
     supabase.from("personal_tasks").select("*").order("due", { ascending: true, nullsFirst: false }).order("created_at").returns<PersonalTask[]>(),
     supabase.from("personal_projects").select("*").eq("archived", false).order("created_at").returns<PersonalProject[]>(),
@@ -77,7 +77,7 @@ export default async function PersonalPage({ searchParams }: { searchParams: Pro
   const doneInProject = project ? tasks.filter((t) => t.project_id === project.id && t.done).length : 0;
 
   return (
-    <Shell member={member} businesses={businesses}>
+    <Shell {...shell}>
       <p className="sub" style={{ margin: "0 0 4px" }}>Only you can see this.</p>
       <div className="personal">
         <aside>

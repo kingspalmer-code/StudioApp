@@ -1,11 +1,12 @@
-import { STATUSES } from "@/lib/priority";
+import { type Ctx, stageColor, stageOf } from "@/lib/priority";
 import type { Status } from "@/lib/types";
 
-export default function StatusChip({ status }: { status: Status }) {
-  const s = STATUSES.find((x) => x.id === status)!;
+export default function StatusChip({ status, ctx }: { status: Status; ctx: Ctx }) {
+  const s = stageOf(ctx, status);
+  const color = stageColor(s?.color ?? "blue");
   return (
-    <span className="chip" style={{ color: s.color, background: `color-mix(in srgb, ${s.color} 14%, transparent)` }}>
-      {s.label}
+    <span className="chip" style={{ color, background: `color-mix(in srgb, ${color} 14%, transparent)` }}>
+      {s?.label ?? status}
     </span>
   );
 }

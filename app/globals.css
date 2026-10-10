@@ -6,7 +6,7 @@
   --bg: #f4efe7; --surface: #fffdf9; --surface-2: #f9f4ec; --fill: rgba(56,42,37,.08);
   --label: #2a201c; --label-2: rgba(56,42,37,.64); --label-3: rgba(56,42,37,.34);
   --sep: rgba(56,42,37,.14); --accent: #382a25; --accent-ink: #fefcf9;
-  --blue: #3a6ea5; --red: #d9412e; --orange: #d9822b; --green: #3f8f4f; --indigo: #5856a6; --purple: #94508f; --pink: #c8456b;
+  --blue: #3a6ea5; --red: #d9412e; --orange: #d9822b; --green: #3f8f4f; --indigo: #5856a6; --purple: #94508f; --pink: #c8456b; --teal: #2f8a86;
   --bar: rgba(244,239,231,.82); --shadow: 0 1px 2px rgba(56,42,37,.06), 0 8px 28px rgba(56,42,37,.10);
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, "Segoe UI", Roboto, sans-serif;
   --font-title: "Demorny", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
@@ -19,7 +19,7 @@
     --bg: #17110f; --surface: #241c19; --surface-2: #2e2420; --fill: rgba(243,233,220,.10);
     --label: #f3e9dc; --label-2: rgba(243,233,220,.64); --label-3: rgba(243,233,220,.32);
     --sep: rgba(243,233,220,.14); --accent: #e6d4bc; --accent-ink: #382a25;
-    --blue: #7fa9d6; --red: #ff6b57; --orange: #f0a457; --green: #6fbf7e; --indigo: #9c9ae6; --purple: #d08ccb; --pink: #f07a9b;
+    --blue: #7fa9d6; --red: #ff6b57; --orange: #f0a457; --green: #6fbf7e; --indigo: #9c9ae6; --purple: #d08ccb; --pink: #f07a9b; --teal: #5fc4bd;
     --bar: rgba(23,17,15,.82); --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 28px rgba(0,0,0,.5);
     color-scheme: dark;
   }
@@ -28,7 +28,7 @@
   --bg: #17110f; --surface: #241c19; --surface-2: #2e2420; --fill: rgba(243,233,220,.10);
   --label: #f3e9dc; --label-2: rgba(243,233,220,.64); --label-3: rgba(243,233,220,.32);
   --sep: rgba(243,233,220,.14); --accent: #e6d4bc; --accent-ink: #382a25;
-  --blue: #7fa9d6; --red: #ff6b57; --orange: #f0a457; --green: #6fbf7e; --indigo: #9c9ae6; --purple: #d08ccb; --pink: #f07a9b;
+  --blue: #7fa9d6; --red: #ff6b57; --orange: #f0a457; --green: #6fbf7e; --indigo: #9c9ae6; --purple: #d08ccb; --pink: #f07a9b; --teal: #5fc4bd;
   --bar: rgba(23,17,15,.82); --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 28px rgba(0,0,0,.5);
   color-scheme: dark;
 }
@@ -104,7 +104,7 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 
 .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 22px 0 8px; }
 .toolbar .eyebrow { margin: 0 4px; flex: 1; }
-.board { display: grid; grid-template-columns: repeat(5, minmax(210px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(210px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
 .col h3 { font-size: 13px; font-weight: 600; margin: 0 4px 8px; display: flex; justify-content: space-between; color: var(--label-2); }
 .card { background: var(--surface); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: block; color: var(--label); }
 .card:hover { box-shadow: var(--shadow); }
@@ -208,3 +208,19 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 
 /* iPhone zooms the page into any field smaller than 16px, so touch screens get 16px fields. */
 @media (hover: none) and (pointer: coarse) { input, select, textarea { font-size: 16px !important; } }
+
+/* Settings and customers */
+.stage-form { display: flex; gap: 10px; align-items: center; }
+.stage-form input:not(.days) { flex: 1; min-width: 0; }
+.stage-form .days { width: 56px; flex: none; text-align: right; background: var(--fill); border-radius: 6px; padding: 3px 6px; }
+.stage-tools { display: flex; gap: 2px; flex: none; }
+.stage-tools .link { padding: 2px 6px; }
+.stage-tools .link:disabled { opacity: .25; cursor: default; }
+.cust + .cust { border-top: .5px solid var(--sep); }
+.cust summary { list-style: none; cursor: pointer; }
+.cust summary::-webkit-details-marker { display: none; }
+.cust[open] summary .chev { transform: rotate(90deg); }
+.cust-edit { padding: 0 12px 12px; }
+.cust-edit .group { background: var(--surface-2); }
+.stage-form select { width: auto; flex: none; }
+.seg.stage-picker { flex-wrap: wrap; overflow: visible; }

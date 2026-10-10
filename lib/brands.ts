@@ -51,6 +51,7 @@ export function brandFor(biz: Business): Brand {
     biz.name
       .replace(/^the\s+/i, "")
       .split(/\s+/)
+      .filter((w) => /^[a-z0-9]/i.test(w))
       .map((w) => w[0])
       .join("")
       .slice(0, 2)
