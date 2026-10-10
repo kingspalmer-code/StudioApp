@@ -5,7 +5,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="auth">
       <h1 className="large">Studio Desk</h1>
-      <p className="sub">Sign in with your work email. We'll send you a link and a code, no password needed.</p>
+      <p className="sub">Sign in with your work email. We'll email you a sign-in link, no password needed.</p>
       <LoginForm
         initialError={
           error === "no-access"

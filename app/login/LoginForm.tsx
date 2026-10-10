@@ -58,7 +58,7 @@ export default function LoginForm({ initialError }: { initialError: string | nul
             </div>
           </div>
         </div>
-        <p className="foot">We sent an email to {email}. Tap the link in it, or type the code here.</p>
+        <p className="foot">We sent an email to {email}. Open the link in it on this device, or type the code here if the email has one.</p>
         {error && <p className="error">{error}</p>}
         <button className="btn wide" disabled={busy}>{busy ? "Checking…" : "Sign in"}</button>
         <p className="foot" style={{ textAlign: "center", marginTop: 14 }}>
