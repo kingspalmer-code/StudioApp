@@ -36,6 +36,15 @@ export async function pdfFor(supabase: SupabaseClient, doc: Doc, settings: DocSe
   return renderDocPdf({ doc, settings, origin, logoUrl, customFontUrl });
 }
 
+// What a PDF link shows if the PDF can't be made, instead of a blank page.
+export function pdfFailed(e: unknown) {
+  console.error("pdf", e);
+  return new Response(
+    `<!doctype html><meta name="viewport" content="width=device-width"><body style="font:16px -apple-system,Helvetica,sans-serif;padding:32px;color:#2a201c"><h1 style="font-size:20px">The PDF couldn't be made</h1><p>Something went wrong on our side. Go back and try again in a moment.</p></body>`,
+    { status: 500, headers: { "Content-Type": "text/html; charset=utf-8" } }
+  );
+}
+
 // A made-up quote for previewing the look in Settings.
 export function sampleDoc(settings: DocSettings): Doc {
   return asDoc({

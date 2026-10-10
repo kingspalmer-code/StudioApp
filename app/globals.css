@@ -405,4 +405,5 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 .oc-intro .login-screen .login-logo, .oc-intro .login-screen .login-sub, .oc-intro .login-screen .auth form > * { opacity: 0; }
 
 /* Film grain over the dark sign-in background, drawn fresh every frame by components/FilmGrain. */
-.film-grain { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.login-screen { --grain: .07; } /* grain strength: higher shows more */
+.film-grain { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: var(--grain); }

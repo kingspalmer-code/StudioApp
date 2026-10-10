@@ -4,11 +4,11 @@ import { useEffect, useRef } from "react";
 
 // Film grain for the dark sign-in screens. Like real film, every frame is a brand new random
 // scatter of grain (hard cuts at 24fps, no sliding). A dozen noise tiles are made once, then each
-// frame picks a different one at a random offset. Brightness only, no colour.
+// frame picks a different one at a random offset. Brightness only, no colour. How strong it looks
+// is the --grain setting in globals.css.
 const FPS = 24;
 const TILE = 256;
 const FRAMES = 12;
-const STRENGTH = 0.12; // how far a grain can lighten or darken the background
 
 function makeTile() {
   const c = document.createElement("canvas");
@@ -19,7 +19,7 @@ function makeTile() {
   for (let i = 0; i < px.length; i++) {
     // Roughly gaussian, centred on zero: most grains are faint, a few stand out.
     const g = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
-    const a = Math.min(255, Math.abs(g) * STRENGTH * 2 * 255) | 0;
+    const a = Math.min(255, Math.abs(g) * 255) | 0;
     const v = g > 0 ? 255 : 0;
     px[i] = (a << 24) | (v << 16) | (v << 8) | v;
   }

@@ -259,7 +259,13 @@ export async function sendDocument(id: number, to: string, message: string): Pro
   const settings = await loadSettings(supabase, workspace.id);
   const h = await headers();
   const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
-  const pdf = await pdfFor(supabase, doc, settings, origin);
+  let pdf: Buffer;
+  try {
+    pdf = await pdfFor(supabase, doc, settings, origin);
+  } catch (e) {
+    console.error("sendDocument pdf", e);
+    return { error: "The PDF couldn't be made, so nothing was sent. Try again in a moment." };
+  }
 
   const from = (settings.business_name || workspace.name).replace(/[<>"]/g, "");
   const replyTo = settings.email || member.email;

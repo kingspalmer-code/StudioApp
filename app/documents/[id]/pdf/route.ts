@@ -1,5 +1,5 @@
 import { docName } from "@/lib/documents";
-import { asDoc, loadSettings, pdfFor } from "@/lib/docs-server";
+import { asDoc, loadSettings, pdfFailed, pdfFor } from "@/lib/docs-server";
 import { createClient } from "@/lib/supabase/server";
 
 // The PDF for one quote or invoice. ?download=1 saves it instead of opening it.
@@ -11,7 +11,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const doc = asDoc(row);
   const settings = await loadSettings(supabase, doc.workspace_id);
   const url = new URL(req.url);
-  const pdf = await pdfFor(supabase, doc, settings, url.origin);
+  let pdf: Buffer;
+  try {
+    pdf = await pdfFor(supabase, doc, settings, url.origin);
+  } catch (e) {
+    return pdfFailed(e);
+  }
   const name = `${docName(doc)}${doc.customer_name ? ` - ${doc.customer_name}` : ""}.pdf`.replace(/[^\w .,&()-]/g, "");
   return new Response(new Uint8Array(pdf), {
     headers: {
