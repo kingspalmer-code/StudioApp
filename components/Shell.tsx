@@ -4,7 +4,7 @@ import { brandFor, brandThemeCss } from "@/lib/brands";
 import type { Business, Member } from "@/lib/types";
 import BizBadge from "./BizBadge";
 import NavLinks from "./NavLinks";
-import OatcakeLogo from "./OatcakeLogo";
+import { OatcakeMark } from "./OatcakeLogo";
 import ThemeToggle from "./ThemeToggle";
 
 const LINKS = {
@@ -47,7 +47,7 @@ export default function Shell({
             </Link>
           ) : (
             <Link href="/" className="brand" aria-label="Oatcake">
-              <span className="brand-pill"><OatcakeLogo height={18} /></span>
+              <OatcakeMark height={22} />
             </Link>
           )}
           <NavLinks links={LINKS[member.role]} />

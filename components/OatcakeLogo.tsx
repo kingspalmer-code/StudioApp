@@ -9,3 +9,8 @@ export default function OatcakeLogo({ height = 48 }: { height?: number }) {
     </span>
   );
 }
+
+// The wordmark drawn in the current text colour (brown in light mode, oat in dark), for the top bar.
+export function OatcakeMark({ height = 22 }: { height?: number }) {
+  return <span className="oatcake-mark" role="img" aria-label="Oatcake" style={{ height, width: height * (906.36 / 177.4) }} />;
+}
