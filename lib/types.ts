@@ -44,3 +44,17 @@ export type Note = {
 };
 
 export type TicketFile = { id: number; ticket_id: number; path: string; name: string };
+
+export type PersonalProject = { id: number; name: string; color: string; archived: boolean };
+
+export type PersonalTask = {
+  id: number;
+  project_id: number | null;
+  title: string;
+  notes: string;
+  due: string | null;
+  flagged: boolean;
+  done: boolean;
+  done_at: string | null;
+  created_at: string;
+};

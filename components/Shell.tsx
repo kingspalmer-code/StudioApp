@@ -12,6 +12,7 @@ const LINKS = {
     { href: "/overview", label: "Overview" },
     { href: "/portal", label: "New request" },
     { href: "/people", label: "People" },
+    { href: "/personal", label: "Personal" },
   ],
   manager: [{ href: "/overview", label: "Overview" }],
   client: [{ href: "/portal", label: "Requests" }],
