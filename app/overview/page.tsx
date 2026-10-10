@@ -1,7 +1,7 @@
 import BizBadge from "@/components/BizBadge";
 import Shell from "@/components/Shell";
 import TicketRow from "@/components/TicketRow";
-import { daysFromToday, formatDate, isAtRisk, isDone, sortQueue, stageColor } from "@/lib/priority";
+import { daysFromToday, formatDate, isAtRisk, isDone, money, sortQueue, stageColor } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
 
@@ -20,9 +20,12 @@ export default async function OverviewPage() {
   monthStart.setHours(0, 0, 0, 0);
   const deliveredThisMonth = done.filter((t) => t.delivered_at && new Date(t.delivered_at) >= monthStart).length;
 
+  const unpaid = all.reduce((sum, t) => sum + Math.max(0, (t.quote_amount ?? 0) - (t.paid_amount ?? 0)), 0);
   const stats = [
     { n: open.length, label: `Open ${terms.jobs}` },
-    { n: open.filter((t) => { const d = daysFromToday(t.deadline); return d >= 0 && d <= 7; }).length, label: "Due this week" },
+    workspace.kind === "trade"
+      ? { n: money(unpaid), label: "Quoted, not yet paid", color: unpaid ? "var(--orange)" : undefined }
+      : { n: open.filter((t) => { const d = daysFromToday(t.deadline); return d >= 0 && d <= 7; }).length, label: "Due this week" },
     { n: risk.length, label: "At risk", color: risk.length ? "var(--red)" : undefined },
     { n: deliveredThisMonth, label: "Delivered this month", color: "var(--green)" },
   ];

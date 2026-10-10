@@ -81,7 +81,7 @@ export default async function PersonalPage({ searchParams }: { searchParams: Pro
       <p className="sub" style={{ margin: "0 0 4px" }}>Only you can see this.</p>
       <div className="personal">
         <aside>
-          <div className="smart">
+          {tasks.length > 0 && <div className="smart">
             {views.map((v) => (
               <Link key={v.id} href={`/personal?view=${v.id}`} className="smart-tile" aria-current={view === v.id ? "page" : undefined}>
                 <span className="dot" style={{ background: v.color, width: 10, height: 10 }} />
@@ -89,7 +89,7 @@ export default async function PersonalPage({ searchParams }: { searchParams: Pro
                 <span>{v.label}</span>
               </Link>
             ))}
-          </div>
+          </div>}
           <p className="eyebrow">Projects</p>
           <div className="group">
             {projects.map((p) => {

@@ -200,12 +200,18 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 .seg.theme-toggle { flex: none; }
 .seg.theme-toggle button { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; }
 .theme-toggle svg { width: 14px; height: 14px; }
+/* Phones: a slim top bar (logo and account button) and the sections in a tab bar along the bottom. */
+.me-btn, .tabbar { display: none; }
 @media (max-width: 700px) {
-  .bar-in { row-gap: 8px; }
-  .seg.theme-toggle { order: 1; }
-  .bar-in > nav.seg { order: 2; flex: 1 1 100%; }
-  .bar-in > nav.seg a { flex: 1; text-align: center; padding: 5px 8px; }
-  .who { order: 3; }
+  .bar-in > nav.seg, .bar-in > .who, .bar-in > .theme-toggle { display: none; }
+  .me-btn { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--fill); color: var(--label); font-size: 12.5px; font-weight: 700; letter-spacing: .02em; }
+  .tabbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--bar); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-top: .5px solid var(--sep); padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px)); }
+  .tabbar a { flex: 1; display: grid; justify-items: center; gap: 2px; color: var(--label-3); font-size: 10.5px; font-weight: 600; padding: 2px 0; -webkit-tap-highlight-color: transparent; }
+  .tabbar a svg { width: 24px; height: 24px; }
+  .tabbar a[aria-current="page"] { color: var(--accent); }
+  .tabbar a.add svg { width: 30px; height: 30px; padding: 5px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); margin-top: -3px; }
+  .tabbar a.add { color: var(--label-2); }
+  main.has-tabbar { padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* Titles, headline numbers and business names use the Oatcake title face. */
@@ -438,3 +444,26 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
   .sheet-grabber { display: none; }
   .sheet-head { padding-top: 14px; }
 }
+.sub.summary { font-size: 16px; }
+.sub.summary b { color: var(--label); font-variant-numeric: tabular-nums; }
+/* Personal lists: a single scrolling row of chips on phones rather than a grid of tiles. */
+@media (max-width: 700px) {
+  .smart { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 0 16px 2px; scrollbar-width: none; }
+  .smart::-webkit-scrollbar { display: none; }
+  .smart-tile { flex: none; display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 99px; }
+  .smart-tile b { order: 3; font: 600 14px/1 var(--font); color: var(--label-2); }
+  .smart-tile span:last-child { font-size: 14px; color: var(--label); }
+  .smart-tile[aria-current="page"] b { color: var(--accent-ink); }
+}
+
+/* First-login walkthrough: the page dims, a soft spotlight lifts out one part, a card explains it. */
+.walk { position: fixed; inset: 0; z-index: 100; }
+.walk-hole { position: fixed; box-shadow: 0 0 0 200vmax rgba(14,10,9,.58), 0 0 0 2px color-mix(in srgb, var(--oat-cream) 70%, transparent), 0 0 28px 6px rgba(243,233,220,.18); pointer-events: none; }
+.walk-card { position: fixed; background: var(--surface); color: var(--label); border-radius: 16px; padding: 16px 16px 12px; box-shadow: 0 20px 50px rgba(0,0,0,.35); outline: none; }
+.walk-card b { display: block; font-family: var(--font-title); font-size: 21px; line-height: 1.15; margin-bottom: 4px; }
+.walk-card p { margin: 0; color: var(--label-2); font-size: 14.5px; line-height: 1.45; }
+.walk-foot { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+.walk-dots { display: flex; gap: 6px; margin-right: auto; }
+.walk-dots span { position: relative; width: 6px; height: 6px; border-radius: 99px; background: var(--label-3); }
+.walk-dots i { position: absolute; inset: -1px; border-radius: 99px; background: var(--accent); }
+.walk-skip { color: var(--label-2); font-weight: 500; }

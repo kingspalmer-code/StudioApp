@@ -2,17 +2,18 @@ import BizBadge from "@/components/BizBadge";
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import TicketRow from "@/components/TicketRow";
-import { daysFromToday, finalStage, firstStage, formatDate, isDone, money, sortQueue, startBy, startLabel } from "@/lib/priority";
+import Walkthrough from "@/components/Walkthrough";
+import { daysFromToday, finalStage, formatDate, isDone, money, sortQueue, startBy, startLabel } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
 
 export default async function QueuePage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; biz?: string }>;
+  searchParams: Promise<{ view?: string; biz?: string; tour?: string }>;
 }) {
-  const { view = "list", biz = "all" } = await searchParams;
-  const { supabase, businesses, ctx, terms, workspace, shell } = await requireMember(["designer"]);
+  const { view = "list", biz = "all", tour } = await searchParams;
+  const { supabase, businesses, ctx, terms, workspace, shell, viewing } = await requireMember(["designer"]);
   const trade = workspace.kind === "trade";
   const { data } = await supabase.from("tickets").select("*").returns<Ticket[]>();
   const all = data ?? [];
@@ -22,37 +23,37 @@ export default async function QueuePage({
   const keep = (t: Ticket) => !filterBiz || t.business_id === filterBiz.id;
   const href = (v: string, b: string) => `/queue?view=${v}&biz=${b}`;
 
-  const stats = [
-    { n: queue.filter((t) => startBy(t, ctx) <= 0).length, label: "Should start now", color: "var(--red)" },
-    { n: queue.filter((t) => { const d = daysFromToday(t.deadline); return d >= 0 && d <= 7; }).length, label: "Due in the next 7 days" },
-    { n: queue.filter((t) => t.status === firstStage(ctx)).length, label: ctx.stages[0]?.label ?? "New", color: "var(--blue)" },
-    trade
-      ? {
-          n: money(all.reduce((sum, t) => sum + Math.max(0, (t.quote_amount ?? 0) - (t.paid_amount ?? 0)), 0)),
-          label: "Quoted, not yet paid",
-          color: "var(--orange)",
-        }
-      : { n: all.filter((t) => t.status === "waiting").length, label: "Waiting on client", color: "var(--orange)" },
-  ];
+  // One line of what matters, instead of a row of number tiles. The totals live on Overview.
+  const startNow = queue.filter((t) => startBy(t, ctx) <= 0).length;
+  const dueSoon = queue.filter((t) => { const d = daysFromToday(t.deadline); return d >= 0 && d <= 7; }).length;
+  const waiting = trade ? 0 : all.filter((t) => t.status === "waiting").length;
+  const summary = [
+    startNow ? { n: startNow, text: "to start now", color: "var(--red)" } : null,
+    dueSoon ? { n: dueSoon, text: "due this week" } : null,
+    waiting ? { n: waiting, text: "waiting on clients", color: "var(--orange)" } : null,
+  ].filter((x): x is { n: number; text: string; color?: string } => Boolean(x));
   const final = finalStage(ctx);
   const showFilter = businesses.length > 1 && businesses.length <= 8;
 
   return (
     <Shell {...shell}>
       <h1 className="large">Up next</h1>
-      <p className="sub">Every open {terms.job}, ordered by when you need to start it, not just when it's due.</p>
-      <div className="stats">
-        {stats.map((s) => (
-          <div className="stat" key={s.label}>
-            <b style={s.color ? { color: s.color } : undefined}>{s.n}</b>
-            <span>{s.label}</span>
-          </div>
-        ))}
-      </div>
+      <p className="sub summary" data-tour="summary">
+        {summary.length
+          ? summary.map((x, i) => (
+              <span key={x.text}>
+                {i > 0 && " · "}
+                <b style={x.color ? { color: x.color } : undefined}>{x.n}</b> {x.text}
+              </span>
+            ))
+          : queue.length
+            ? "Nothing urgent. Everything open, in the order to start it."
+            : null}
+      </p>
 
       <div className="toolbar">
         <p className="eyebrow">Queue</p>
-        <nav className="seg" aria-label="Layout">
+        <nav className="seg" aria-label="Layout" data-tour="layout">
           <Link href={href("list", biz)} aria-current={view !== "board" ? "page" : undefined}>Priority list</Link>
           <Link href={href("board", biz)} aria-current={view === "board" ? "page" : undefined}>Board</Link>
         </nav>
@@ -68,7 +69,7 @@ export default async function QueuePage({
 
       {view !== "board" ? (
         <>
-          <div className="group">
+          <div className="group" data-tour="list">
             {queue.filter(keep).length ? (
               queue.filter(keep).map((t) => (
                 <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} rank={queue.indexOf(t) + 1} />
@@ -77,7 +78,6 @@ export default async function QueuePage({
               <div className="empty">Nothing open{filterBiz ? ` for ${filterBiz.name}` : ""}. New {terms.jobs} appear here as soon as they're added.</div>
             )}
           </div>
-          <p className="foot">Numbers are the overall rank. Open a {terms.job} to change its stage or pin it to the top.</p>
         </>
       ) : (
         <div className="board">
@@ -121,6 +121,7 @@ export default async function QueuePage({
           })}
         </div>
       )}
+      {!viewing && view !== "board" && <Walkthrough force={tour === "1"} job={terms.job} clients={terms.clients} />}
     </Shell>
   );
 }

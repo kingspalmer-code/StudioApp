@@ -9,7 +9,7 @@ export default function NavLinks({ links }: { links: { href: string; label: stri
   return (
     <nav className="seg" aria-label="Sections">
       {links.map((l) => (
-        <Link key={l.href} href={l.href} aria-current={path.startsWith(l.href) ? "page" : undefined}>
+        <Link key={l.href} href={l.href} aria-current={path.startsWith(l.href) ? "page" : undefined} data-tour={l.href === "/portal" ? "new" : undefined}>
           {l.label}
         </Link>
       ))}

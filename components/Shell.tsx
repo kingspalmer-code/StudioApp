@@ -5,6 +5,7 @@ import { brandFor, brandThemeCss } from "@/lib/brands";
 import type { Business, Member, Workspace } from "@/lib/types";
 import BizBadge from "./BizBadge";
 import NavLinks from "./NavLinks";
+import TabBar from "./TabBar";
 import { OatcakeMark } from "./OatcakeLogo";
 import ThemeToggle from "./ThemeToggle";
 
@@ -52,6 +53,13 @@ export default function Shell({
   // Clients see their own business's identity; the workspace owner and manager see Oatcake.
   const biz = member.role === "client" ? businesses.find((b) => b.id === member.business_id) : undefined;
   const brand = biz ? brandFor(biz) : undefined;
+  const links = linksFor(member, workspace, viewing);
+  const initials = (member.full_name || member.email)
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
 
   return (
     <div className={brand ? "brand-theme" : undefined}>
@@ -71,14 +79,16 @@ export default function Shell({
               <OatcakeMark height={22} />
             </Link>
           )}
-          <NavLinks links={linksFor(member, workspace, viewing)} />
+          <NavLinks links={links} />
           <form action={signOut} className="who">
             <Link href="/account">{member.full_name || member.email}</Link>
-            {member.role === "designer" && <Link href="/settings">Settings</Link>}
+            {member.role === "designer" && <Link href="/settings" data-tour="settings">Settings</Link>}
             {isAdmin && <Link href="/admin">Admin</Link>}
             <button className="link" type="submit">Sign out</button>
           </form>
           <ThemeToggle />
+          {/* On phones the account links and theme switch live on the account page instead. */}
+          <Link href="/account" className="me-btn" aria-label="Your account and settings" data-tour="me">{initials}</Link>
         </div>
       </header>
       {viewing && (
@@ -89,7 +99,7 @@ export default function Shell({
           <button className="btn small" type="submit">Back to my workspace</button>
         </form>
       )}
-      <main>
+      <main className={links.length > 1 ? "has-tabbar" : undefined}>
         {viewing ? (
           <fieldset disabled className="read-only">
             {children}
@@ -98,6 +108,7 @@ export default function Shell({
           children
         )}
       </main>
+      <TabBar links={links} />
     </div>
   );
 }
