@@ -1,3 +1,6 @@
+/* Oatcake title face: OVR Demorny (trial cut, so punctuation falls back to the system font). */
+@font-face { font-family: "Demorny"; src: url(/fonts/OVRDemornyTrial-Bold.woff2) format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+
 /* Oatcake palette: Apple-style grouped lists on warm oat neutrals, with the Oatcake brown as the accent. */
 :root {
   --bg: #f4efe7; --surface: #fffdf9; --surface-2: #f9f4ec; --fill: rgba(56,42,37,.08);
@@ -6,6 +9,7 @@
   --blue: #3a6ea5; --red: #d9412e; --orange: #d9822b; --green: #3f8f4f; --indigo: #5856a6; --purple: #94508f; --pink: #c8456b;
   --bar: rgba(244,239,231,.82); --shadow: 0 1px 2px rgba(56,42,37,.06), 0 8px 28px rgba(56,42,37,.10);
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-title: "Demorny", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", system-ui, "Segoe UI", Roboto, sans-serif;
   --r: 12px;
   color-scheme: light;
@@ -198,3 +202,6 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
   .bar-in > nav.seg a { flex: 1; text-align: center; padding: 5px 8px; }
   .who { order: 3; }
 }
+
+/* Titles, headline numbers and business names use the Oatcake title face. */
+.large, .stat b, .biz h4, .smart-tile b { font-family: var(--font-title); letter-spacing: 0; }
