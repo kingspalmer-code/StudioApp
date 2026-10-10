@@ -119,10 +119,12 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 
 /* Business identity */
 .badge { display: inline-grid; place-items: center; flex: none; border-radius: 8px; font-weight: 700; letter-spacing: .02em; overflow: hidden; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.08); }
-.badge img { width: 100%; height: 100%; object-fit: contain; padding: 3px; }
+.badge img { width: 100%; height: 100%; object-fit: contain; padding: 3px 4px; }
+.badge.wide { padding: 0 10px; }
+.badge.wide img { width: auto; max-width: 140px; padding: 4px 0; }
 .rank { background: var(--fill); color: var(--label-2); width: 22px; height: 22px; font-size: 12px; }
-.ticket + .ticket.ranked::before { left: 90px; }
-.ticket + .ticket::before { left: 56px; }
+.ticket + .ticket.ranked::before { left: 104px; }
+.ticket + .ticket::before { left: 70px; }
 .client-brand { display: flex; align-items: center; gap: 10px; margin-right: auto; color: var(--label); font-weight: 600; }
 .client-brand small { display: block; font-size: 11px; font-weight: 500; color: var(--label-2); letter-spacing: 0; }
 .brand-hero { display: flex; align-items: center; gap: 14px; margin: 6px 0 4px; }

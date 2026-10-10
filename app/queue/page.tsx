@@ -90,7 +90,7 @@ export default async function QueuePage({
                     <Link href={`/tickets/${t.id}`} className="card" key={t.id}>
                       <span className="m">
                         <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
-                          <BizBadge biz={b} size={18} />
+                          <BizBadge biz={b} size={20} />
                           {b?.name}
                         </span>
                         {t.priority !== "Standard" && <span className={`pri-${t.priority}`}>{t.priority}</span>}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { signOut } from "@/app/actions";
-import { brandFor } from "@/lib/brands";
+import { brandFor, brandThemeCss } from "@/lib/brands";
 import type { Business, Member } from "@/lib/types";
 import BizBadge from "./BizBadge";
 import NavLinks from "./NavLinks";
@@ -28,18 +28,18 @@ export default function Shell({
   // Clients see their own business's identity; Kingsley and the manager see the neutral studio.
   const biz = member.role === "client" ? businesses.find((b) => b.id === member.business_id) : undefined;
   const brand = biz ? brandFor(biz) : undefined;
-  const theme = brand ? ({ "--accent": brand.color, "--accent-ink": brand.ink } as React.CSSProperties) : undefined;
 
   return (
-    <div style={theme}>
+    <div className={brand ? "brand-theme" : undefined}>
+      {brand && <style>{brandThemeCss(".brand-theme", brand)}</style>}
       <header className="bar">
         <div className="bar-in">
           {biz ? (
             <Link href="/" className="client-brand">
-              <BizBadge biz={biz} size={30} />
+              <BizBadge biz={biz} size={34} wide />
               <span>
-                {biz.name}
-                <small>Design requests · by Studio Desk</small>
+                Design requests
+                <small>by Studio Desk</small>
               </span>
             </Link>
           ) : (

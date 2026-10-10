@@ -1,18 +1,38 @@
 import type { Business } from "./types";
 
-// Each business's identity. Drop logo files in public/brands/ and point `logo` at them;
-// until then a monogram badge in the brand colour stands in.
-const BRANDS: Record<string, { color?: string; logo?: string; monogram?: string }> = {
-  "brewery-tap": { monogram: "BT" },
-  hoprocket: { monogram: "HR" },
-  boomtowers: { monogram: "BO" },
-  motherchip: { monogram: "MC" },
-  "queens-brewery": { monogram: "QB" },
+type Theme = { accent: string; ink?: string };
+
+// Each business's identity: its logo (in public/brands/), the tile colour the logo sits on,
+// and the accent its own portal uses for buttons and highlights in light and dark mode.
+const BRANDS: Record<string, { logo?: string; tile?: string; light: Theme; dark?: Theme; monogram?: string }> = {
+  "brewery-tap": { logo: "/brands/brewery-tap.svg", tile: "#842f1b", light: { accent: "#c95228" } },
+  hoprocket: {
+    logo: "/brands/hoprocket.svg",
+    tile: "#1c1c1e",
+    light: { accent: "#1c1c1e", ink: "#fbc337" },
+    dark: { accent: "#fbc337", ink: "#1c1c1e" },
+  },
+  boomtowers: { logo: "/brands/boomtowers.svg", tile: "#ffffff", light: { accent: "#dd5136" } },
+  motherchip: { logo: "/brands/motherchip.svg", tile: "#ffffff", light: { accent: "#009245" } },
+  "queens-brewery": {
+    logo: "/brands/queens-brewery.svg",
+    tile: "#ffffff",
+    light: { accent: "#231f20" },
+    dark: { accent: "#f2f2f7" },
+  },
 };
 
-export type Brand = { name: string; color: string; ink: string; logo?: string; monogram: string };
+export type Brand = {
+  name: string;
+  color: string;
+  ink: string;
+  dark: { color: string; ink: string };
+  tile: string;
+  logo?: string;
+  monogram: string;
+};
 
-// Black or white, whichever reads better on the brand colour.
+// Black or white, whichever reads better on the given colour.
 function inkFor(hex: string): string {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex);
   if (!m) return "#ffffff";
@@ -23,10 +43,11 @@ function inkFor(hex: string): string {
 }
 
 export function brandFor(biz: Business): Brand {
-  const b = BRANDS[biz.slug] ?? {};
-  const color = b.color ?? biz.color;
+  const b = BRANDS[biz.slug];
+  const light = b?.light ?? { accent: biz.color };
+  const dark = b?.dark ?? light;
   const monogram =
-    b.monogram ??
+    b?.monogram ??
     biz.name
       .replace(/^the\s+/i, "")
       .split(/\s+/)
@@ -34,5 +55,21 @@ export function brandFor(biz: Business): Brand {
       .join("")
       .slice(0, 2)
       .toUpperCase();
-  return { name: biz.name, color, ink: inkFor(color), logo: b.logo, monogram };
+  return {
+    name: biz.name,
+    color: light.accent,
+    ink: light.ink ?? inkFor(light.accent),
+    dark: { color: dark.accent, ink: dark.ink ?? inkFor(dark.accent) },
+    tile: b?.tile ?? light.accent,
+    logo: b?.logo,
+    monogram,
+  };
+}
+
+// CSS that re-points the accent tokens at a business's colours, in both themes.
+export function brandThemeCss(selector: string, brand: Brand): string {
+  return (
+    `${selector}{--accent:${brand.color};--accent-ink:${brand.ink}}` +
+    `@media (prefers-color-scheme: dark){${selector}{--accent:${brand.dark.color};--accent-ink:${brand.dark.ink}}}`
+  );
 }
