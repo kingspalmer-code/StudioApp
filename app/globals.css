@@ -234,3 +234,26 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 .viewing-bar { max-width: 1180px; margin: 12px auto 0; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--fill); border-radius: 12px; font-size: 14px; width: calc(100% - 32px); }
 fieldset.read-only { border: 0; margin: 0; padding: 0; min-width: 0; }
 fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: not-allowed; }
+
+/* Job form editor */
+.field-row { align-items: flex-start; }
+.field-row .stage-tools { padding-top: 2px; }
+.field-edit summary { list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.field-edit summary::-webkit-details-marker { display: none; }
+.field-name { font-weight: 500; }
+.field-heading { font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: .06em; color: var(--label-2); }
+.field-form { display: grid; gap: 10px; margin-top: 12px; }
+.field-form > label:not(.tick) { display: grid; gap: 4px; font-size: 13px; color: var(--label-2); }
+.field-form > label:not(.tick) :is(input, select, textarea) { width: 100%; border: .5px solid var(--sep); border-radius: 8px; padding: 8px 10px; background: var(--surface); color: var(--label); font-size: 15px; }
+.field-form .tick, .types .tick { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+.field-form .tick input, .types .tick input { width: auto; }
+.types { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; }
+.types legend { font-size: 13px; color: var(--label-2); margin-bottom: 4px; }
+.field-actions { display: flex; gap: 12px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+.nav-row { color: inherit; text-decoration: none; }
+.check-row { cursor: pointer; justify-content: space-between; }
+.check-row input { width: 20px !important; height: 20px; flex: none; }
+.edit-details { margin-top: 16px; }
+.edit-details > summary { list-style: none; cursor: pointer; display: inline-block; }
+.edit-details > summary::-webkit-details-marker { display: none; }
+.edit-details[open] > summary { margin-bottom: 8px; }

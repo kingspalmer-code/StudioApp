@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { ADDABLE_KINDS } from "@/lib/fields";
 import { STAGE_COLORS } from "@/lib/priority";
 import { requireEditor } from "@/lib/session";
 import { slugify } from "@/lib/workspace";
@@ -115,4 +116,86 @@ export async function deleteCustomer(id: string) {
   if (count) return;
   await supabase.from("businesses").delete().eq("id", id);
   done();
+}
+
+// Job form --------------------------------------------------------------------------
+const KINDS = new Set<string>(ADDABLE_KINDS);
+const doneForm = () => {
+  revalidatePath("/settings/form");
+  revalidatePath("/portal");
+};
+
+export async function addField(formData: FormData) {
+  const { supabase, workspace } = await requireEditor(["designer"]);
+  const label = text(formData, "label");
+  const kind = text(formData, "kind");
+  if (!label || !KINDS.has(kind)) return;
+  const { data: last } = await supabase.from("job_fields").select("position").order("position", { ascending: false }).limit(1).maybeSingle();
+  await supabase.from("job_fields").insert({
+    workspace_id: workspace.id,
+    key: `${kind === "heading" ? "h" : "f"}_${Math.random().toString(36).slice(2, 10)}`,
+    label,
+    kind,
+    position: (last?.position ?? -1) + 1,
+  });
+  doneForm();
+}
+
+export async function saveField(id: number, formData: FormData) {
+  const { supabase, ctx } = await requireEditor(["designer"]);
+  const label = text(formData, "label");
+  if (!label) return;
+  const kind = text(formData, "kind");
+  const typeIds = formData
+    .getAll("type_ids")
+    .map((v) => Number(v))
+    .filter((n) => ctx.types.some((t) => t.id === n));
+  const options = text(formData, "options")
+    .split(/\n|,/)
+    .map((o) => o.trim())
+    .filter(Boolean)
+    .slice(0, 50);
+  await supabase
+    .from("job_fields")
+    .update({
+      label,
+      hint: text(formData, "hint"),
+      required: formData.get("required") != null,
+      on_form: formData.get("on_form") != null,
+      // Every type ticked means no limit.
+      type_ids: typeIds.length === ctx.types.length ? [] : typeIds,
+      ...(KINDS.has(kind) && kind !== "heading" ? { kind } : {}),
+      ...(formData.has("options") ? { options } : {}),
+    })
+    .eq("id", id);
+  doneForm();
+}
+
+export async function setFieldHidden(id: number, hidden: boolean) {
+  const { supabase } = await requireEditor(["designer"]);
+  await supabase.from("job_fields").update({ hidden }).eq("id", id);
+  doneForm();
+}
+
+export async function moveField(id: number, dir: -1 | 1) {
+  const { supabase } = await requireEditor(["designer"]);
+  const { data: fields } = await supabase.from("job_fields").select("id, hidden").order("position").order("id");
+  // Moves past switched-off fields so each tap visibly moves it one place on the form.
+  const list = fields ?? [];
+  const i = list.findIndex((f) => f.id === id);
+  if (i < 0) return;
+  let j = i + dir;
+  while (j >= 0 && j < list.length && list[j].hidden && !list[i].hidden) j += dir;
+  if (j < 0 || j >= list.length) return;
+  const reordered = [...list];
+  const [moved] = reordered.splice(i, 1);
+  reordered.splice(j, 0, moved);
+  await Promise.all(reordered.map((f, n) => supabase.from("job_fields").update({ position: n }).eq("id", f.id)));
+  doneForm();
+}
+
+export async function deleteField(id: number) {
+  const { supabase } = await requireEditor(["designer"]);
+  await supabase.from("job_fields").delete().eq("id", id).eq("builtin", false);
+  doneForm();
 }

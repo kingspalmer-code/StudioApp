@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { PRIORITIES, daysFromToday, todayISO } from "@/lib/priority";
+import FieldInput from "@/components/FieldInput";
+import { appliesTo, groupFields, readFields, type JobField } from "@/lib/fields";
 import type { Business, JobType } from "@/lib/types";
 import { slugify } from "@/lib/workspace";
 
@@ -14,6 +16,7 @@ export default function NewRequestForm({
   defaultName,
   isDesigner,
   types,
+  fields: allFields,
   trade = false,
   ownerName = "the studio",
 }: {
@@ -21,6 +24,7 @@ export default function NewRequestForm({
   defaultName: string;
   isDesigner: boolean;
   types: JobType[];
+  fields: JobField[];
   trade?: boolean;
   ownerName?: string;
 }) {
@@ -33,7 +37,11 @@ export default function NewRequestForm({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
 
-  const lead = types.find((t) => t.name === type)?.lead_days ?? 3;
+  const typeRow = types.find((t) => t.name === type);
+  const lead = typeRow?.lead_days ?? 3;
+  // Fields can be limited to some job types; headings with nothing under them drop out.
+  const fields = allFields.filter((f) => appliesTo(f, typeRow?.id));
+  const groups = groupFields(fields);
   const job = trade ? "Job" : "Request";
   const tight = deadline && daysFromToday(deadline) < lead;
 
@@ -73,27 +81,17 @@ export default function NewRequestForm({
         business_id = created.id;
       }
     }
-    const amount = (k: string) => {
-      const n = parseFloat(get(k).replace(/[£,\s]/g, ""));
-      return Number.isFinite(n) && n >= 0 ? n : null;
-    };
+    const { columns, details } = readFields(fields, get, (k) => f.get(k) != null);
     const { data: ticket, error: insertError } = await supabase
       .from("tickets")
       .insert({
         business_id,
-        requester_name: get("requester_name"),
         title: get("title"),
         type: get("type"),
-        formats: get("formats"),
-        brief: get("brief"),
-        copy: get("copy"),
-        links: get("links"),
-        colours: get("colours"),
         deadline: get("deadline"),
-        event_date: get("event_date") || null,
         priority: get("priority"),
-        approver: get("approver"),
-        ...(trade ? { quote_amount: amount("quote_amount"), site_address: get("site_address") } : {}),
+        ...columns,
+        details,
       })
       .select("id")
       .single();
@@ -176,74 +174,9 @@ export default function NewRequestForm({
           </div>
         </div>
         <div className="row">
-          <label htmlFor="formats">Sizes / formats</label>
-          <div className="ctl"><input id="formats" name="formats" placeholder={trade ? "2400 × 600mm, double-sided" : "A3 print, IG post 1080×1350, story"} /></div>
-        </div>
-        <div className="row stack">
-          <label htmlFor="brief">{trade ? "Job notes" : "What do you need?"}</label>
-          <textarea id="brief" name="brief" required={!trade} placeholder={trade ? "Wording, colours, materials, fixings" : "Goal, audience, where it will be used"} />
-        </div>
-        {trade && (
-          <>
-            <div className="row">
-              <label htmlFor="site_address">Site address</label>
-              <div className="ctl"><input id="site_address" name="site_address" placeholder="Where the sign goes" /></div>
-            </div>
-            <div className="row">
-              <label htmlFor="quote_amount">Quote (£)</label>
-              <div className="ctl"><input id="quote_amount" name="quote_amount" inputMode="decimal" placeholder="Leave blank if not quoted yet" /></div>
-            </div>
-            <div className="row">
-              <label htmlFor="files">Photos / drawings</label>
-              <div className="ctl"><input id="files" name="files" type="file" multiple accept="image/*,application/pdf,.ai,.svg,.eps,.dxf,.zip" /></div>
-            </div>
-          </>
-        )}
-      </div>
-
-      {!trade && (
-      <>
-
-      <p className="eyebrow">Copy</p>
-      <div className="group">
-        <div className="row stack">
-          <label htmlFor="copy">Exact wording to use</label>
-          <textarea id="copy" name="copy" placeholder="Headline, dates, prices, small print. Paste it exactly as it should appear." />
-        </div>
-      </div>
-      <p className="foot">Final copy up front saves a round of changes.</p>
-
-      <p className="eyebrow">Inspiration</p>
-      <div className="group">
-        <div className="row">
-          <label htmlFor="links">Links</label>
-          <div className="ctl"><input id="links" name="links" placeholder="Pinterest, Instagram, websites" /></div>
-        </div>
-        <div className="row">
-          <label htmlFor="files">Images / logos</label>
-          <div className="ctl"><input id="files" name="files" type="file" multiple accept="image/*,application/pdf,.ai,.psd,.svg,.eps,.zip" /></div>
-        </div>
-        <div className="row">
-          <label htmlFor="colours">Colours / mood</label>
-          <div className="ctl"><input id="colours" name="colours" placeholder="Autumnal, gold and black, playful" /></div>
-        </div>
-      </div>
-
-      </>
-      )}
-
-      <p className="eyebrow">Timing</p>
-      <div className="group">
-        <div className="row">
           <label htmlFor="deadline">Needed by</label>
           <div className="ctl"><input id="deadline" name="deadline" type="date" required min={todayISO()} value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
         </div>
-        {!trade && (
-          <div className="row">
-            <label htmlFor="event_date">Event / go-live</label>
-            <div className="ctl"><input id="event_date" name="event_date" type="date" /></div>
-          </div>
-        )}
         <div className="row">
           <label htmlFor="priority">Importance</label>
           <div className="ctl">
@@ -258,21 +191,16 @@ export default function NewRequestForm({
         {tight ? (isDesigner ? " That deadline is tight." : ` That deadline is tight, so ${ownerName} may come back to you about timing.`) : ""}
       </p>
 
-      {!trade && (
-      <>
-      <p className="eyebrow">Sign-off</p>
-      <div className="group">
-        <div className="row">
-          <label htmlFor="requester_name">{isDesigner ? "Requested by" : "Your name"}</label>
-          <div className="ctl"><input id="requester_name" name="requester_name" required defaultValue={isDesigner ? "" : defaultName} placeholder={`Who should ${ownerName} ask?`} /></div>
+      {groups.map((g, i) => (
+        <div key={`${g.title}-${i}`}>
+          <p className="eyebrow">{g.title ?? "Details"}</p>
+          <div className="group">
+            {g.fields.map((f) => (
+              <FieldInput key={f.key} field={f} value={f.key === "requester_name" && !isDesigner ? defaultName : undefined} />
+            ))}
+          </div>
         </div>
-        <div className="row">
-          <label htmlFor="approver">Final approver</label>
-          <div className="ctl"><input id="approver" name="approver" placeholder="If someone else signs it off" /></div>
-        </div>
-      </div>
-      </>
-      )}
+      ))}
 
       {error && <p className="error">{error}</p>}
       {done && <p className="foot" style={{ color: "var(--green)", fontWeight: 600 }}>{done}</p>}

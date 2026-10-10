@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireEditor } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
+import { appliesTo, readFields, type JobField } from "@/lib/fields";
 import type { Role, Status } from "@/lib/types";
 
 export async function signOut() {
@@ -25,21 +26,23 @@ export async function setPinned(id: number, pinned: boolean) {
   revalidatePath("/", "layout");
 }
 
-// Quote, payment and site details on a trade job.
-export async function updateJob(id: number, formData: FormData) {
-  const { supabase } = await requireEditor(["designer"]);
-  const amount = (k: string) => {
-    const n = parseFloat(String(formData.get(k) ?? "").replace(/[£,\s]/g, ""));
-    return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
-  };
-  await supabase
-    .from("tickets")
-    .update({
-      quote_amount: amount("quote_amount"),
-      paid_amount: amount("paid_amount"),
-      site_address: String(formData.get("site_address") ?? "").trim(),
-    })
-    .eq("id", id);
+// Saves the job's form fields from the job page. Fields not on the page are left as they are.
+export async function saveDetails(id: number, formData: FormData) {
+  const { supabase, ctx } = await requireEditor(["designer"]);
+  const [{ data: t }, { data: fields }] = await Promise.all([
+    supabase.from("tickets").select("type, details").eq("id", id).maybeSingle<{ type: string; details: Record<string, unknown> }>(),
+    supabase.from("job_fields").select("*").returns<JobField[]>(),
+  ]);
+  if (!t) return;
+  const typeId = ctx.types.find((x) => x.name === t.type)?.id;
+  const editable = (fields ?? []).filter((f) => !f.hidden && appliesTo(f, typeId));
+  const { columns, details } = readFields(
+    editable,
+    (k) => String(formData.get(k) ?? "").trim(),
+    (k) => formData.get(k) != null,
+    t.details ?? {}
+  );
+  await supabase.from("tickets").update({ ...columns, details }).eq("id", id);
   revalidatePath(`/tickets/${id}`);
   revalidatePath("/queue");
 }

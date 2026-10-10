@@ -2,7 +2,9 @@ import BizBadge from "@/components/BizBadge";
 import { notFound } from "next/navigation";
 import Shell from "@/components/Shell";
 import StatusChip from "@/components/StatusChip";
-import { addNote, setPinned, setStatus, updateJob } from "@/app/actions";
+import { addNote, saveDetails, setPinned, setStatus } from "@/app/actions";
+import FieldInput from "@/components/FieldInput";
+import { appliesTo, groupFields, hasValue, showValue, valueOf, type JobField } from "@/lib/fields";
 import { dueLabel, formatDate, isDone, money, startBy, startLabel } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
 import type { Note, Ticket, TicketFile } from "@/lib/types";
@@ -13,14 +15,15 @@ const IMAGE = /\.(png|jpe?g|gif|webp|svg)$/i;
 export default async function TicketPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: rawId } = await params;
   const id = Number(rawId);
-  const { supabase, member, businesses, ctx, terms, workspace, shell } = await requireMember();
+  const { supabase, member, businesses, ctx, terms, workspace, shell, viewing } = await requireMember();
   const trade = workspace.kind === "trade";
   const { data: t } = await supabase.from("tickets").select("*").eq("id", id).maybeSingle<Ticket>();
   if (!t) notFound();
 
-  const [{ data: notes }, { data: files }] = await Promise.all([
+  const [{ data: notes }, { data: files }, { data: fields }] = await Promise.all([
     supabase.from("ticket_notes").select("*").eq("ticket_id", id).order("created_at").returns<Note[]>(),
     supabase.from("ticket_files").select("*").eq("ticket_id", id).order("created_at").returns<TicketFile[]>(),
+    supabase.from("job_fields").select("*").order("position").order("id").returns<JobField[]>(),
   ]);
   const signed = files?.length
     ? (await supabase.storage.from("inspiration").createSignedUrls(files.map((f) => f.path), 3600)).data ?? []
@@ -32,13 +35,37 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   const sb = startLabel(startBy(t, ctx));
   const done = isDone(t, ctx);
   const owner = workspace.owner_name || "the studio";
-  const field = (label: string, value: string | null | undefined) =>
-    value ? (
-      <div className="row stack">
-        <span className="k">{label}</span>
-        <div className="copy">{value}</div>
+  // Show every field that has something in it, even ones since hidden from the form, so nothing saved is lost.
+  const typeId = ctx.types.find((x) => x.name === t.type)?.id;
+  const withValues = (fields ?? []).filter((f) => f.kind === "heading" || hasValue(valueOf(t, f)));
+  const groups = groupFields(withValues);
+  const shown = new Set(withValues.map((f) => f.key));
+  const filesField = fields?.find((f) => f.kind === "files");
+  const editable = (fields ?? []).filter((f) => !f.hidden && f.kind !== "heading" && f.kind !== "files" && appliesTo(f, typeId));
+  const fieldOn = (key: string) => fields?.some((f) => f.key === key && (!f.hidden || hasValue(valueOf(t, f))));
+  const quote = fieldOn("quote_amount") && fieldOn("paid_amount") ? t.quote_amount : null;
+  const paid = t.paid_amount;
+  const show = (f: JobField) => {
+    const v = showValue(f, valueOf(t, f));
+    if (f.kind === "longtext")
+      return (
+        <div className="row stack" key={f.key}>
+          <span className="k">{f.label}</span>
+          <div className="copy">{v}</div>
+        </div>
+      );
+    return (
+      <div className="row" key={f.key}>
+        <span className="k">{f.label}</span>
+        <div className="ctl">
+          {f.kind === "link" && /^https?:\/\//.test(v) ? <a href={v} target="_blank" rel="noreferrer">{v}</a>
+            : f.kind === "phone" ? <a href={`tel:${v}`}>{v}</a>
+            : f.kind === "email" ? <a href={`mailto:${v}`}>{v}</a>
+            : v}
+        </div>
       </div>
-    ) : null;
+    );
+  };
 
   return (
     <Shell {...shell}>
@@ -74,87 +101,64 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           </>
         )}
 
-        {trade && (
+        <p className="eyebrow">Details</p>
+        <div className="group">
+          {biz && <div className="row"><span className="k">{terms.Client}</span><div className="ctl">{biz.name}</div></div>}
+          <div className="row"><span className="k">Type</span><div className="ctl">{t.type}</div></div>
+          <div className="row"><span className="k">Needed by</span><div className="ctl">{formatDate(t.deadline)} <span className="when">({dueLabel(t.deadline)})</span></div></div>
+          {groups[0] && !groups[0].title && groups[0].fields.map(show)}
+          <div className="row"><span className="k">{trade ? "Added" : "Submitted"}</span><div className="ctl">{formatDate(t.created_at)}{t.requester_name && !shown.has("requester_name") ? ` by ${t.requester_name}` : ""}</div></div>
+          {quote != null && (
+            <div className="row"><span className="k">Left to pay</span><div className="ctl">{money(Math.max(0, quote - (paid ?? 0)))}</div></div>
+          )}
+        </div>
+
+        {groups.filter((g, i) => i > 0 || g.title).map((g, i) => (
+          <div key={`${g.title}-${i}`}>
+            <p className="eyebrow">{g.title}</p>
+            <div className="group">{g.fields.map(show)}</div>
+          </div>
+        ))}
+
+        {signed.length > 0 && (
           <>
-            <p className="eyebrow">Quote and site</p>
-            {isDesigner ? (
-              <form action={updateJob.bind(null, t.id)}>
-                <div className="group">
-                  <div className="row">
-                    <label htmlFor="quote_amount">Quote (£)</label>
-                    <div className="ctl"><input id="quote_amount" name="quote_amount" inputMode="decimal" defaultValue={t.quote_amount ?? ""} placeholder="0" /></div>
-                  </div>
-                  <div className="row">
-                    <label htmlFor="paid_amount">Paid (£)</label>
-                    <div className="ctl"><input id="paid_amount" name="paid_amount" inputMode="decimal" defaultValue={t.paid_amount ?? ""} placeholder="0" /></div>
-                  </div>
-                  <div className="row">
-                    <label htmlFor="site_address">Site address</label>
-                    <div className="ctl"><input id="site_address" name="site_address" defaultValue={t.site_address} placeholder="Where the sign goes" /></div>
-                  </div>
+            <p className="eyebrow">{filesField?.label ?? "Files"}</p>
+            <div className="group">
+              <div className="row stack">
+                <div className="files">
+                  {files!.map((f, i) =>
+                    signed[i]?.signedUrl ? (
+                      <a key={f.id} href={signed[i].signedUrl} target="_blank" rel="noreferrer">
+                        {IMAGE.test(f.name) && <img src={signed[i].signedUrl} alt="" />}
+                        {f.name}
+                      </a>
+                    ) : null
+                  )}
                 </div>
-                <p className="foot">
-                  {t.quote_amount != null && `Left to pay: ${money(Math.max(0, t.quote_amount - (t.paid_amount ?? 0)))}. `}
-                  <button className="link" type="submit">Save</button>
-                </p>
-              </form>
-            ) : (
-              <div className="group">
-                <div className="row"><span className="k">Quote</span><div className="ctl">{money(t.quote_amount) || "Not set"}</div></div>
-                <div className="row"><span className="k">Paid</span><div className="ctl">{money(t.paid_amount) || "Nothing yet"}</div></div>
-                {t.site_address && <div className="row"><span className="k">Site</span><div className="ctl">{t.site_address}</div></div>}
               </div>
-            )}
-            {biz && (biz.phone || biz.email || biz.address) && (
-              <>
-                <p className="eyebrow">{biz.name}</p>
-                <div className="group">
-                  {biz.phone && <div className="row"><span className="k">Phone</span><div className="ctl"><a href={`tel:${biz.phone}`}>{biz.phone}</a></div></div>}
-                  {biz.email && <div className="row"><span className="k">Email</span><div className="ctl"><a href={`mailto:${biz.email}`}>{biz.email}</a></div></div>}
-                  {biz.address && <div className="row"><span className="k">Address</span><div className="ctl">{biz.address}</div></div>}
-                </div>
-              </>
-            )}
+            </div>
           </>
         )}
 
-        <p className="eyebrow">Details</p>
-        <div className="group">
-          <div className="row"><span className="k">Type</span><div className="ctl">{t.type}</div></div>
-          {t.formats && <div className="row"><span className="k">Sizes</span><div className="ctl">{t.formats}</div></div>}
-          <div className="row"><span className="k">Needed by</span><div className="ctl">{formatDate(t.deadline)} <span className="when">({dueLabel(t.deadline)})</span></div></div>
-          {t.event_date && <div className="row"><span className="k">Event / go-live</span><div className="ctl">{formatDate(t.event_date)}</div></div>}
-          {!trade && <div className="row"><span className="k">Requested by</span><div className="ctl">{t.requester_name || t.created_by}{t.approver ? ` · approver: ${t.approver}` : ""}</div></div>}
-          <div className="row"><span className="k">{trade ? "Added" : "Submitted"}</span><div className="ctl">{formatDate(t.created_at)}</div></div>
-        </div>
+        {isDesigner && !viewing && editable.length > 0 && (
+          <details className="edit-details">
+            <summary className="btn plain small">Edit details</summary>
+            <form action={saveDetails.bind(null, t.id)}>
+              <div className="group">
+                {editable.map((f) => <FieldInput key={f.key} field={{ ...f, required: false }} value={valueOf(t, f)} idPrefix="edit-" />)}
+              </div>
+              <p className="foot"><button className="btn small" type="submit">Save details</button></p>
+            </form>
+          </details>
+        )}
 
-        <p className="eyebrow">{trade ? "Job notes" : "Brief"}</p>
-        <div className="group">
-          {field(trade ? "What's needed" : "What they need", t.brief) ?? <div className="empty">{trade ? "No notes yet." : "No brief given."}</div>}
-          {field("Copy", t.copy)}
-        </div>
-
-        {(t.links || t.colours || signed.length > 0) && (
+        {trade && biz && (biz.phone || biz.email || biz.address) && (
           <>
-            <p className="eyebrow">{trade ? "Photos and files" : "Inspiration"}</p>
+            <p className="eyebrow">{biz.name}</p>
             <div className="group">
-              {field("Links", t.links)}
-              {field("Colours / mood", t.colours)}
-              {signed.length > 0 && (
-                <div className="row stack">
-                  <span className="k">Files</span>
-                  <div className="files">
-                    {files!.map((f, i) =>
-                      signed[i]?.signedUrl ? (
-                        <a key={f.id} href={signed[i].signedUrl} target="_blank" rel="noreferrer">
-                          {IMAGE.test(f.name) && <img src={signed[i].signedUrl} alt="" />}
-                          {f.name}
-                        </a>
-                      ) : null
-                    )}
-                  </div>
-                </div>
-              )}
+              {biz.phone && <div className="row"><span className="k">Phone</span><div className="ctl"><a href={`tel:${biz.phone}`}>{biz.phone}</a></div></div>}
+              {biz.email && <div className="row"><span className="k">Email</span><div className="ctl"><a href={`mailto:${biz.email}`}>{biz.email}</a></div></div>}
+              {biz.address && <div className="row"><span className="k">Address</span><div className="ctl">{biz.address}</div></div>}
             </div>
           </>
         )}

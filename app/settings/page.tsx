@@ -29,6 +29,17 @@ export default async function SettingsPage() {
           {terms.Clients} and their contact details are on the <Link href="/customers">{terms.Clients} page</Link>.
         </p>
 
+        <p className="eyebrow">{terms.Job} form</p>
+        <div className="group">
+          <Link href="/settings/form" className="row nav-row">
+            <div className="ctl">
+              <div style={{ fontWeight: 600 }}>Edit the {terms.job} form</div>
+              <div className="when">Add, rename, reorder or hide what a new {terms.job} asks for</div>
+            </div>
+            <span className="when">›</span>
+          </Link>
+        </div>
+
         <p className="eyebrow">Stages</p>
         <div className="group">
           {ctx.stages.map((s, i) => (

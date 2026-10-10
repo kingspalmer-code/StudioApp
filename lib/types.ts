@@ -4,7 +4,7 @@ export type Status = string;
 export type Priority = "Standard" | "High" | "Urgent";
 
 export type WorkspaceKind = "studio" | "trade";
-export type Workspace = { id: string; name: string; kind: WorkspaceKind; owner_name: string };
+export type Workspace = { id: string; name: string; kind: WorkspaceKind; owner_name: string; profile?: string };
 export type Stage = { id: number; key: string; label: string; color: string; position: number };
 export type JobType = { id: number; name: string; lead_days: number; position: number };
 
@@ -50,6 +50,7 @@ export type Ticket = {
   quote_amount: number | null;
   paid_amount: number | null;
   site_address: string;
+  details: Record<string, unknown>;
 };
 
 export type Note = {
