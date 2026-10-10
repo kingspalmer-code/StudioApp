@@ -11,7 +11,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </div>
         <p className="login-sub">Organised by design.</p>
         <LoginForm
-          playful
           initialError={
             error === "no-access"
               ? "That email doesn't have access yet. Ask whoever runs your Oatcake to add you."

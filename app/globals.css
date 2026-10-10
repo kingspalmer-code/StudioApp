@@ -153,6 +153,10 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 .login-screen .foot, .login-screen .foot .link { color: color-mix(in srgb, var(--oat-cream) 75%, transparent); }
 .login-screen .foot .link { color: var(--oat-cream); text-decoration: underline; text-underline-offset: 2px; }
 .login-screen .error { color: #ffb4a8; }
+.login-screen .btn.outline { background: transparent; color: var(--oat-cream); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--oat-cream) 55%, transparent); }
+.login-divider { display: flex; align-items: center; gap: 12px; margin: 26px 0 14px; font-size: 13px; color: color-mix(in srgb, var(--oat-cream) 60%, transparent); }
+.login-divider::before, .login-divider::after { content: ""; flex: 1; border-top: 1px solid color-mix(in srgb, var(--oat-cream) 18%, transparent); }
+.login-step { text-align: center; font-weight: 600; margin: 0 0 12px; }
 .oatcake-word { font-family: ui-serif, "New York", Georgia, serif; font-weight: 600; letter-spacing: -.03em; line-height: 1; color: var(--oat-cream); }
 .login-screen .group { color: var(--label); }
 .oatcake-mark { display: block; background: var(--oat-brown); -webkit-mask: url(/brands/oatcake.svg) center / contain no-repeat; mask: url(/brands/oatcake.svg) center / contain no-repeat; }

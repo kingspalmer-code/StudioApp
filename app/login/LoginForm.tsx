@@ -4,9 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-type Mode = "password" | "link" | "sent";
+type Mode = "password" | "new" | "forgot" | "sent";
 
-export default function LoginForm({ initialError, playful = false }: { initialError: string | null; playful?: boolean }) {
+export default function LoginForm({ initialError }: { initialError: string | null }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("password");
   const [email, setEmail] = useState("");
@@ -22,7 +22,7 @@ export default function LoginForm({ initialError, playful = false }: { initialEr
     setError(null);
     const { error } = await createClient().auth.signInWithPassword({ email: address(), password });
     setBusy(false);
-    if (error) setError("That email and password don't match. If you haven't set a password yet, use an email link instead.");
+    if (error) setError("That email and password don't match. New here? Use \"Set up my account\" below.");
     else router.replace("/");
   }
 
@@ -92,15 +92,20 @@ export default function LoginForm({ initialError, playful = false }: { initialEr
     );
   }
 
-  if (mode === "link") {
+  if (mode === "new" || mode === "forgot") {
     return (
       <form onSubmit={sendLink}>
+        <p className="login-step">{mode === "new" ? "Set up your account" : "Reset your password"}</p>
         <div className="group">{emailRow}</div>
-        <p className="foot">We'll email you a sign-in link. Once you're in, you can set a password.</p>
+        <p className="foot">
+          {mode === "new"
+            ? "Use the email you were invited with. We'll send you a link, and when you open it you'll choose your password."
+            : "We'll email you a link. Open it to sign in and choose a new password."}
+        </p>
         {error && <p className="error">{error}</p>}
         <button className="btn wide" disabled={busy}>{busy ? "Sending…" : "Email me a link"}</button>
         <p className="foot" style={{ textAlign: "center", marginTop: 14 }}>
-          <button type="button" className="link" onClick={switchTo("password")}>Sign in with a password</button>
+          <button type="button" className="link" onClick={switchTo("password")}>Back to sign in</button>
         </p>
       </form>
     );
@@ -118,11 +123,12 @@ export default function LoginForm({ initialError, playful = false }: { initialEr
         </div>
       </div>
       {error && <p className="error">{error}</p>}
-      <button className="btn wide" disabled={busy}>{busy ? (playful ? "Warming the oven…" : "Signing in…") : "Sign in"}</button>
-      <p className="foot" style={{ textAlign: "center", marginTop: 14 }}>
-        {playful ? "Crumbs, forgot your password?" : "First time here, or forgot your password?"}{" "}
-        <button type="button" className="link" onClick={switchTo("link")}>Email me a sign-in link</button>
+      <button className="btn wide" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+      <p className="foot" style={{ textAlign: "center", marginTop: 12 }}>
+        <button type="button" className="link" onClick={switchTo("forgot")}>Forgot your password?</button>
       </p>
+      <div className="login-divider"><span>New to Oatcake?</span></div>
+      <button type="button" className="btn wide outline" onClick={switchTo("new")}>Set up my account</button>
     </form>
   );
 }
