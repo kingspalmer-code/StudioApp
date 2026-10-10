@@ -1,3 +1,4 @@
+import BizBadge from "@/components/BizBadge";
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import TicketRow from "@/components/TicketRow";
@@ -28,7 +29,7 @@ export default async function QueuePage({
   ];
 
   return (
-    <Shell member={member}>
+    <Shell member={member} businesses={businesses}>
       <h1 className="large">Up next</h1>
       <p className="sub">Every request from all five businesses, ordered by when you need to start it, not just when it's due.</p>
       <div className="stats">
@@ -89,7 +90,7 @@ export default async function QueuePage({
                     <Link href={`/tickets/${t.id}`} className="card" key={t.id}>
                       <span className="m">
                         <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
-                          <span className="dot" style={{ background: b?.color }} />
+                          <BizBadge biz={b} size={18} />
                           {b?.name}
                         </span>
                         {t.priority !== "Standard" && <span className={`pri-${t.priority}`}>{t.priority}</span>}

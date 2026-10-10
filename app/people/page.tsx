@@ -1,3 +1,4 @@
+import BizBadge from "@/components/BizBadge";
 import Shell from "@/components/Shell";
 import { removeMember } from "@/app/actions";
 import { requireMember } from "@/lib/session";
@@ -12,7 +13,7 @@ export default async function PeoplePage() {
   const byId = Object.fromEntries(businesses.map((b) => [b.id, b]));
 
   return (
-    <Shell member={member}>
+    <Shell member={member} businesses={businesses}>
       <h1 className="large">People</h1>
       <p className="sub">Only people listed here can sign in. Clients see their own business's requests; managers see the overview.</p>
       <div className="cols">
@@ -23,7 +24,7 @@ export default async function PeoplePage() {
               const b = m.business_id ? byId[m.business_id] : undefined;
               return (
                 <div className="row" key={m.email}>
-                  <span className="dot" style={{ background: b?.color ?? "var(--label-3)" }} />
+                  {b ? <BizBadge biz={b} /> : <span className="badge" style={{ width: 28, height: 28, background: "var(--fill)" }} />}
                   <div className="ctl">
                     <div style={{ fontWeight: 600 }}>{m.full_name || m.email}</div>
                     <div className="when">{m.email} · {ROLE_LABEL[m.role]}{b ? ` · ${b.name}` : ""}</div>

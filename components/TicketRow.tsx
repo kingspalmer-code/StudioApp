@@ -1,3 +1,4 @@
+import BizBadge from "./BizBadge";
 import Link from "next/link";
 import { dueLabel, formatDate, startBy, startLabel } from "@/lib/priority";
 import type { Business, Ticket } from "@/lib/types";
@@ -14,15 +15,11 @@ export default function TicketRow({
   rank?: number;
   showBusiness?: boolean;
 }) {
-  const color = biz?.color ?? "var(--accent)";
   const sb = startLabel(startBy(t));
   return (
-    <Link href={`/tickets/${t.id}`} className="ticket">
-      {rank ? (
-        <span className="rank" style={{ background: color }}>{rank}</span>
-      ) : (
-        <span className="dot" style={{ background: color, margin: "0 8px" }} />
-      )}
+    <Link href={`/tickets/${t.id}`} className={rank ? "ticket ranked" : "ticket"}>
+      {rank ? <span className="rank">{rank}</span> : null}
+      <BizBadge biz={biz} />
       <span className="main">
         <span className="t">{t.pinned ? "📌 " : ""}{t.title}</span>
         <span className="m">

@@ -1,3 +1,4 @@
+import BizBadge from "@/components/BizBadge";
 import Shell from "@/components/Shell";
 import TicketRow from "@/components/TicketRow";
 import { STATUSES, daysFromToday, formatDate, isAtRisk, sortQueue } from "@/lib/priority";
@@ -27,7 +28,7 @@ export default async function OverviewPage() {
   ];
 
   return (
-    <Shell member={member}>
+    <Shell member={member} businesses={businesses}>
       <h1 className="large">Overview</h1>
       <p className="sub">Workload and progress across all five businesses.</p>
       <div className="stats">
@@ -48,7 +49,7 @@ export default async function OverviewPage() {
           const next = open.filter((t) => t.business_id === b.id).sort((x, y) => x.deadline.localeCompare(y.deadline))[0];
           return (
             <div className="biz" key={b.id}>
-              <h4><span className="dot" style={{ background: b.color }} />{b.name}</h4>
+              <h4><BizBadge biz={b} size={26} />{b.name}</h4>
               <div className="meter" role="img" aria-label={counts.map((c) => `${c.n} ${c.st.label}`).join(", ")}>
                 {counts.map((c) => (
                   <i key={c.st.id} style={{ width: `${(c.n / total) * 100}%`, background: c.st.color }} />

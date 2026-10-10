@@ -4,14 +4,14 @@ import SetPassword from "./SetPassword";
 
 export default async function AccountPage({ searchParams }: { searchParams: Promise<{ setup?: string }> }) {
   const { setup } = await searchParams;
-  const { supabase, member } = await requireMember();
+  const { supabase, member, businesses } = await requireMember();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const hasPassword = Boolean(user?.user_metadata?.has_password);
 
   return (
-    <Shell member={member}>
+    <Shell member={member} businesses={businesses}>
       <div style={{ maxWidth: 520 }}>
         <h1 className="large">{setup && !hasPassword ? "Set a password" : "Your account"}</h1>
         <p className="sub">

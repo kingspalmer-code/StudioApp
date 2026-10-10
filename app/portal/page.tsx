@@ -16,7 +16,7 @@ export default async function PortalPage() {
   }
 
   return (
-    <Shell member={member}>
+    <Shell member={member} businesses={businesses}>
       <h1 className="large">New design request</h1>
       <p className="sub">
         {isDesigner

@@ -1,3 +1,4 @@
+import BizBadge from "@/components/BizBadge";
 import { notFound } from "next/navigation";
 import Shell from "@/components/Shell";
 import StatusChip from "@/components/StatusChip";
@@ -37,10 +38,10 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
     ) : null;
 
   return (
-    <Shell member={member}>
+    <Shell member={member} businesses={businesses}>
       <div style={{ maxWidth: 720 }}>
         <p className="eyebrow" style={{ display: "flex", alignItems: "center", gap: 8, textTransform: "none", letterSpacing: 0 }}>
-          <span className="dot" style={{ background: biz?.color }} />
+          <BizBadge biz={biz} size={22} />
           {biz?.name}
         </p>
         <h1 className="large">{t.title}</h1>
