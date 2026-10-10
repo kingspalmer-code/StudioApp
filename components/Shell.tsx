@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { signOut } from "@/app/actions";
 import { stopViewing } from "@/app/admin/actions";
 import { brandFor, brandThemeCss } from "@/lib/brands";
 import type { Business, Member, Workspace } from "@/lib/types";
@@ -8,7 +7,6 @@ import BizBadge from "./BizBadge";
 import NavLinks from "./NavLinks";
 import TabBar from "./TabBar";
 import { OatcakeMark } from "./OatcakeLogo";
-import ThemeToggle from "./ThemeToggle";
 
 function linksFor(member: Member, workspace: Workspace, viewing: boolean) {
   if (member.role === "manager") return [{ href: "/overview", label: "Overview" }];
@@ -40,7 +38,6 @@ export default function Shell({
   member,
   businesses,
   workspace,
-  isAdmin = false,
   viewing = false,
   avatar = null,
   initials = "",
@@ -85,14 +82,8 @@ export default function Shell({
             </Link>
           )}
           <NavLinks links={links} />
-          <form action={signOut} className="who">
-            {member.role === "designer" && <Link href="/settings" data-tour="settings">Settings</Link>}
-            {isAdmin && <Link href="/admin">Admin</Link>}
-            <button className="link" type="submit">Sign out</button>
-          </form>
-          <ThemeToggle />
           {member.role === "designer" && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake hint={askHint} opens={askOpens} since={askSince} />}
-          {/* Your photo or initials, opening your account. On phones the account links and theme switch live there too. */}
+          {/* Your photo or initials, opening your account: settings, appearance and sign out live there, so the bar stays calm. */}
           <Link href="/account" className="me-btn" aria-label="Your account and settings" data-tour="me">
             {avatar ? <img src={avatar} alt="" /> : initials}
           </Link>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SaveWhenChanged from "@/components/SaveWhenChanged";
 import Shell from "@/components/Shell";
 import { STAGE_COLORS, stageColor } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
@@ -56,13 +57,12 @@ export default async function SettingsPage() {
           {ctx.stages.map((s, i) => (
             <div className="row stage-row" key={s.id}>
               <span className="dot" style={{ background: stageColor(s.color), width: 10, height: 10 }} />
-              <form action={saveStage.bind(null, s.id)} className="ctl stage-form">
+              <SaveWhenChanged action={saveStage.bind(null, s.id)} className="ctl stage-form">
                 <input name="label" defaultValue={s.label} aria-label="Stage name" required />
                 <select name="color" defaultValue={s.color} aria-label="Colour" className="swatch-select">
                   {STAGE_COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
-                <button className="link" type="submit">Save</button>
-              </form>
+              </SaveWhenChanged>
               <span className="stage-tools">
                 <form action={moveStage.bind(null, s.id, -1)}><button className="link" disabled={i === 0} aria-label="Move up">↑</button></form>
                 <form action={moveStage.bind(null, s.id, 1)}><button className="link" disabled={i === ctx.stages.length - 1} aria-label="Move down">↓</button></form>
@@ -85,12 +85,11 @@ export default async function SettingsPage() {
         <div className="group">
           {ctx.types.map((t) => (
             <div className="row" key={t.id}>
-              <form action={saveType.bind(null, t.id)} className="ctl stage-form">
+              <SaveWhenChanged action={saveType.bind(null, t.id)} className="ctl stage-form">
                 <input name="name" defaultValue={t.name} aria-label="Type name" required />
                 <input name="lead_days" type="number" min={0} max={365} defaultValue={t.lead_days} aria-label="Working days needed" className="days" />
                 <span className="when">days</span>
-                <button className="link" type="submit">Save</button>
-              </form>
+              </SaveWhenChanged>
               {ctx.types.length > 1 && (
                 <form action={deleteType.bind(null, t.id)}><button className="link" style={{ color: "var(--red)" }} aria-label={`Delete ${t.name}`}>✕</button></form>
               )}

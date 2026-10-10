@@ -104,7 +104,6 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
               <form action={setPinned.bind(null, t.id, !t.pinned)}>
                 <button className="btn plain small" type="submit">{t.pinned ? "Unpin from top" : "Pin to top"}</button>
               </form>
-              <DeleteTicket id={t.id} noun={terms.job} />
             </div>
           </>
         )}
@@ -217,6 +216,9 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
             </form>
           )}
         </div>
+
+        {/* Out of the way at the bottom, so it's never tapped by mistake next to everyday buttons. */}
+        {isDesigner && !viewing && <div className="danger-foot"><DeleteTicket id={t.id} noun={terms.job} /></div>}
       </div>
     </Shell>
   );

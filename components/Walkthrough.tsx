@@ -22,7 +22,7 @@ export default function Walkthrough({ force = false, job = "job", clients = "cus
     { target: "layout", title: "List or board", text: `Prefer columns? The board shows every ${job} by stage.` },
     { target: "new", title: `Add a ${job}`, text: `Add a ${job} the moment it comes in. New ${clients} are saved for you.` },
     { target: "ask", title: "Ask Oatcake", text: "Stuck, or after a quick answer? Ask about your jobs, money or how to do something." },
-    { target: ["settings", "me"], title: "Make it yours", text: `Your stages, the ${job} form, and your quote and invoice style are all in Settings.` },
+    { target: "me", title: "Make it yours", text: `Settings, your photo, light or dark, and sign out are all in here. Settings holds your stages, the ${job} form and your quote style.` },
   ], [job, clients]);
   const router = useRouter();
   const [open, setOpen] = useState(false);

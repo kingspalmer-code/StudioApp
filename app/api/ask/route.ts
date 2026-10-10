@@ -17,8 +17,8 @@ const GUIDE = `How Oatcake is laid out (use these paths for links):
 - Personal (/personal): a private to-do list only you can see. Type "tomorrow", a weekday or "next week" to set a date, and "!" to flag it. Projects group to-dos.
 - A job's page (open it from Jobs): change its stage, pin it to the top, edit details, add notes, and make quotes and invoices with "+ New quote" or "+ New invoice". When a job is finished it offers to create the invoice.
 - A quote or invoice: edit the customer, line items, VAT and notes; "Draft with Oatcake" fills in line items; "Preview PDF", "Email to customer" (sends the PDF, replies come back to you), "Mark accepted" or "Mark paid".
-- Settings (/settings): rename the workspace; job types and how many days each takes; stages (add, rename, reorder, colour, delete); the job form (/settings/form) to add, rename, reorder or hide fields; quote and invoice style (/settings/documents) for logo, font, colour, business details, VAT, bank details, payment terms and footer.
-- Account (/account; on a phone, tap your initials at the top right): password, light or dark appearance, sign out, and "Show me around again" to replay the walkthrough.`;
+- Settings (/settings; tap your photo or initials at the top right, then Settings): rename the workspace; job types and how many days each takes; stages (add, rename, reorder, colour, delete); the job form (/settings/form) to add, rename, reorder or hide fields; quote and invoice style (/settings/documents) for logo, font, colour, business details, VAT, bank details, payment terms and footer.
+- Account (/account; tap your photo or initials at the top right): password, light or dark appearance, sign out, and "Show me around again" to replay the walkthrough.`;
 
 function line(t: Ticket, biz: string, ctx: Parameters<typeof sortQueue>[1]) {
   const done = isDone(t, ctx);
