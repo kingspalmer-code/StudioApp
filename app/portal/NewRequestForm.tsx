@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import BriefHelper from "./BriefHelper";
 import { createClient } from "@/lib/supabase/client";
 import { PRIORITIES, daysFromToday, todayISO } from "@/lib/priority";
 import FieldInput from "@/components/FieldInput";
@@ -19,6 +20,8 @@ export default function NewRequestForm({
   fields: allFields,
   trade = false,
   ownerName = "the studio",
+  helper = false,
+  onSent,
 }: {
   businesses: Business[];
   defaultName: string;
@@ -27,6 +30,8 @@ export default function NewRequestForm({
   fields: JobField[];
   trade?: boolean;
   ownerName?: string;
+  helper?: boolean;
+  onSent?: (message: string) => void;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -36,6 +41,26 @@ export default function NewRequestForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  // Images pasted or dropped onto the form (from Pinterest, a screenshot, anywhere), sent with the other files.
+  const [extra, setExtra] = useState<{ file: File; url: string }[]>([]);
+  const hasFiles = allFields.some((f) => f.kind === "files");
+
+  function addImages(list: File[]) {
+    const images = list.filter((f) => f.type.startsWith("image/"));
+    if (!images.length) return false;
+    setExtra((xs) => [...xs, ...images.map((file, i) => ({ file: file.name && file.name !== "image.png" ? file : new File([file], `reference-${Date.now()}-${i}.png`, { type: file.type }), url: URL.createObjectURL(file) }))]);
+    return true;
+  }
+
+  useEffect(() => {
+    if (!hasFiles) return;
+    const form = formRef.current;
+    const paste = (e: ClipboardEvent) => {
+      if (addImages(Array.from(e.clipboardData?.files ?? []))) e.preventDefault();
+    };
+    form?.addEventListener("paste", paste);
+    return () => form?.removeEventListener("paste", paste);
+  }, [hasFiles]);
 
   const typeRow = types.find((t) => t.name === type);
   const lead = typeRow?.lead_days ?? 3;
@@ -52,7 +77,7 @@ export default function NewRequestForm({
     setDone(null);
     const f = new FormData(e.currentTarget);
     const get = (k: string) => String(f.get(k) ?? "").trim();
-    const files = (f.getAll("files") as File[]).filter((x) => x.size > 0);
+    const files = [...(f.getAll("files") as File[]).filter((x) => x.size > 0), ...extra.map((x) => x.file)];
     const tooBig = files.find((x) => x.size > MAX_FILE_MB * 1024 * 1024);
     if (tooBig) {
       setBusy(false);
@@ -112,23 +137,51 @@ export default function NewRequestForm({
     }
 
     setBusy(false);
-    formRef.current?.reset();
-    setType(firstType);
-    setDeadline("");
-    setDone(
+    const message =
       failed.length
         ? `${job} saved, but these files didn't upload: ${failed.join(", ")}. Add a link to them in a note instead.`
         : trade
           ? "Job added. It's in your list now."
           : isDesigner
             ? "Request added to the queue."
-            : `Request sent. ${ownerName} can see it now.`
-    );
+            : `Request sent. ${ownerName} can see it now.`;
     router.refresh();
+    if (onSent && !failed.length) return onSent(message);
+    formRef.current?.reset();
+    setType(firstType);
+    setDeadline("");
+    setExtra([]);
+    setDone(message);
   }
 
+  const readIdea = () => {
+    const form = formRef.current;
+    const val = (k: string) => ((form?.elements.namedItem(k) as HTMLInputElement | null)?.value ?? "").trim();
+    return [val("title"), val("brief")].filter(Boolean).join(". ");
+  };
+  const briefField = fields.some((f) => f.key === "brief");
+  const applyBrief = (text: string) => {
+    const el = formRef.current?.elements.namedItem("brief") as HTMLTextAreaElement | null;
+    if (!el) return;
+    el.value = text;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+  };
+
   return (
-    <form ref={formRef} onSubmit={submit}>
+    <form
+      ref={formRef}
+      onSubmit={submit}
+      onDragOver={(e) => hasFiles && e.preventDefault()}
+      onDrop={(e) => {
+        if (!hasFiles) return;
+        e.preventDefault();
+        if (addImages(Array.from(e.dataTransfer.files))) return;
+        // An image dragged from another tab often comes as a link; keep it in the links field.
+        const link = e.dataTransfer.getData("text/uri-list").split("\n")[0]?.trim();
+        const links = formRef.current?.elements.namedItem("links") as HTMLInputElement | null;
+        if (link && links) links.value = links.value ? `${links.value} ${link}` : link;
+      }}
+    >
       <p className="eyebrow">{trade ? "The job" : "The project"}</p>
       <div className="group">
         {trade && (
@@ -191,6 +244,8 @@ export default function NewRequestForm({
         {tight ? (isDesigner ? " That deadline is tight." : ` That deadline is tight, so ${ownerName} may come back to you about timing.`) : ""}
       </p>
 
+      {helper && <BriefHelper type={type} readIdea={readIdea} applyBrief={briefField ? applyBrief : null} canAddImages={hasFiles} />}
+
       {groups.map((g, i) => (
         <div key={`${g.title}-${i}`}>
           <p className="eyebrow">{g.title ?? "Details"}</p>
@@ -202,6 +257,19 @@ export default function NewRequestForm({
         </div>
       ))}
 
+      {extra.length > 0 && (
+        <>
+          <p className="eyebrow">Added images</p>
+          <div className="ref-tray">
+            {extra.map((x, i) => (
+              <span key={x.url} className="ref-thumb">
+                <img src={x.url} alt="" />
+                <button type="button" aria-label="Remove image" onClick={() => setExtra((xs) => xs.filter((_, j) => j !== i))}>×</button>
+              </span>
+            ))}
+          </div>
+        </>
+      )}
       {error && <p className="error">{error}</p>}
       {done && <p className="foot" style={{ color: "var(--green)", fontWeight: 600 }}>{done}</p>}
       <button className="btn wide" disabled={busy}>{busy ? "Saving…" : trade ? "Add job" : isDesigner ? "Add request" : "Send request"}</button>

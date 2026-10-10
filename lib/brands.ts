@@ -42,10 +42,21 @@ function inkFor(hex: string): string {
   return L > 0.4 ? "#1c1c1e" : "#ffffff";
 }
 
+// In dark mode a very dark brand colour would vanish into the background, so it's swapped for a light one.
+function readableOnDark(t: Theme): Theme {
+  const m = /^#?([0-9a-f]{6})$/i.exec(t.accent);
+  if (!m) return t;
+  const n = parseInt(m[1], 16);
+  const lum = (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255;
+  return lum < 0.25 ? { accent: "#f2ece4" } : t;
+}
+
 export function brandFor(biz: Business): Brand {
   const b = BRANDS[biz.slug];
-  const light = b?.light ?? { accent: biz.color };
-  const dark = b?.dark ?? light;
+  // A colour the business picked itself wins over the built-in one.
+  const own: Theme | null = biz.accent ? { accent: biz.accent } : null;
+  const light: Theme = own ?? b?.light ?? { accent: biz.color };
+  const dark = own ? readableOnDark(own) : (b?.dark ?? light);
   const monogram =
     b?.monogram ??
     biz.name
@@ -61,8 +72,8 @@ export function brandFor(biz: Business): Brand {
     color: light.accent,
     ink: light.ink ?? inkFor(light.accent),
     dark: { color: dark.accent, ink: dark.ink ?? inkFor(dark.accent) },
-    tile: b?.tile ?? light.accent,
-    logo: b?.logo,
+    tile: biz.logo_url ? "#ffffff" : (b?.tile ?? light.accent),
+    logo: biz.logo_url || b?.logo,
     monogram,
   };
 }

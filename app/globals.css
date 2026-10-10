@@ -592,3 +592,77 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 }
 .admin-table small.m-label { display: none; }
 @media (max-width: 700px) { .admin-table small.m-label { display: inline; color: var(--label-2); } }
+
+/* Client portal */
+.portal { max-width: 720px; }
+.portal-head { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+.portal-head .badge { flex: none; }
+.portal-head .large { margin: 0; }
+.portal-head .sub { margin: 4px 0 0; }
+.new-request-btn { margin: 6px 0 4px; }
+.sent-notice { box-shadow: inset 3px 0 0 var(--green); font-weight: 600; }
+.request-drawer { margin-top: 8px; }
+.request-drawer-head { display: flex; align-items: center; justify-content: space-between; margin: 4px 4px 0; }
+.request-drawer-head b { font-size: 17px; }
+.eyebrow-row { display: flex; align-items: baseline; justify-content: space-between; }
+.eyebrow-link { font-size: 13px; color: var(--label-2); }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.gallery-card { display: grid; gap: 3px; color: var(--label); }
+.gallery-img { aspect-ratio: 4 / 3; border-radius: var(--r); overflow: hidden; background: var(--surface); display: grid; place-items: center; margin-bottom: 6px; box-shadow: 0 0 0 .5px var(--sep); }
+.gallery-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s; }
+.gallery-card:hover .gallery-img img { transform: scale(1.03); }
+.gallery-img > span { font-size: 13px; font-weight: 600; color: var(--label-3); padding: 8px; text-align: center; }
+.gallery-card b { font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.archive-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.portal-foot { margin-top: 26px; text-align: center; }
+@media (max-width: 700px) { .gallery { grid-template-columns: 1fr 1fr; gap: 12px; } }
+
+/* Finished files on a job */
+.deliveries { border-radius: var(--r); transition: box-shadow .2s; }
+.deliveries.over { box-shadow: 0 0 0 2px var(--accent); }
+.deliv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.deliv { background: var(--surface); border-radius: var(--r); overflow: hidden; display: grid; }
+.deliv-preview { aspect-ratio: 4 / 3; background: var(--surface-2); display: grid; place-items: center; overflow: hidden; }
+.deliv-preview img, .deliv-preview video { width: 100%; height: 100%; object-fit: contain; display: block; }
+.deliv-ext { font: 700 15px/1 var(--font-display); color: var(--label-3); letter-spacing: .04em; }
+.deliv-meta { display: grid; gap: 1px; padding: 8px 10px 0; min-width: 0; }
+.deliv-name { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deliv-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px 10px; }
+.deliv-remove { font-size: 13px; color: var(--red); }
+.deliv-add { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
+.deliv-link { margin-top: 12px; }
+
+/* Brief helper on requests */
+.brief-help { margin: 14px 0 4px; }
+.brief-help-open { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; background: var(--surface); border: 1px dashed var(--sep); border-radius: var(--r); padding: 12px 14px; cursor: pointer; color: var(--label); font: inherit; }
+.brief-help-open > span:first-child { font-size: 20px; }
+.brief-help-open b { display: block; font-size: 15px; }
+.brief-help-open small { display: block; color: var(--label-2); font-size: 13px; }
+.brief-help-card { background: var(--surface); border-radius: var(--r); padding: 14px; }
+.brief-help-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.brief-help-card textarea { width: 100%; border: 0; border-radius: 8px; background: var(--fill); padding: 10px 12px; font: inherit; color: var(--label); resize: vertical; outline: none; }
+.brief-help-actions { display: flex; justify-content: flex-end; margin: 8px 0 2px; }
+.brief-help-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--label-2); margin: 16px 0 6px; }
+.brief-help-brief { white-space: pre-wrap; line-height: 1.5; background: var(--surface-2); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+.brief-help-qs { margin: 0; padding-left: 20px; line-height: 1.5; }
+.brief-styles { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.brief-style { display: grid; gap: 4px; background: var(--surface-2); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+.brief-style span { color: var(--label-2); line-height: 1.4; }
+.brief-style a { font-size: 13px; font-weight: 600; margin-top: 2px; }
+.brief-help-tip { font-size: 13px; color: var(--label-2); margin: 10px 0 0; }
+.ref-tray { display: flex; flex-wrap: wrap; gap: 10px; }
+.ref-thumb { position: relative; width: 84px; height: 84px; border-radius: 10px; overflow: hidden; background: var(--surface); }
+.ref-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.ref-thumb button { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: rgba(0,0,0,.6); color: #fff; cursor: pointer; line-height: 1; }
+
+/* Brand settings for a business */
+.brand-logo-tile { flex: none; width: 120px; height: 72px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 .5px var(--sep); display: grid; place-items: center; padding: 8px; }
+.brand-logo-tile img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.brand-logo-tile b { color: #2a201c; }
+.swatch-row { flex-wrap: wrap; gap: 10px; }
+.swatch { width: 32px; height: 32px; border-radius: 50%; border: 0; cursor: pointer; box-shadow: 0 0 0 .5px var(--sep); position: relative; padding: 0; }
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--label); }
+.swatch.custom { background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); overflow: hidden; }
+.swatch.custom input { opacity: 0; position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
+.brand-preview { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.deliv-add .link { font-size: 14px; color: var(--label-2); }

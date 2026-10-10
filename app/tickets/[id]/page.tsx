@@ -13,6 +13,8 @@ import Link from "next/link";
 import { createDocument } from "@/app/documents/actions";
 import { docName, gbp, STATUS_LABEL } from "@/lib/documents";
 import { asDoc } from "@/lib/docs-server";
+import Deliveries from "@/components/Deliveries";
+import { signDeliveries, type Delivery } from "@/lib/deliveries";
 
 const IMAGE = /\.(png|jpe?g|gif|webp|svg)$/i;
 
@@ -32,6 +34,8 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
       ? supabase.from("documents").select("*").eq("ticket_id", id).order("created_at")
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
   ]);
+  const { data: deliveryRows } = await supabase.from("ticket_deliveries").select("*").eq("ticket_id", id).order("created_at").returns<Delivery[]>();
+  const delivered = await signDeliveries(supabase, deliveryRows ?? []);
   const docs = (docRows ?? []).map(asDoc);
   const signed = files?.length
     ? (await supabase.storage.from("inspiration").createSignedUrls(files.map((f) => f.path), 3600)).data ?? []
@@ -75,6 +79,15 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
     );
   };
 
+  // Finished files sit near the top once there are some (or the job's done); until then the studio finds the upload lower down.
+  const deliveriesUp = delivered.length > 0 || (isDesigner && done);
+  const deliveries = (isDesigner || delivered.length > 0) && (
+    <>
+      <p className="eyebrow">Finished files</p>
+      <Deliveries ticketId={t.id} businessId={t.business_id} files={delivered} canEdit={isDesigner && !viewing} clientName={biz?.name ?? `the ${terms.client}`} />
+    </>
+  );
+
   return (
     <Shell {...shell}>
       <div style={{ maxWidth: 720 }}>
@@ -107,6 +120,8 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
             </div>
           </>
         )}
+
+        {deliveriesUp && deliveries}
 
         <p className="eyebrow">Details</p>
         <div className="group">
@@ -146,6 +161,8 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
             </div>
           </>
         )}
+
+        {!deliveriesUp && deliveries}
 
         {isDesigner && (
           <>

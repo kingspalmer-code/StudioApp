@@ -17,6 +17,8 @@ export type Business = {
   email?: string;
   address?: string;
   notes?: string;
+  logo_url?: string | null;
+  accent?: string | null;
 };
 
 export type Member = {
