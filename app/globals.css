@@ -1,13 +1,3 @@
-/* Oatcake typeface: OVR Demorny (trial cut, so punctuation falls back to the system font). */
-@font-face { font-family: "Demorny"; src: url(/fonts/OVRDemornyTrial-Thin.woff2) format("woff2"); font-weight: 100; font-style: normal; font-display: swap; }
-@font-face { font-family: "Demorny"; src: url(/fonts/OVRDemornyTrial-ExtraLight.woff2) format("woff2"); font-weight: 200; font-style: normal; font-display: swap; }
-@font-face { font-family: "Demorny"; src: url(/fonts/OVRDemornyTrial-Light.woff2) format("woff2"); font-weight: 300; font-style: normal; font-display: swap; }
-@font-face { font-family: "Demorny"; src: url(/fonts/OVRDemornyTrial-Regular.woff2) format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: "Demorny"; src: url(/fonts/OVRDemornyTrial-Medium.woff2) format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
-@font-face { font-family: "Demorny"; src: url(/fonts/OVRDemornyTrial-SemiBold.woff2) format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
-@font-face { font-family: "Demorny"; src: url(/fonts/OVRDemornyTrial-Bold.woff2) format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
-@font-face { font-family: "Demorny"; src: url(/fonts/OVRDemornyTrial-Black.woff2) format("woff2"); font-weight: 900; font-style: normal; font-display: swap; }
-
 /* Oatcake palette: Apple-style grouped lists on warm oat neutrals, with the Oatcake brown as the accent. */
 :root {
   --bg: #f4efe7; --surface: #fffdf9; --surface-2: #f9f4ec; --fill: rgba(56,42,37,.08);
@@ -15,8 +5,8 @@
   --sep: rgba(56,42,37,.14); --accent: #382a25; --accent-ink: #fefcf9;
   --blue: #3a6ea5; --red: #d9412e; --orange: #d9822b; --green: #3f8f4f; --indigo: #5856a6; --purple: #94508f; --pink: #c8456b;
   --bar: rgba(244,239,231,.82); --shadow: 0 1px 2px rgba(56,42,37,.06), 0 8px 28px rgba(56,42,37,.10);
-  --font: "Demorny", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Demorny", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", system-ui, "Segoe UI", Roboto, sans-serif;
   --r: 12px;
   color-scheme: light;
 }
