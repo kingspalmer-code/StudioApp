@@ -31,7 +31,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .bar { position: sticky; top: 0; z-index: 20; background: var(--bar); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: .5px solid var(--sep); padding-top: env(safe-area-inset-top, 0px); }
 .bar-in { max-width: 1180px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .brand { font-weight: 600; display: flex; align-items: center; gap: 8px; margin-right: auto; color: var(--label); }
-.brand i { width: 22px; height: 22px; border-radius: 6px; background: linear-gradient(145deg, var(--accent), var(--indigo)); display: inline-block; }
+.brand i { width: 22px; height: 22px; border-radius: 6px; background: var(--oat-brown); box-shadow: inset 0 0 0 1px rgba(243,233,220,.18); display: inline-block; }
 .who { font-size: 13px; color: var(--label-2); display: flex; gap: 10px; align-items: center; }
 
 .seg { display: inline-flex; background: var(--fill); border-radius: 9px; padding: 2px; gap: 2px; max-width: 100%; overflow-x: auto; }
@@ -129,3 +129,16 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 .client-brand small { display: block; font-size: 11px; font-weight: 500; color: var(--label-2); letter-spacing: 0; }
 .brand-hero { display: flex; align-items: center; gap: 14px; margin: 6px 0 4px; }
 .btn { background: var(--accent); color: var(--accent-ink); }
+
+/* Oatcake sign-in screen: the brand colour, full bleed, in both themes. */
+:root { --oat-brown: #382a25; --oat-cream: #f3e9dc; }
+.login-screen { min-height: 100dvh; background: var(--oat-brown); color: var(--oat-cream); padding: 0 16px; display: flex; }
+.login-screen .auth { margin: auto; width: 100%; max-width: 400px; padding: 48px 0; }
+.login-logo { display: flex; justify-content: center; margin-bottom: 14px; }
+.login-sub { text-align: center; color: color-mix(in srgb, var(--oat-cream) 72%, transparent); margin: 0 0 26px; font-size: 14px; text-wrap: balance; }
+.login-screen .btn { background: var(--oat-cream); color: var(--oat-brown); }
+.login-screen .foot, .login-screen .foot .link { color: color-mix(in srgb, var(--oat-cream) 75%, transparent); }
+.login-screen .foot .link { color: var(--oat-cream); text-decoration: underline; text-underline-offset: 2px; }
+.login-screen .error { color: #ffb4a8; }
+.oatcake-word { font-family: ui-serif, "New York", Georgia, serif; font-weight: 600; letter-spacing: -.03em; line-height: 1; color: var(--oat-cream); }
+.login-screen .group { color: var(--label); }

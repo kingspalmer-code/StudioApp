@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Studio Desk",
+  title: "Oatcake",
   description: "Design requests for The Brewery Tap, HopRocket, Boomtowers, Motherchip and Queens Brewery.",
 };
 

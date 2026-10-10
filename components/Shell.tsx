@@ -39,13 +39,13 @@ export default function Shell({
               <BizBadge biz={biz} size={34} wide />
               <span>
                 Design requests
-                <small>by Studio Desk</small>
+                <small>by Oatcake</small>
               </span>
             </Link>
           ) : (
             <Link href="/" className="brand">
               <i aria-hidden="true" />
-              Studio Desk
+              Oatcake
             </Link>
           )}
           <NavLinks links={LINKS[member.role]} />

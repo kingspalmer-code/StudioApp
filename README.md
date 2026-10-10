@@ -1,4 +1,4 @@
-# Studio Desk
+# Oatcake
 
 Design requests for The Brewery Tap, HopRocket, Boomtowers, Motherchip and Queens Brewery.
 
@@ -34,7 +34,7 @@ Each project type has a lead time in working days (`lib/priority.ts`). A request
    ```
 4. Go to **Authentication > Emails > Templates** ([direct link](https://supabase.com/dashboard/project/_/auth/templates)). In both **Magic Link** and **Confirm signup**, replace the body with:
    ```html
-   <h2>Sign in to Studio Desk</h2>
+   <h2>Sign in to Oatcake</h2>
    <p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email">Sign in</a></p>
    <p>Or enter this code: <strong>{{ .Token }}</strong></p>
    ```
