@@ -9,7 +9,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="login-logo">
           <OatcakeLogo height={44} />
         </div>
-        <p className="login-sub">Design requests for The Brewery Tap, HopRocket, Boom Towers, Motherchip and Queens.</p>
+        <p className="login-sub">Jobs, requests and projects, all in one place.</p>
         <LoginForm
           initialError={
             error === "no-access"
