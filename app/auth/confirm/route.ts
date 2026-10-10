@@ -16,5 +16,11 @@ export async function GET(request: NextRequest) {
   } else if (code) {
     ok = !(await supabase.auth.exchangeCodeForSession(code)).error;
   }
-  return NextResponse.redirect(`${origin}${ok ? "/" : "/login?error=link"}`);
+  if (!ok) return NextResponse.redirect(`${origin}/login?error=link`);
+
+  // First time in by email: offer to set a password so they can skip the email next time.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return NextResponse.redirect(`${origin}${user?.user_metadata?.has_password ? "/" : "/account?setup=1"}`);
 }

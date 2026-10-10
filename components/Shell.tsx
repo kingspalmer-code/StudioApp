@@ -25,7 +25,7 @@ export default function Shell({ member, children }: { member: Member; children: 
           </Link>
           <NavLinks links={LINKS[member.role]} />
           <form action={signOut} className="who">
-            <span>{member.full_name || member.email}</span>
+            <Link href="/account">{member.full_name || member.email}</Link>
             <button className="link" type="submit">Sign out</button>
           </form>
         </div>
