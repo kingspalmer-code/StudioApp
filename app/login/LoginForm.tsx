@@ -22,7 +22,7 @@ export default function LoginForm({ initialError }: { initialError: string | nul
     setError(null);
     const { error } = await createClient().auth.signInWithPassword({ email: address(), password });
     setBusy(false);
-    if (error) setError("That email and password don't match. New here? Use \"Set up my account\" below.");
+    if (error) setError("That email and password don't match. New here? Use \"Create an account\" below.");
     else router.replace("/");
   }
 
@@ -31,10 +31,11 @@ export default function LoginForm({ initialError }: { initialError: string | nul
     setBusy(true);
     setError(null);
     const supabase = createClient();
-    const { data: allowed } = await supabase.rpc("is_member", { check_email: address() });
+    // Anyone can create an account; a password reset only makes sense for someone who has one.
+    const { data: allowed } = mode === "forgot" ? await supabase.rpc("is_member", { check_email: address() }) : { data: true };
     if (!allowed) {
       setBusy(false);
-      setError("That email doesn't have access yet. Ask whoever runs your Oatcake to add you.");
+      setError("There's no Oatcake account for that email yet. Use \"Create an account\" instead.");
       return;
     }
     const { error } = await supabase.auth.signInWithOtp({
@@ -95,11 +96,11 @@ export default function LoginForm({ initialError }: { initialError: string | nul
   if (mode === "new" || mode === "forgot") {
     return (
       <form onSubmit={sendLink}>
-        <p className="login-step">{mode === "new" ? "Set up your account" : "Reset your password"}</p>
+        <p className="login-step">{mode === "new" ? "Create your account" : "Reset your password"}</p>
         <div className="group">{emailRow}</div>
         <p className="foot">
           {mode === "new"
-            ? "Use the email you were invited with. We'll send you a link, and when you open it you'll choose your password."
+            ? "We'll email you a link to confirm it's you. If someone has invited you, use the email they added."
             : "We'll email you a link. Open it to sign in and choose a new password."}
         </p>
         {error && <p className="error">{error}</p>}
@@ -128,7 +129,7 @@ export default function LoginForm({ initialError }: { initialError: string | nul
         <button type="button" className="link" onClick={switchTo("forgot")}>Forgot your password?</button>
       </p>
       <div className="login-divider"><span>New to Oatcake?</span></div>
-      <button type="button" className="btn wide outline" onClick={switchTo("new")}>Set up my account</button>
+      <button type="button" className="btn wide outline" onClick={switchTo("new")}>Create an account</button>
     </form>
   );
 }

@@ -20,7 +20,8 @@ export async function requireMember(roles?: Role[]) {
     .select("email, full_name, role, business_id, workspace_id")
     .eq("email", (user.email ?? "").toLowerCase())
     .maybeSingle<Member & { workspace_id: string }>();
-  if (!member) redirect("/login?error=no-access");
+  // Signed in but no workspace yet: set one up.
+  if (!member) redirect("/welcome");
   if (roles && !roles.includes(member.role)) redirect(HOME[member.role]);
 
   // An admin viewing someone else's workspace sees it read-only; the database enforces that too.
