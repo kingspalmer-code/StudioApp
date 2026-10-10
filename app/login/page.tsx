@@ -1,3 +1,4 @@
+import FilmGrain from "@/components/FilmGrain";
 import OatcakeLogo from "@/components/OatcakeLogo";
 import LoginForm from "./LoginForm";
 import LoginIntro, { INTRO_SCRIPT } from "./LoginIntro";
@@ -5,7 +6,8 @@ import LoginIntro, { INTRO_SCRIPT } from "./LoginIntro";
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
   return (
-    <div className="login-screen grain">
+    <div className="login-screen">
+      <FilmGrain />
       <script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
       <LoginIntro>
         <div className="login-logo">

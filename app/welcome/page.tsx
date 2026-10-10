@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import FilmGrain from "@/components/FilmGrain";
 import OatcakeLogo from "@/components/OatcakeLogo";
 import { createClient } from "@/lib/supabase/server";
 import WelcomeForm from "./WelcomeForm";
@@ -17,7 +18,8 @@ export default async function WelcomePage() {
   if (member) redirect("/");
 
   return (
-    <div className="login-screen grain">
+    <div className="login-screen">
+      <FilmGrain />
       <main className="auth welcome">
         <div className="login-logo">
           <OatcakeLogo height={36} />
