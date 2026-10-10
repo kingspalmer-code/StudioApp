@@ -36,7 +36,7 @@ export type SuggestResult = { setup?: Setup; error?: string };
 export async function suggestSetup(about: string, name: string): Promise<SuggestResult> {
   const text = about.trim().slice(0, 1500);
   if (text.length < 10) return { error: "Tell us a little more about what you do." };
-  if (!process.env.ANTHROPIC_API_KEY) return { error: "This isn't switched on yet. Pick the closest option below instead." };
+  if (!process.env.ANTHROPIC_API_KEY) return { error: "This isn't switched on yet. Start with a blank workspace instead." };
 
   // Only people setting up their first workspace, a few tries each, with a daily cap across Oatcake.
   const supabase = await createClient();
@@ -51,13 +51,13 @@ export async function suggestSetup(about: string, name: string): Promise<Suggest
       output_config: { effort: "low", format: { type: "json_schema", schema: SETUP_SCHEMA } },
       messages: [{ role: "user", content: `My name: ${name.trim().slice(0, 80) || "not given"}\n\nWhat I do:\n${text}` }],
     });
-    if (response.stop_reason === "refusal") return { error: "That couldn't be set up. Pick the closest option below instead." };
+    if (response.stop_reason === "refusal") return { error: "That couldn't be set up. Try describing it differently, or start with a blank workspace." };
     const json = response.content.find((b) => b.type === "text")?.text;
     const setup = json ? normalizeSetup(JSON.parse(json)) : null;
-    if (!setup) return { error: "That didn't come out right. Try again, or pick the closest option below." };
+    if (!setup) return { error: "That didn't come out right. Try again, or start with a blank workspace." };
     return { setup };
   } catch (e) {
     console.error("suggestSetup", e);
-    return { error: "Couldn't reach the setup helper just now. Try again, or pick the closest option below." };
+    return { error: "Couldn't reach the setup helper just now. Try again, or start with a blank workspace." };
   }
 }

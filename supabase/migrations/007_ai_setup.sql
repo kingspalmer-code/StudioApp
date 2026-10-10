@@ -18,10 +18,10 @@ begin
   if e = '' then raise exception 'Sign in first'; end if;
   if exists (select 1 from members where email = e) then raise exception 'You already have an Oatcake workspace'; end if;
   if (select count(*) from setup_tries where email = e and at > now() - interval '1 day') >= 5 then
-    raise exception 'That''s the most tries for today. Pick the closest option below instead.';
+    raise exception 'That''s the most tries for today. Start with a blank workspace instead.';
   end if;
   if (select count(*) from setup_tries where at > now() - interval '1 day') >= 300 then
-    raise exception 'The setup helper is busy today. Pick the closest option below instead.';
+    raise exception 'The setup helper is busy today. Start with a blank workspace instead.';
   end if;
   insert into setup_tries (email) values (e);
 end $$;

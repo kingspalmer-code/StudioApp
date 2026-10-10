@@ -5,21 +5,32 @@ import { useState } from "react";
 import { signOut } from "@/app/actions";
 import { KIND_LABELS } from "@/lib/fields";
 import { STAGE_COLORS, stageColor } from "@/lib/priority";
-import { PROFILES, type Profile } from "@/lib/profiles";
 import type { Setup } from "@/lib/setup";
 import { createClient } from "@/lib/supabase/client";
 import { suggestSetup } from "./actions";
 
 type Step = "name" | "profile" | "setup" | "workspace";
 
+const BLANK: Setup = {
+  base: "personal",
+  workspace_name: "",
+  clients_log_in: false,
+  stages: [{ label: "To do", color: "blue" }, { label: "In progress", color: "orange" }, { label: "Done", color: "green" }],
+  job_types: [{ name: "Job", lead_days: 3 }],
+  fields: [
+    { use: "brief", label: "Notes", kind: "longtext", hint: "", options: [], required: false },
+    { use: "files", label: "Files", kind: "files", hint: "", options: [], required: false },
+  ],
+};
+
 export default function WelcomeForm({ email, hasPassword, helper }: { email: string; hasPassword: boolean; helper: boolean }) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("name");
   const [name, setName] = useState("");
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [about, setAbout] = useState("");
   const [setup, setSetup] = useState<Setup | null>(null);
   const [thinking, setThinking] = useState(false);
+  const [blankStart, setBlankStart] = useState(false);
   const [workspace, setWorkspace] = useState("");
   const [clients, setClients] = useState(false);
   const [password, setPassword] = useState("");
@@ -27,11 +38,12 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
   const [error, setError] = useState<string | null>(null);
   const first = name.trim().split(/\s+/)[0] ?? "";
 
-  function pick(p: Profile) {
-    setProfile(p);
-    setSetup(null);
-    setWorkspace(p.workspace(first || "My"));
-    setClients(p.clients);
+  // A plain starting point for anyone who'd rather set things up themselves in Settings.
+  function blank() {
+    setSetup(BLANK);
+    setBlankStart(true);
+    setWorkspace(`${first || "My"}'s Workspace`);
+    setClients(false);
     setStep("workspace");
   }
 
@@ -43,7 +55,7 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
     setThinking(false);
     if (!res.setup) return setError(res.error ?? "Something went wrong.");
     setSetup(res.setup);
-    setProfile(null);
+    setBlankStart(false);
     setWorkspace(res.setup.workspace_name || `${first || "My"}'s Workspace`);
     setClients(res.setup.clients_log_in);
     setStep("setup");
@@ -51,7 +63,7 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
 
   async function finish(e: React.FormEvent) {
     e.preventDefault();
-    if (!profile && !setup) return;
+    if (!setup) return;
     if (!hasPassword && password.length < 8) return setError("Choose a password of at least 8 characters.");
     setBusy(true);
     setError(null);
@@ -63,9 +75,7 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
         return setError(`Your password wasn't saved: ${pwError.message}`);
       }
     }
-    const { error: wsError } = setup
-      ? await supabase.rpc("start_custom_workspace", { ws_name: workspace, owner_name: name.trim(), clients_log_in: clients, setup })
-      : await supabase.rpc("start_workspace", { ws_name: workspace, owner_name: name.trim(), ws_profile: profile!.key, clients_log_in: clients });
+    const { error: wsError } = await supabase.rpc("start_custom_workspace", { ws_name: workspace, owner_name: name.trim(), clients_log_in: clients, setup });
     if (wsError) {
       setBusy(false);
       return setError(wsError.message);
@@ -114,20 +124,16 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
               {thinking ? "Setting it up for you…" : "Set it up for me"}
             </button>
             {thinking && <p className="foot" style={{ textAlign: "center" }}>This takes a few seconds.</p>}
-            <div className="login-divider"><span>Or pick the closest</span></div>
+            <p className="foot" style={{ textAlign: "center", marginTop: 18 }}>
+              Rather do it yourself? <button type="button" className="link" onClick={blank}>Start with a blank workspace</button>
+            </p>
           </form>
         ) : (
-          <p className="login-sub">Pick the closest. It sets up your stages and job form, and you can change all of it later.</p>
+          <>
+            <p className="login-sub">You&apos;ll start with a simple workspace. Set up your stages, kinds of job and job form in Settings to suit how you work.</p>
+            <button type="button" className="btn wide" onClick={blank}>Continue</button>
+          </>
         )}
-        <div className="profiles">
-          {PROFILES.map((p) => (
-            <button key={p.key} type="button" className="profile-card" onClick={() => pick(p)}>
-              <b>{p.title}</b>
-              <span>{p.who}</span>
-              <small>{p.stages.join(" · ")}</small>
-            </button>
-          ))}
-        </div>
         <p className="foot" style={{ textAlign: "center", marginTop: 14 }}>
           <button type="button" className="link" onClick={() => setStep("name")}>Back</button>
         </p>
@@ -139,7 +145,7 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
 
   return (
     <form onSubmit={finish}>
-      <p className="login-step">{profile?.title ?? "Nearly there"}</p>
+      <p className="login-step">Nearly there</p>
       <div className="group">
         <div className="row">
           <label htmlFor="ws">Workspace</label>
@@ -167,7 +173,7 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
       {error && <p className="error">{error}</p>}
       <button className="btn wide" disabled={busy} style={{ marginTop: 8 }}>{busy ? "Setting up…" : "Create my workspace"}</button>
       <p className="foot" style={{ textAlign: "center", marginTop: 14 }}>
-        <button type="button" className="link" onClick={() => setStep(setup ? "setup" : "profile")}>Back</button>
+        <button type="button" className="link" onClick={() => setStep(blankStart ? "profile" : "setup")}>Back</button>
       </p>
     </form>
   );

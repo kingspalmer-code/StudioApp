@@ -260,16 +260,9 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 
 /* Sign-up: pick what you do */
 .login-screen .auth.welcome { max-width: 560px; }
-.profiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.profile-card { text-align: left; border: 0; border-radius: 14px; padding: 14px; background: color-mix(in srgb, var(--oat-cream) 8%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--oat-cream) 16%, transparent); color: var(--oat-cream); cursor: pointer; display: grid; gap: 4px; font: inherit; }
-.profile-card:hover, .profile-card:focus-visible { background: color-mix(in srgb, var(--oat-cream) 14%, transparent); box-shadow: inset 0 0 0 1.5px var(--oat-cream); outline: none; }
-.profile-card b { font-family: var(--font-title); font-size: 19px; font-weight: 700; }
-.profile-card span { font-size: 14px; color: color-mix(in srgb, var(--oat-cream) 80%, transparent); }
-.profile-card small { font-size: 12px; color: color-mix(in srgb, var(--oat-cream) 55%, transparent); margin-top: 4px; }
 .login-screen .seg.wide-seg { display: flex; background: color-mix(in srgb, var(--oat-cream) 10%, transparent); }
 .login-screen .seg.wide-seg button { flex: 1; color: var(--oat-cream); padding: 10px 12px; font-size: 14px; }
 .login-screen .seg.wide-seg button[aria-pressed="true"] { background: var(--oat-cream); color: #17110f; }
-@media (max-width: 480px) { .profiles { grid-template-columns: 1fr; } }
 .describe textarea { width: 100%; border: 0; border-radius: 14px; padding: 14px; font: inherit; font-size: 15px; line-height: 1.45; resize: vertical; background: color-mix(in srgb, var(--oat-cream) 8%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--oat-cream) 22%, transparent); color: var(--oat-cream); outline: none; }
 .describe textarea:focus { box-shadow: inset 0 0 0 1.5px var(--oat-cream); }
 .describe textarea::placeholder { color: color-mix(in srgb, var(--oat-cream) 45%, transparent); }

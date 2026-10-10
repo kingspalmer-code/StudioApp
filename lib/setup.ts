@@ -1,6 +1,5 @@
 import { ADDABLE_KINDS, type FieldKind } from "./fields";
 import { STAGE_COLORS } from "./priority";
-import type { Profile } from "./profiles";
 
 // A workspace setup suggested at sign-up from what someone says about their work.
 // The same shape is saved by start_custom_workspace() in the database, which checks it again.
@@ -24,8 +23,11 @@ const BUILTIN_KEYS = Object.keys(BUILTIN_KINDS) as BuiltinKey[];
 export type SetupStage = { label: string; color: (typeof STAGE_COLORS)[number] };
 export type SetupType = { name: string; lead_days: number };
 export type SetupField = { use: BuiltinKey | "custom"; label: string; kind: FieldKind; hint: string; options: string[]; required: boolean };
+// The nearest of the database's starting profiles, kept on the workspace for reference.
+const PROFILE_KEYS = ["creative", "photo", "trades", "events", "content", "personal"] as const;
+
 export type Setup = {
-  base: Profile["key"];
+  base: (typeof PROFILE_KEYS)[number];
   workspace_name: string;
   clients_log_in: boolean;
   stages: SetupStage[];
@@ -33,7 +35,6 @@ export type Setup = {
   fields: SetupField[];
 };
 
-const PROFILE_KEYS = ["creative", "photo", "trades", "events", "content", "personal"] as const;
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
 // Tidies a suggestion so it always fits what Oatcake can store.
@@ -72,7 +73,7 @@ export function normalizeSetup(raw: unknown): Setup | null {
 
   if (stages.length < 2 || job_types.length < 1) return null;
   return {
-    base: PROFILE_KEYS.includes(r.base as Profile["key"]) ? (r.base as Profile["key"]) : "personal",
+    base: PROFILE_KEYS.includes(r.base as Setup["base"]) ? (r.base as Setup["base"]) : "personal",
     workspace_name: str(r.workspace_name, 80),
     clients_log_in: r.clients_log_in === true,
     stages: stages.slice(0, 8),
