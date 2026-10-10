@@ -3,6 +3,7 @@ import { signOut } from "@/app/actions";
 import { stopViewing } from "@/app/admin/actions";
 import { brandFor, brandThemeCss } from "@/lib/brands";
 import type { Business, Member, Workspace } from "@/lib/types";
+import AskOatcake from "./AskOatcake";
 import BizBadge from "./BizBadge";
 import NavLinks from "./NavLinks";
 import TabBar from "./TabBar";
@@ -87,6 +88,7 @@ export default function Shell({
             <button className="link" type="submit">Sign out</button>
           </form>
           <ThemeToggle />
+          {member.role === "designer" && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake />}
           {/* On phones the account links and theme switch live on the account page instead. */}
           <Link href="/account" className="me-btn" aria-label="Your account and settings" data-tour="me">{initials}</Link>
         </div>

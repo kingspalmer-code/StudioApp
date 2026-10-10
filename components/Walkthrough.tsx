@@ -21,6 +21,7 @@ export default function Walkthrough({ force = false, job = "job", clients = "cus
     { target: "list", title: "Your next move, at the top", text: `Every open ${job}, ordered by when to start it, worked back from the deadline. Tap one to move it on, add notes or send a quote.` },
     { target: "layout", title: "List or board", text: `Prefer columns? The board shows every ${job} by stage.` },
     { target: "new", title: `Add a ${job}`, text: `Add a ${job} the moment it comes in. New ${clients} are saved for you.` },
+    { target: "ask", title: "Ask Oatcake", text: "Stuck, or after a quick answer? Ask about your jobs, money or how to do something." },
     { target: ["settings", "me"], title: "Make it yours", text: `Your stages, the ${job} form, and your quote and invoice style are all in Settings.` },
   ], [job, clients]);
   const router = useRouter();
