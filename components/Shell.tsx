@@ -5,6 +5,7 @@ import type { Business, Member } from "@/lib/types";
 import BizBadge from "./BizBadge";
 import NavLinks from "./NavLinks";
 import OatcakeLogo from "./OatcakeLogo";
+import ThemeToggle from "./ThemeToggle";
 
 const LINKS = {
   designer: [
@@ -53,6 +54,7 @@ export default function Shell({
           <form action={signOut} className="who">
             <Link href="/account">{member.full_name || member.email}</Link>
             <button className="link" type="submit">Sign out</button>
+            <ThemeToggle />
           </form>
         </div>
       </header>

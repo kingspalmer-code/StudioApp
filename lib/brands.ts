@@ -68,8 +68,10 @@ export function brandFor(biz: Business): Brand {
 
 // CSS that re-points the accent tokens at a business's colours, in both themes.
 export function brandThemeCss(selector: string, brand: Brand): string {
+  const dark = `--accent:${brand.dark.color};--accent-ink:${brand.dark.ink}`;
   return (
     `${selector}{--accent:${brand.color};--accent-ink:${brand.ink}}` +
-    `@media (prefers-color-scheme: dark){${selector}{--accent:${brand.dark.color};--accent-ink:${brand.dark.ink}}}`
+    `@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) ${selector}{${dark}}}` +
+    `:root[data-theme="dark"] ${selector}{${dark}}`
   );
 }
