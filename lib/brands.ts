@@ -8,9 +8,9 @@ const BRANDS: Record<string, { logo?: string; tile?: string; light: Theme; dark?
   "brewery-tap": { logo: "/brands/brewery-tap.svg", tile: "#842f1b", light: { accent: "#c95228" } },
   hoprocket: {
     logo: "/brands/hoprocket.svg",
-    tile: "#1c1c1e",
-    light: { accent: "#1c1c1e", ink: "#fbc337" },
-    dark: { accent: "#fbc337", ink: "#1c1c1e" },
+    tile: "#ffffff",
+    light: { accent: "#021801", ink: "#f9c238" },
+    dark: { accent: "#f9c238", ink: "#021801" },
   },
   boomtowers: { logo: "/brands/boomtowers.svg", tile: "#ffffff", light: { accent: "#dd5136" } },
   motherchip: { logo: "/brands/motherchip.svg", tile: "#ffffff", light: { accent: "#009245" } },
