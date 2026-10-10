@@ -332,6 +332,18 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 .demo-row.urgent { box-shadow: inset 3px 0 0 var(--t-red); }
 .demo-queue { position: absolute; inset: 12px; }
 
+.demo-invoice { position: absolute; inset: 12px; display: grid; gap: 10px; justify-items: center; align-content: start; }
+.demo-doc { position: relative; width: min(250px, 86%); background: #fbf6ef; color: #2a201c; border-radius: 6px; padding: 12px 14px 10px; box-shadow: 0 10px 30px rgba(0,0,0,.45); font-size: 10px; }
+.demo-doc-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.demo-doc-head b { display: flex; align-items: center; gap: 5px; font-family: Georgia, "Times New Roman", serif; font-size: 12px; }
+.demo-doc-head b i { width: 14px; height: 14px; border-radius: 4px; background: #1f4e79; }
+.demo-doc-head > span { display: inline-block; font-family: Georgia, "Times New Roman", serif; font-size: 15px; font-weight: 700; letter-spacing: .06em; color: #1f4e79; }
+.demo-doc-line { display: flex; justify-content: space-between; height: 21px; align-items: center; border-bottom: 0.5px solid #e6ddd2; }
+.demo-doc-line.empty { border-bottom-color: transparent; }
+.demo-doc-total { display: flex; justify-content: space-between; margin-top: 6px; padding-top: 5px; border-top: 1.5px solid #1f4e79; color: #1f4e79; font-family: Georgia, "Times New Roman", serif; font-weight: 700; font-size: 12px; }
+.demo-paid { position: absolute; right: 18px; top: 46px; padding: 3px 10px; border: 2px solid #2f8f4f; border-radius: 6px; color: #2f8f4f; font-weight: 800; font-size: 15px; letter-spacing: .12em; text-transform: uppercase; background: rgba(251,246,239,.7); }
+.demo-invoice .demo-send { justify-self: center; }
+.demo-toast { background: var(--t-col); border-radius: 99px; padding: 6px 14px; font-size: 12px; font-weight: 600; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--t-green) 70%, transparent); }
 .demo-yours { position: absolute; inset: 12px; display: grid; gap: 10px; align-content: start; }
 .demo-pills { display: flex; gap: 6px; }
 .demo-pill { flex: 1; min-width: 0; background: var(--t-col); border-radius: 99px; height: 30px; font-size: 11.5px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; overflow: hidden; white-space: nowrap; }

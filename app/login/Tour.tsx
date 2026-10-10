@@ -26,6 +26,11 @@ const SLIDES = [
     Demo: QueueDemo,
   },
   {
+    title: "Quotes & invoices, sorted.",
+    text: "Send a quote from your phone, designed by Oatcake with your logo. Turn it into an invoice when the job's done.",
+    Demo: InvoiceDemo,
+  },
+  {
     title: "Make it yours.",
     text: "Designers, signwriters, photographers: tell Oatcake how you work and it sets itself up to match.",
     Demo: YoursDemo,
@@ -228,6 +233,93 @@ function QueueDemo() {
             <span>{r.t}<small>{r.s}</small></span><em className={r.c}>{r.w}</em>
           </motion.div>
         ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function InvoiceDemo() {
+  const step = useLoop(20, 400); // lines fill in, send it, then it becomes an invoice and gets paid
+  const lines: [string, string][] = [
+    ["Fascia design", "£180.00"],
+    ["Aluminium panel", "£520.00"],
+    ["Gold leaf lettering", "£350.00"],
+  ];
+  const invoice = step >= 12;
+  const kind = invoice ? "INVOICE" : "QUOTE";
+  return (
+    <div className="demo-invoice">
+      <div className="demo-doc">
+        <div className="demo-doc-head">
+          <b><i />Ashwell Signs</b>
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={kind}
+              initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -8, filter: "blur(4px)" }}
+              transition={SOFT}
+            >
+              {kind}
+            </motion.span>
+          </AnimatePresence>
+        </div>
+        {lines.map(([t, p], n) =>
+          step >= n + 1 ? (
+            <motion.div
+              key={t}
+              className="demo-doc-line"
+              initial={{ opacity: 0, x: -10, filter: "blur(4px)" }}
+              animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+              transition={SOFT}
+            >
+              <span>{t}</span><span>{p}</span>
+            </motion.div>
+          ) : (
+            <div key={t} className="demo-doc-line empty" />
+          )
+        )}
+        <motion.div className="demo-doc-total" animate={{ opacity: step >= 4 ? 1 : 0, y: step >= 4 ? 0 : 6 }} transition={SOFT}>
+          <span>{invoice ? "Amount due" : "Total"}</span><span>£1,050.00</span>
+        </motion.div>
+        <AnimatePresence>
+          {step >= 14 && (
+            <motion.div
+              className="demo-paid"
+              initial={{ opacity: 0, scale: 1.8, rotate: -4 }}
+              animate={{ opacity: 1, scale: 1, rotate: -12 }}
+              exit={{ opacity: 0 }}
+              transition={{ type: "spring", stiffness: 420, damping: 16 }}
+            >
+              Paid
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      <AnimatePresence mode="popLayout" initial={false}>
+        {step >= 8 && step < 12 ? (
+          <motion.div
+            key="sent"
+            className="demo-toast"
+            initial={{ opacity: 0, y: 14, scale: 0.94 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 300, damping: 22 }}
+          >
+            ✓ Sent to The Brewery Tap
+          </motion.div>
+        ) : (
+          <motion.div
+            key="send"
+            className="demo-send"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: step >= 5 && step < 12 ? 1 : 0, scale: step === 6 || step === 7 ? 0.92 : 1 }}
+            exit={{ opacity: 0 }}
+            transition={SPRING}
+          >
+            Email to customer
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
