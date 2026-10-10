@@ -54,8 +54,8 @@ export default function Shell({
           <form action={signOut} className="who">
             <Link href="/account">{member.full_name || member.email}</Link>
             <button className="link" type="submit">Sign out</button>
-            <ThemeToggle />
           </form>
+          <ThemeToggle />
         </div>
       </header>
       <main>{children}</main>

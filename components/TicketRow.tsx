@@ -24,7 +24,7 @@ export default function TicketRow({
         <span className="t">{t.pinned ? "📌 " : ""}{t.title}</span>
         <span className="m">
           {showBusiness && biz ? `${biz.name} · ` : ""}
-          {t.type} · {dueLabel(t.deadline)}
+          {t.type} · {t.status === "done" ? `Due ${formatDate(t.deadline)}` : dueLabel(t.deadline)}
           {t.priority !== "Standard" && <span className={`pri-${t.priority}`}> · {t.priority}</span>}
         </span>
       </span>
