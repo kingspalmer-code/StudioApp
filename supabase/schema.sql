@@ -1210,3 +1210,307 @@ create policy "avatars: see your own" on storage.objects for select to authentic
   using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "avatars: remove your own" on storage.objects for delete to authenticated
   using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ===== 011_support =====
+-- Help & support: anyone signed in can message Oatcake, and Oatcake admins answer from Admin → Support.
+-- Each conversation is a support ticket with its messages. People see their own; admins see all.
+-- Every change goes through the functions below, so the rules live in one place.
+create table if not exists public.support_tickets (
+  id bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid(),
+  email text not null default public.my_email(),
+  name text not null default '',
+  workspace_id uuid references public.workspaces (id) on delete set null,
+  subject text not null default '',
+  status text not null default 'open' check (status in ('open', 'waiting', 'solved')),
+  page text not null default '',
+  device text not null default '',
+  last_from text not null default 'user' check (last_from in ('user', 'oatcake')),
+  user_seen_at timestamptz not null default now(),
+  admin_seen_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists support_tickets_user on public.support_tickets (user_id, updated_at desc);
+create index if not exists support_tickets_status on public.support_tickets (status, updated_at desc);
+
+create table if not exists public.support_messages (
+  id bigint generated always as identity primary key,
+  ticket_id bigint not null references public.support_tickets (id) on delete cascade,
+  from_oatcake boolean not null default false,
+  author_name text not null default '',
+  body text not null default '' check (length(body) <= 6000),
+  attachment text,
+  created_at timestamptz not null default now()
+);
+create index if not exists support_messages_ticket on public.support_messages (ticket_id, created_at);
+
+alter table public.support_tickets enable row level security;
+alter table public.support_messages enable row level security;
+
+create policy "support: see your own, admins see all" on public.support_tickets
+  for select to authenticated using (user_id = auth.uid() or public.is_platform_admin());
+create policy "support: see messages on tickets you can see" on public.support_messages
+  for select to authenticated using (
+    exists (select 1 from public.support_tickets t where t.id = ticket_id and (t.user_id = auth.uid() or public.is_platform_admin()))
+  );
+
+-- Screenshots people attach: private, in a folder per person. Admins can read them all.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('support', 'support', false, 5242880, array['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+on conflict (id) do nothing;
+
+create policy "support files: add your own" on storage.objects for insert to authenticated
+  with check (bucket_id = 'support' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "support files: see your own, admins see all" on storage.objects for select to authenticated
+  using (bucket_id = 'support' and ((storage.foldername(name))[1] = auth.uid()::text or public.is_platform_admin()));
+-- Screenshots Oatcake attaches in a reply can be seen by the person the conversation belongs to.
+create policy "support files: see files on your conversations" on storage.objects for select to authenticated
+  using (bucket_id = 'support' and exists (
+    select 1 from public.support_messages m join public.support_tickets t on t.id = m.ticket_id
+    where m.attachment = storage.objects.name and t.user_id = auth.uid()
+  ));
+
+-- Start a conversation. A few a day each is plenty, and stops a stuck script flooding the inbox.
+create or replace function public.support_open(p_subject text, p_body text, p_page text, p_device text, p_attachment text)
+returns bigint language plpgsql security definer set search_path = public as $$
+declare
+  t_id bigint;
+  who public.members%rowtype;
+begin
+  if auth.uid() is null then raise exception 'Sign in first.'; end if;
+  if length(trim(coalesce(p_body, ''))) = 0 then raise exception 'Write a message first.'; end if;
+  if (select count(*) from support_tickets where user_id = auth.uid() and created_at > now() - interval '1 day') >= 10 then
+    raise exception 'That''s a lot of messages today. Reply on an earlier one and we''ll pick it up.';
+  end if;
+  select * into who from members where email = my_email();
+  insert into support_tickets (user_id, email, name, workspace_id, subject, page, device)
+  values (auth.uid(), my_email(), coalesce(who.full_name, ''), who.workspace_id,
+          left(trim(coalesce(p_subject, '')), 140), left(coalesce(p_page, ''), 300), left(coalesce(p_device, ''), 300))
+  returning id into t_id;
+  insert into support_messages (ticket_id, author_name, body, attachment)
+  values (t_id, coalesce(who.full_name, ''), left(trim(p_body), 6000), nullif(p_attachment, ''));
+  return t_id;
+end $$;
+
+-- Add a message. Admins answering pass as_oatcake; that marks it as waiting on the person.
+create or replace function public.support_reply(p_ticket bigint, p_body text, p_attachment text, p_as_oatcake boolean)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  t support_tickets%rowtype;
+  staff boolean := coalesce(p_as_oatcake, false);
+begin
+  select * into t from support_tickets where id = p_ticket;
+  if not found then raise exception 'That conversation wasn''t found.'; end if;
+  if staff and not is_platform_admin() then raise exception 'Only Oatcake can answer as Oatcake.'; end if;
+  if not staff and t.user_id <> auth.uid() then raise exception 'That conversation wasn''t found.'; end if;
+  if length(trim(coalesce(p_body, ''))) = 0 and coalesce(p_attachment, '') = '' then raise exception 'Write a message first.'; end if;
+  if (select count(*) from support_messages where ticket_id = p_ticket and created_at > now() - interval '1 day') >= 60 then
+    raise exception 'That''s a lot of messages today. Try again tomorrow.';
+  end if;
+  insert into support_messages (ticket_id, from_oatcake, author_name, body, attachment)
+  values (p_ticket, staff,
+          case when staff then 'Oatcake' else coalesce((select full_name from members where email = my_email()), '') end,
+          left(trim(coalesce(p_body, '')), 6000), nullif(p_attachment, ''));
+  update support_tickets set
+    status = case when staff then 'waiting' else 'open' end,
+    last_from = case when staff then 'oatcake' else 'user' end,
+    user_seen_at = case when staff then user_seen_at else now() end,
+    admin_seen_at = case when staff then now() else admin_seen_at end,
+    updated_at = now()
+  where id = p_ticket;
+end $$;
+
+-- Mark solved or reopen. The person can close their own; admins can set any status.
+create or replace function public.support_set_status(p_ticket bigint, p_status text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if p_status not in ('open', 'waiting', 'solved') then raise exception 'Unknown status.'; end if;
+  if is_platform_admin() then
+    update support_tickets set status = p_status, updated_at = now() where id = p_ticket;
+  else
+    update support_tickets set status = case when p_status = 'solved' then 'solved' else 'open' end, updated_at = now()
+    where id = p_ticket and user_id = auth.uid();
+  end if;
+end $$;
+
+-- Remember when someone last read a conversation, to show a dot for new replies.
+create or replace function public.support_seen(p_ticket bigint, p_as_oatcake boolean)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if coalesce(p_as_oatcake, false) and is_platform_admin() then
+    update support_tickets set admin_seen_at = now() where id = p_ticket;
+  else
+    update support_tickets set user_seen_at = now() where id = p_ticket and user_id = auth.uid();
+  end if;
+end $$;
+
+revoke execute on function public.support_open(text, text, text, text, text) from public, anon;
+revoke execute on function public.support_reply(bigint, text, text, boolean) from public, anon;
+revoke execute on function public.support_set_status(bigint, text) from public, anon;
+revoke execute on function public.support_seen(bigint, boolean) from public, anon;
+grant execute on function public.support_open(text, text, text, text, text) to authenticated;
+grant execute on function public.support_reply(bigint, text, text, boolean) to authenticated;
+grant execute on function public.support_set_status(bigint, text) to authenticated;
+grant execute on function public.support_seen(bigint, boolean) to authenticated;
+
+-- ===== 012_activity =====
+-- How people use Oatcake, so admins can see where they spend time and where they get stuck.
+-- The app records page views, time actively spent on each page, a few key actions, and errors
+-- people see. People can turn this off in their account. Only Oatcake admins can read it.
+create table if not exists public.activity (
+  id bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid(),
+  workspace_id uuid default public.my_workspace(),
+  kind text not null check (kind in ('view', 'time', 'action', 'error')),
+  name text not null default '' check (length(name) <= 60),
+  path text not null default '' check (length(path) <= 200),
+  ms integer not null default 0 check (ms between 0 and 600000),
+  meta jsonb not null default '{}'::jsonb check (octet_length(meta::text) <= 2000),
+  created_at timestamptz not null default now()
+);
+create index if not exists activity_created on public.activity (created_at);
+create index if not exists activity_user on public.activity (user_id, created_at);
+
+alter table public.activity enable row level security;
+create policy "activity: record your own" on public.activity
+  for insert to authenticated with check (user_id = auth.uid());
+create policy "activity: admins read" on public.activity
+  for select to authenticated using (public.is_platform_admin());
+
+-- Everyone who has signed up, with how far they've got and how much they use Oatcake.
+create or replace function public.admin_people()
+returns table (
+  user_id uuid, email text, name text, signed_up timestamptz, last_sign_in timestamptz,
+  workspace_id uuid, workspace text, kind text, role text, is_admin boolean, walkthrough boolean, no_tracking boolean,
+  jobs int, customers int, docs int, docs_sent int,
+  active_ms_7d bigint, active_ms bigint, days_active int, last_seen timestamptz, open_help int
+)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not is_platform_admin() then raise exception 'Admins only.'; end if;
+  return query
+  select u.id, lower(u.email)::text, coalesce(nullif(m.full_name, ''), u.raw_user_meta_data ->> 'full_name', '')::text,
+    u.created_at, u.last_sign_in_at, m.workspace_id, w.name, w.kind, m.role,
+    exists (select 1 from platform_admins pa where pa.email = lower(u.email)),
+    coalesce((u.raw_user_meta_data ->> 'walkthrough_done')::boolean, false),
+    coalesce((u.raw_user_meta_data ->> 'no_tracking')::boolean, false),
+    (select count(*)::int from tickets t where t.workspace_id = m.workspace_id),
+    (select count(*)::int from businesses b where b.workspace_id = m.workspace_id),
+    (select count(*)::int from documents d where d.workspace_id = m.workspace_id),
+    (select count(*)::int from documents d where d.workspace_id = m.workspace_id and d.sent_at is not null),
+    a.ms7, a.ms, a.days, a.last_seen,
+    (select count(*)::int from support_tickets s where s.user_id = u.id and s.status <> 'solved')
+  from auth.users u
+  left join members m on m.email = lower(u.email)
+  left join workspaces w on w.id = m.workspace_id
+  left join lateral (
+    select coalesce(sum(x.ms) filter (where x.created_at > now() - interval '7 days'), 0)::bigint as ms7,
+           coalesce(sum(x.ms), 0)::bigint as ms,
+           count(distinct (x.created_at at time zone 'Europe/London')::date)::int as days,
+           max(x.created_at) as last_seen
+    from activity x where x.user_id = u.id
+  ) a on true
+  order by u.created_at desc;
+end $$;
+
+-- Sign-ups and active people per day (UK days), leaving out Oatcake admins.
+create or replace function public.admin_daily(p_days int)
+returns table (day date, signups int, active int, active_ms bigint)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not is_platform_admin() then raise exception 'Admins only.'; end if;
+  return query
+  with staff as (select u.id from auth.users u join platform_admins p on p.email = lower(u.email)),
+  days as (
+    select generate_series((now() at time zone 'Europe/London')::date - (least(p_days, 365) - 1),
+                           (now() at time zone 'Europe/London')::date, interval '1 day')::date as d
+  ),
+  su as (
+    select (u.created_at at time zone 'Europe/London')::date as d, count(*) as n
+    from auth.users u where u.id not in (select id from staff) group by 1
+  ),
+  ac as (
+    select (x.created_at at time zone 'Europe/London')::date as d, count(distinct x.user_id) as n, sum(x.ms) as ms
+    from activity x
+    where x.created_at > now() - make_interval(days => least(p_days, 365) + 1) and x.user_id not in (select id from staff)
+    group by 1
+  )
+  select days.d, coalesce(su.n, 0)::int, coalesce(ac.n, 0)::int, coalesce(ac.ms, 0)::bigint
+  from days left join su on su.d = days.d left join ac on ac.d = days.d
+  order by 1;
+end $$;
+
+-- Headline numbers for the admin overview.
+create or replace function public.admin_summary()
+returns table (people int, workspaces int, signups_7d int, signups_prev_7d int, active_7d int, active_prev_7d int,
+               active_30d int, active_ms_7d bigint, open_help int, unread_help int)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not is_platform_admin() then raise exception 'Admins only.'; end if;
+  return query
+  with staff as (select u.id from auth.users u join platform_admins p on p.email = lower(u.email)),
+  a as (select * from activity x where x.created_at > now() - interval '30 days' and x.user_id not in (select id from staff))
+  select
+    (select count(*)::int from auth.users u where u.id not in (select id from staff)),
+    (select count(*)::int from workspaces),
+    (select count(*)::int from auth.users u where u.created_at > now() - interval '7 days' and u.id not in (select id from staff)),
+    (select count(*)::int from auth.users u where u.created_at between now() - interval '14 days' and now() - interval '7 days' and u.id not in (select id from staff)),
+    (select count(distinct a.user_id)::int from a where a.created_at > now() - interval '7 days'),
+    (select count(distinct a.user_id)::int from a where a.created_at between now() - interval '14 days' and now() - interval '7 days'),
+    (select count(distinct a.user_id)::int from a),
+    (select coalesce(sum(a.ms), 0)::bigint from a where a.created_at > now() - interval '7 days'),
+    (select count(*)::int from support_tickets s where s.status = 'open'),
+    (select count(*)::int from support_tickets s where s.last_from = 'user' and s.status <> 'solved'
+       and (s.admin_seen_at is null or s.admin_seen_at < s.updated_at));
+end $$;
+
+-- Each page: views, people, time spent, and how often a form there was started but not sent.
+create or replace function public.admin_pages(p_days int)
+returns table (path text, views int, people int, ms bigint, form_starts int, form_sends int)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not is_platform_admin() then raise exception 'Admins only.'; end if;
+  return query
+  with staff as (select u.id from auth.users u join platform_admins p on p.email = lower(u.email))
+  select x.path,
+    (count(*) filter (where x.kind = 'view'))::int,
+    count(distinct x.user_id)::int,
+    coalesce(sum(x.ms), 0)::bigint,
+    (count(*) filter (where x.kind = 'action' and x.name = 'form_start'))::int,
+    (count(*) filter (where x.kind = 'action' and x.name = 'form_send'))::int
+  from activity x
+  where x.created_at > now() - make_interval(days => least(p_days, 365)) and x.user_id not in (select id from staff)
+  group by x.path
+  order by 2 desc
+  limit 60;
+end $$;
+
+-- Signs someone got stuck: errors they saw, rapid repeated taps, and where they skipped the walkthrough.
+create or replace function public.admin_problems(p_days int)
+returns table (kind text, name text, path text, detail text, times int, people int, last_at timestamptz)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not is_platform_admin() then raise exception 'Admins only.'; end if;
+  return query
+  with staff as (select u.id from auth.users u join platform_admins p on p.email = lower(u.email))
+  select x.kind, x.name, x.path, coalesce(x.meta ->> 'text', '')::text,
+    count(*)::int, count(distinct x.user_id)::int, max(x.created_at)
+  from activity x
+  where x.created_at > now() - make_interval(days => least(p_days, 365)) and x.user_id not in (select id from staff)
+    and (x.kind = 'error' or x.name = 'walkthrough_skip')
+  group by 1, 2, 3, 4
+  order by 6 desc, 5 desc
+  limit 60;
+end $$;
+
+revoke execute on function public.admin_people() from public, anon;
+revoke execute on function public.admin_daily(int) from public, anon;
+revoke execute on function public.admin_summary() from public, anon;
+revoke execute on function public.admin_pages(int) from public, anon;
+revoke execute on function public.admin_problems(int) from public, anon;
+grant execute on function public.admin_people() to authenticated;
+grant execute on function public.admin_daily(int) to authenticated;
+grant execute on function public.admin_summary() to authenticated;
+grant execute on function public.admin_pages(int) to authenticated;
+grant execute on function public.admin_problems(int) to authenticated;

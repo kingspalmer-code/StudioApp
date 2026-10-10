@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import FilmGrain from "@/components/FilmGrain";
 import OatcakeLogo from "@/components/OatcakeLogo";
+import Tracker from "@/components/Tracker";
 import { createClient } from "@/lib/supabase/server";
 import WelcomeForm from "./WelcomeForm";
 
@@ -20,6 +21,7 @@ export default async function WelcomePage() {
   return (
     <div className="login-screen">
       <FilmGrain />
+      {!user.user_metadata?.no_tracking && <Tracker />}
       <main className="auth welcome">
         <div className="login-logo">
           <OatcakeLogo height={36} />

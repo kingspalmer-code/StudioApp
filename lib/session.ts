@@ -27,7 +27,7 @@ export async function requireMember(roles?: Role[]) {
   // An admin viewing someone else's workspace sees it read-only; the database enforces that too.
   const rawView = (await cookies()).get(VIEW_COOKIE)?.value ?? "";
   const viewId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawView) ? rawView : null;
-  const [{ data: businesses }, { data: workspace }, { data: stages }, { data: types }, { data: isAdmin }] = await Promise.all([
+  const [{ data: businesses }, { data: workspace }, { data: stages }, { data: types }, { data: isAdmin }, { data: replies }] = await Promise.all([
     supabase.from("businesses").select("*").order("name").returns<Business[]>(),
     supabase
       .from("workspaces")
@@ -37,6 +37,7 @@ export async function requireMember(roles?: Role[]) {
     supabase.from("stages").select("*").order("position").order("id").returns<Stage[]>(),
     supabase.from("job_types").select("*").order("position").order("id").returns<JobType[]>(),
     supabase.rpc("is_platform_admin"),
+    supabase.from("support_tickets").select("updated_at, user_seen_at").eq("user_id", user.id).eq("last_from", "oatcake").neq("status", "solved"),
   ]);
   const viewed = isAdmin && viewId && viewId !== member.workspace_id ? workspace?.find((w) => w.id === viewId) : undefined;
   const own = workspace?.find((w) => w.id === member.workspace_id);
@@ -55,7 +56,11 @@ export async function requireMember(roles?: Role[]) {
   const askOpens = Number(user.user_metadata?.ask_opens ?? 0);
   const askSince = Number(user.user_metadata?.ask_since ?? 0);
   const askHint = askOpens < 2 && (!askSince || Date.now() - askSince < 7 * 86400000);
-  const shell = { member, businesses: businesses ?? [], workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials, askHint, askOpens, askSince };
+  // A dot on your photo when Oatcake has replied to a help message you haven't read yet.
+  const helpUnread = (replies ?? []).some((r) => r.updated_at > r.user_seen_at);
+  // Usage stats are on unless you've turned them off in your account.
+  const track = !user.user_metadata?.no_tracking;
+  const shell = { member, businesses: businesses ?? [], workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials, askHint, askOpens, askSince, helpUnread, track };
   return { supabase, member, businesses: businesses ?? [], workspace: ws, ctx, terms, shell, viewing };
 }
 

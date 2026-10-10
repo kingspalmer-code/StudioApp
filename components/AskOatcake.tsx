@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, MotionConfig, useAnimate } from "motion/react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { track } from "@/lib/track";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
@@ -171,6 +172,7 @@ export default function AskOatcake({ hint = false, opens = 0, since = 0 }: { hin
     const question = q.trim();
     if (!question || busy) return;
     const history: Turn[] = [...turns, { role: "user", content: question }];
+    track("ask", { text: question.slice(0, 200) });
     setTurns([...history, { role: "assistant", content: "" }]);
     setDraft("");
     setBusy(true);
@@ -294,6 +296,18 @@ export default function AskOatcake({ hint = false, opens = 0, since = 0 }: { hin
                       )}
                     </motion.div>
                   ))
+                )}
+                {turns.length > 1 && !busy && (
+                  <Link
+                    className="ask-human"
+                    href={`/help?from=${encodeURIComponent(window.location.pathname)}&q=${encodeURIComponent([...turns].reverse().find((t) => t.role === "user")?.content ?? "")}`}
+                    onClick={() => {
+                      track("ask_to_person");
+                      close();
+                    }}
+                  >
+                    Still stuck? Message the Oatcake team
+                  </Link>
                 )}
               </div>
               <form

@@ -515,3 +515,80 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 /* Save appears in a settings row only once something in it has changed. It keeps its space so nothing shifts. */
 .save-when { opacity: 0; pointer-events: none; transition: opacity .2s; }
 .save-when.on { opacity: 1; pointer-events: auto; }
+
+/* Help & support: the message box and conversations. */
+.composer { background: var(--surface); border-radius: var(--r); padding: 12px 14px; margin: 14px 0 6px; }
+.composer textarea { width: 100%; border: 0; background: transparent; resize: vertical; min-height: 84px; font: inherit; color: var(--label); outline: none; }
+.composer-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: .5px solid var(--sep); padding-top: 10px; margin-top: 6px; }
+.composer-foot .file-btn { font-size: 14px; color: var(--label-2); cursor: pointer; }
+.composer-foot .file-btn.busy { opacity: .6; }
+.composer-shot { display: flex; align-items: center; gap: 12px; margin: 6px 0; }
+.composer-shot img { max-height: 90px; max-width: 160px; border-radius: 8px; border: .5px solid var(--sep); }
+.composer .error { margin: 8px 0 0; }
+.chat { display: grid; gap: 14px; margin: 18px 0; }
+.bubble-row { display: grid; justify-items: start; gap: 4px; }
+.bubble-row.own { justify-items: end; }
+.bubble { max-width: min(460px, 88%); background: var(--surface); border-radius: 16px 16px 16px 4px; padding: 10px 14px; font-size: 15px; line-height: 1.45; }
+.bubble-row.own .bubble { background: var(--accent); color: var(--accent-ink); border-radius: 16px 16px 4px 16px; }
+.bubble .copy { white-space: pre-wrap; overflow-wrap: anywhere; }
+.bubble-shot { display: block; margin-top: 8px; }
+.bubble-shot img { display: block; max-width: 100%; max-height: 320px; border-radius: 10px; }
+.bubble-row .when { font-size: 12px; padding: 0 4px; }
+.unread-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--blue); margin-right: 2px; }
+.help-status { background: var(--fill); color: var(--label-2); }
+.help-status.open { color: var(--orange); }
+.help-status.waiting { color: var(--blue); }
+.help-status.solved { color: var(--green); }
+.me-btn { position: relative; overflow: visible; }
+.me-btn img { border-radius: 50%; }
+.me-btn .me-dot { position: absolute; top: -1px; right: -1px; width: 10px; height: 10px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 2px var(--bg); }
+.ask-human { display: block; text-align: center; font-size: 13px; color: var(--label-2); margin: 14px 0 4px; text-decoration: underline; text-underline-offset: 3px; }
+.switch { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 46px; height: 28px; border-radius: 999px; background: var(--fill); cursor: pointer; transition: background .2s; margin: 0; }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .22s cubic-bezier(.3,.7,.4,1); }
+.switch:checked { background: var(--green); }
+.switch:checked::after { transform: translateX(18px); }
+.switch:disabled { opacity: .6; }
+.row input.switch { width: 46px; padding: 0; background: var(--fill); }
+.row input.switch:checked { background: var(--green); }
+
+/* Admin: overview, people and support. */
+.admin-nav { margin: 0 0 18px; }
+.admin-stats { margin: 6px 0 4px; }
+.admin-stats .stat { color: var(--label); display: grid; gap: 2px; }
+.admin-stats .stat small { font-size: 12px; color: var(--label-3); }
+.chart-card { padding: 16px 16px 12px; }
+.chart { display: flex; align-items: flex-end; gap: 3px; height: 120px; }
+.chart-col { flex: 1; height: 100%; display: flex; align-items: flex-end; gap: 1px; }
+.chart-col i { flex: 1; display: block; min-height: 2px; border-radius: 3px 3px 0 0; }
+.bar-active { background: var(--accent); opacity: .85; }
+.bar-signup { background: var(--orange); }
+.chart-key { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--label-2); }
+.chart-key i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.funnel-row .k { flex-basis: 170px; font-size: 14px; }
+.funnel-bar { display: block; height: 8px; border-radius: 99px; background: var(--fill); overflow: hidden; }
+.funnel-bar i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.funnel-n { flex: 0 0 56px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.funnel-n small { color: var(--red); font-weight: 600; }
+.admin-table .row { display: grid; grid-template-columns: minmax(0, 2.2fr) repeat(4, minmax(0, 1fr)); gap: 12px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.admin-table .row.nav-row > span:first-child, .people-table .row > span { min-width: 0; }
+.people-table .row { grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) minmax(0, .9fr) minmax(0, .8fr) minmax(0, 1fr); }
+.admin-table b, .admin-table small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.table-head { font-size: 12px !important; color: var(--label-2); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; min-height: 36px; }
+.steps { display: flex; gap: 3px; margin: 3px 0; }
+.steps i { width: 14px; height: 5px; border-radius: 3px; background: var(--fill); }
+.steps i.on { background: var(--green); }
+.tick { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: var(--fill); color: var(--label-3); }
+.tick.on { background: var(--green); color: #fff; }
+.timeline-day { font-size: 13px; font-weight: 600; color: var(--label-2); margin: 14px 4px 6px; }
+.timeline-row { font-size: 14px; min-height: 38px; padding-top: 8px; padding-bottom: 8px; }
+.timeline-row .when { flex: 0 0 64px; font-variant-numeric: tabular-nums; }
+.timeline-row.problem .ctl { color: var(--red); }
+.clamp { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 700px) {
+  .admin-table .table-head { display: none; }
+  .admin-table .row, .people-table .row { grid-template-columns: 1fr 1fr; }
+  .admin-table .row > span:first-child { grid-column: 1 / -1; }
+  .funnel-row .k { flex-basis: 120px; font-size: 13px; }
+}
+.admin-table small.m-label { display: none; }
+@media (max-width: 700px) { .admin-table small.m-label { display: inline; color: var(--label-2); } }

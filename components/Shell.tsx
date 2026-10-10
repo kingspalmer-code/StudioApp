@@ -6,6 +6,7 @@ import AskOatcake from "./AskOatcake";
 import BizBadge from "./BizBadge";
 import NavLinks from "./NavLinks";
 import TabBar from "./TabBar";
+import Tracker from "./Tracker";
 import { OatcakeMark } from "./OatcakeLogo";
 
 function linksFor(member: Member, workspace: Workspace, viewing: boolean) {
@@ -44,6 +45,8 @@ export default function Shell({
   askHint = false,
   askOpens = 0,
   askSince = 0,
+  helpUnread = false,
+  track = false,
   children,
 }: {
   member: Member;
@@ -56,6 +59,8 @@ export default function Shell({
   askHint?: boolean;
   askOpens?: number;
   askSince?: number;
+  helpUnread?: boolean;
+  track?: boolean;
   children: React.ReactNode;
 }) {
   // Clients see their own business's identity; the workspace owner and manager see Oatcake.
@@ -84,8 +89,9 @@ export default function Shell({
           <NavLinks links={links} />
           {member.role === "designer" && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake hint={askHint} opens={askOpens} since={askSince} />}
           {/* Your photo or initials, opening your account: settings, appearance and sign out live there, so the bar stays calm. */}
-          <Link href="/account" className="me-btn" aria-label="Your account and settings" data-tour="me">
+          <Link href="/account" className="me-btn" aria-label={helpUnread ? "Your account. New reply from Oatcake" : "Your account and settings"} data-tour="me">
             {avatar ? <img src={avatar} alt="" /> : initials}
+            {helpUnread && <span className="me-dot" />}
           </Link>
         </div>
       </header>
@@ -107,6 +113,7 @@ export default function Shell({
         )}
       </main>
       <TabBar links={links} />
+      {track && !viewing && <Tracker />}
     </div>
   );
 }

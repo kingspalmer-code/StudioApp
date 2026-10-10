@@ -4,6 +4,7 @@ import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { track } from "@/lib/track";
 
 // A short first-login tour of the Jobs page. The page dims, the part being explained lifts out
 // in a soft spotlight, and a small card says what it's for. It shows once per person (remembered
@@ -88,8 +89,13 @@ export default function Walkthrough({ force = false, job = "job", clients = "cus
     };
   }, [open, step, find]);
 
-  const finish = useCallback(() => {
+  const usableRef = useRef(usable);
+  const iRef = useRef(i);
+  usableRef.current = usable;
+  iRef.current = i;
+  const finish = useCallback((how: "done" | "skip") => {
     setOpen(false);
+    track(how === "done" ? "walkthrough_done" : "walkthrough_skip", { text: usableRef.current[iRef.current]?.title ?? "", step: iRef.current + 1 });
     try {
       localStorage.setItem(DONE_KEY, "1");
     } catch {}
@@ -101,7 +107,7 @@ export default function Walkthrough({ force = false, job = "job", clients = "cus
     if (!open) return;
     cardRef.current?.focus();
     const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape") finish();
+      if (e.key === "Escape") finish("skip");
       if (e.key === "ArrowRight") setI((n) => Math.min(n + 1, usable.length - 1));
       if (e.key === "ArrowLeft") setI((n) => Math.max(n - 1, 0));
     };
@@ -170,8 +176,8 @@ export default function Walkthrough({ force = false, job = "job", clients = "cus
                     <span key={n}>{n === i && <motion.i layoutId="walk-dot" transition={SPRING} />}</span>
                   ))}
                 </div>
-                {!last && <button type="button" className="link walk-skip" onClick={finish}>Skip</button>}
-                <motion.button type="button" className="btn small" whileTap={{ scale: 0.96 }} onClick={() => (last ? finish() : setI(i + 1))}>
+                {!last && <button type="button" className="link walk-skip" onClick={() => finish("skip")}>Skip</button>}
+                <motion.button type="button" className="btn small" whileTap={{ scale: 0.96 }} onClick={() => (last ? finish("done") : setI(i + 1))}>
                   {i === 0 ? "Show me" : last ? "Done" : "Next"}
                 </motion.button>
               </div>

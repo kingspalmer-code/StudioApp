@@ -19,7 +19,7 @@ export async function createWorkspace(_prev: State, formData: FormData): Promise
     ws_kind: get("kind"),
   });
   if (error) return { error: error.message };
-  revalidatePath("/admin");
+  revalidatePath("/admin/workspaces");
   return { ok: `Done. ${get("owner_name")} can now sign in at oatcake.xyz with ${get("email").toLowerCase()}.` };
 }
 
@@ -33,5 +33,5 @@ export async function viewWorkspace(id: string) {
 
 export async function stopViewing() {
   (await cookies()).delete(VIEW_COOKIE);
-  redirect("/admin");
+  redirect("/admin/workspaces");
 }

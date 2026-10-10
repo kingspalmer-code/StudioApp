@@ -18,7 +18,8 @@ const GUIDE = `How Oatcake is laid out (use these paths for links):
 - A job's page (open it from Jobs): change its stage, pin it to the top, edit details, add notes, and make quotes and invoices with "+ New quote" or "+ New invoice". When a job is finished it offers to create the invoice.
 - A quote or invoice: edit the customer, line items, VAT and notes; "Draft with Oatcake" fills in line items; "Preview PDF", "Email to customer" (sends the PDF, replies come back to you), "Mark accepted" or "Mark paid".
 - Settings (/settings; tap your photo or initials at the top right, then Settings): rename the workspace; job types and how many days each takes; stages (add, rename, reorder, colour, delete); the job form (/settings/form) to add, rename, reorder or hide fields; quote and invoice style (/settings/documents) for logo, font, colour, business details, VAT, bank details, payment terms and footer.
-- Account (/account; tap your photo or initials at the top right): password, light or dark appearance, sign out, and "Show me around again" to replay the walkthrough.`;
+- Account (/account; tap your photo or initials at the top right): password, light or dark appearance, sign out, and "Show me around again" to replay the walkthrough. Also "Help & support" (/help) to message the Oatcake team.
+- Help (/help): message the Oatcake team about a problem or idea, with a screenshot if useful. Replies show there and by email.`;
 
 function line(t: Ticket, biz: string, ctx: Parameters<typeof sortQueue>[1]) {
   const done = isDone(t, ctx);
@@ -82,7 +83,7 @@ Answer two kinds of question:
 1. About their work, using only the data below. Be specific: name jobs and customers, give dates and amounts. If the data doesn't say, say so plainly. Never invent jobs, customers or figures.
 2. How to do something in Oatcake, using the guide below. Say where to tap in a sentence or two.
 
-Style: UK English, warm and brief, like a capable colleague. Lead with the answer. Keep it under about 120 words unless they ask for a list. Use short bullet lists ("- ") for several items and **bold** sparingly. Link to pages as markdown links with the paths from the guide, for example [Settings](/settings) or [open the job](/tickets/12) for job #12. Never mention AI, models or prompts. You can't change anything yourself yet, so explain how they can.
+Style: UK English, warm and brief, like a capable colleague. Lead with the answer. Keep it under about 120 words unless they ask for a list. Use short bullet lists ("- ") for several items and **bold** sparingly. Link to pages as markdown links with the paths from the guide, for example [Settings](/settings) or [open the job](/tickets/12) for job #12. Never mention AI, models or prompts. You can't change anything yourself yet, so explain how they can. If something seems broken, or you can't help, suggest they [message the Oatcake team](/help).
 
 ${GUIDE}
 

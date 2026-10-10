@@ -5,6 +5,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { requireMember } from "@/lib/session";
 import ProfilePhoto from "./ProfilePhoto";
 import SetPassword from "./SetPassword";
+import UsageStats from "./UsageStats";
 
 export default async function AccountPage({ searchParams }: { searchParams: Promise<{ setup?: string }> }) {
   const { setup } = await searchParams;
@@ -42,6 +43,18 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                 <span className="k">Theme</span>
                 <div className="ctl" style={{ display: "flex", justifyContent: "flex-end" }}><ThemeToggle /></div>
               </div>
+            </div>
+
+            <div className="group" style={{ marginTop: 22 }}>
+              <Link href="/help" className="row nav-row">
+                {shell.helpUnread && <span className="unread-dot" aria-label="New reply" />}
+                <div className="ctl">
+                  <div style={{ fontWeight: 600 }}>Help &amp; support</div>
+                  <div className="when">{shell.helpUnread ? "Oatcake replied to your message" : "Message the Oatcake team"}</div>
+                </div>
+                <span className="when">›</span>
+              </Link>
+              <UsageStats on={shell.track} />
             </div>
 
             {(member.role === "designer" || shell.isAdmin) && (
