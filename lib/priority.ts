@@ -15,7 +15,7 @@ export const PRIORITIES: Priority[] = ["Standard", "High", "Urgent"];
 const PRIORITY_BUMP: Record<Priority, number> = { Standard: 0, High: 1, Urgent: 2 };
 
 export const STATUSES: { id: Status; label: string; color: string }[] = [
-  { id: "new", label: "New", color: "var(--accent)" },
+  { id: "new", label: "New", color: "var(--blue)" },
   { id: "progress", label: "In progress", color: "var(--indigo)" },
   { id: "review", label: "With client", color: "var(--purple)" },
   { id: "waiting", label: "Waiting on client", color: "var(--orange)" },

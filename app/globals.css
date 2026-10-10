@@ -1,10 +1,10 @@
-/* Apple-style system palette: grouped inset lists on a system-grey ground, translucent top bar. */
+/* Oatcake palette: Apple-style grouped lists on warm oat neutrals, with the Oatcake brown as the accent. */
 :root {
-  --bg: #f2f2f7; --surface: #ffffff; --surface-2: #f7f7fa; --fill: rgba(118,118,128,.12);
-  --label: #1c1c1e; --label-2: rgba(60,60,67,.62); --label-3: rgba(60,60,67,.32);
-  --sep: rgba(60,60,67,.18); --accent: #007aff; --accent-ink: #ffffff;
-  --red: #ff3b30; --orange: #ff9500; --green: #34c759; --indigo: #5856d6; --purple: #af52de; --pink: #ff2d55;
-  --bar: rgba(249,249,251,.78); --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 28px rgba(0,0,0,.08);
+  --bg: #f4efe7; --surface: #fffdf9; --surface-2: #f9f4ec; --fill: rgba(56,42,37,.08);
+  --label: #2a201c; --label-2: rgba(56,42,37,.64); --label-3: rgba(56,42,37,.34);
+  --sep: rgba(56,42,37,.14); --accent: #382a25; --accent-ink: #fefcf9;
+  --blue: #3a6ea5; --red: #d9412e; --orange: #d9822b; --green: #3f8f4f; --indigo: #5856a6; --purple: #94508f; --pink: #c8456b;
+  --bar: rgba(244,239,231,.82); --shadow: 0 1px 2px rgba(56,42,37,.06), 0 8px 28px rgba(56,42,37,.10);
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, "Segoe UI", Roboto, sans-serif;
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", system-ui, "Segoe UI", Roboto, sans-serif;
   --r: 12px;
@@ -12,11 +12,11 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #000000; --surface: #1c1c1e; --surface-2: #2c2c2e; --fill: rgba(118,118,128,.24);
-    --label: #f2f2f7; --label-2: rgba(235,235,245,.62); --label-3: rgba(235,235,245,.3);
-    --sep: rgba(84,84,88,.6); --accent: #0a84ff;
-    --red: #ff453a; --orange: #ff9f0a; --green: #30d158; --indigo: #5e5ce6; --purple: #bf5af2; --pink: #ff375f;
-    --bar: rgba(22,22,24,.78); --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 28px rgba(0,0,0,.5);
+    --bg: #17110f; --surface: #241c19; --surface-2: #2e2420; --fill: rgba(243,233,220,.10);
+    --label: #f3e9dc; --label-2: rgba(243,233,220,.64); --label-3: rgba(243,233,220,.32);
+    --sep: rgba(243,233,220,.14); --accent: #e6d4bc; --accent-ink: #382a25;
+    --blue: #7fa9d6; --red: #ff6b57; --orange: #f0a457; --green: #6fbf7e; --indigo: #9c9ae6; --purple: #d08ccb; --pink: #f07a9b;
+    --bar: rgba(23,17,15,.82); --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 28px rgba(0,0,0,.5);
     color-scheme: dark;
   }
 }
@@ -36,7 +36,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .seg { display: inline-flex; background: var(--fill); border-radius: 9px; padding: 2px; gap: 2px; max-width: 100%; overflow-x: auto; }
 .seg a, .seg button { border: 0; background: transparent; padding: 5px 14px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; color: var(--label); }
-.seg [aria-current="page"], .seg [aria-pressed="true"] { background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04); }
+.seg [aria-current="page"], .seg [aria-pressed="true"] { background: var(--surface); box-shadow: 0 1px 3px rgba(56,42,37,.14), 0 0 0 .5px rgba(56,42,37,.06); }
 
 main { max-width: 1180px; margin: 0 auto; padding: 20px 16px 64px; }
 .large { font: 700 34px/1.1 var(--font-display); letter-spacing: -.025em; margin: 6px 0 4px; text-wrap: balance; }

@@ -24,7 +24,7 @@ export default async function QueuePage({
   const stats = [
     { n: queue.filter((t) => startBy(t) <= 0).length, label: "Should start now", color: "var(--red)" },
     { n: queue.filter((t) => { const d = daysFromToday(t.deadline); return d >= 0 && d <= 7; }).length, label: "Due in the next 7 days" },
-    { n: queue.filter((t) => t.status === "new").length, label: "New, not started", color: "var(--accent)" },
+    { n: queue.filter((t) => t.status === "new").length, label: "New, not started", color: "var(--blue)" },
     { n: all.filter((t) => t.status === "waiting").length, label: "Waiting on client", color: "var(--orange)" },
   ];
 
