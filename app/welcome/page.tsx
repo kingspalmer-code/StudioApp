@@ -3,6 +3,9 @@ import OatcakeLogo from "@/components/OatcakeLogo";
 import { createClient } from "@/lib/supabase/server";
 import WelcomeForm from "./WelcomeForm";
 
+// The setup helper waits on Claude, which can take a little while.
+export const maxDuration = 60;
+
 // First stop for someone who has signed in but doesn't have a workspace yet.
 export default async function WelcomePage() {
   const supabase = await createClient();
@@ -19,7 +22,7 @@ export default async function WelcomePage() {
         <div className="login-logo">
           <OatcakeLogo height={36} />
         </div>
-        <WelcomeForm email={user.email ?? ""} hasPassword={Boolean(user.user_metadata?.has_password)} />
+        <WelcomeForm email={user.email ?? ""} hasPassword={Boolean(user.user_metadata?.has_password)} helper={Boolean(process.env.ANTHROPIC_API_KEY)} />
       </main>
     </div>
   );
