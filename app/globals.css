@@ -229,3 +229,8 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 .cust-edit .group { background: var(--surface-2); }
 .stage-form select { width: auto; flex: none; }
 .seg.stage-picker { flex-wrap: wrap; overflow: visible; }
+
+/* Admin looking inside someone else's workspace */
+.viewing-bar { max-width: 1180px; margin: 12px auto 0; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--fill); border-radius: 12px; font-size: 14px; width: calc(100% - 32px); }
+fieldset.read-only { border: 0; margin: 0; padding: 0; min-width: 0; }
+fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: not-allowed; }

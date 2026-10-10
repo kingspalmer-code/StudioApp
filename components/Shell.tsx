@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signOut } from "@/app/actions";
+import { stopViewing } from "@/app/admin/actions";
 import { brandFor, brandThemeCss } from "@/lib/brands";
 import type { Business, Member, Workspace } from "@/lib/types";
 import BizBadge from "./BizBadge";
@@ -7,9 +8,15 @@ import NavLinks from "./NavLinks";
 import { OatcakeMark } from "./OatcakeLogo";
 import ThemeToggle from "./ThemeToggle";
 
-function linksFor(member: Member, workspace: Workspace) {
+function linksFor(member: Member, workspace: Workspace, viewing: boolean) {
   if (member.role === "manager") return [{ href: "/overview", label: "Overview" }];
   if (member.role === "client") return [{ href: "/portal", label: "Requests" }];
+  if (viewing)
+    return [
+      { href: "/queue", label: workspace.kind === "trade" ? "Jobs" : "Queue" },
+      { href: "/overview", label: "Overview" },
+      ...(workspace.kind === "trade" ? [{ href: "/customers", label: "Customers" }] : [{ href: "/people", label: "People" }]),
+    ];
   if (workspace.kind === "trade")
     return [
       { href: "/queue", label: "Jobs" },
@@ -32,12 +39,14 @@ export default function Shell({
   businesses,
   workspace,
   isAdmin = false,
+  viewing = false,
   children,
 }: {
   member: Member;
   businesses: Business[];
   workspace: Workspace;
   isAdmin?: boolean;
+  viewing?: boolean;
   children: React.ReactNode;
 }) {
   // Clients see their own business's identity; the workspace owner and manager see Oatcake.
@@ -62,7 +71,7 @@ export default function Shell({
               <OatcakeMark height={22} />
             </Link>
           )}
-          <NavLinks links={linksFor(member, workspace)} />
+          <NavLinks links={linksFor(member, workspace, viewing)} />
           <form action={signOut} className="who">
             <Link href="/account">{member.full_name || member.email}</Link>
             {member.role === "designer" && <Link href="/settings">Settings</Link>}
@@ -72,7 +81,23 @@ export default function Shell({
           <ThemeToggle />
         </div>
       </header>
-      <main>{children}</main>
+      {viewing && (
+        <form action={stopViewing} className="viewing-bar">
+          <span>
+            Viewing <b>{workspace.name}</b>{workspace.owner_name ? ` (${workspace.owner_name})` : ""}. Read-only.
+          </span>
+          <button className="btn small" type="submit">Back to my workspace</button>
+        </form>
+      )}
+      <main>
+        {viewing ? (
+          <fieldset disabled className="read-only">
+            {children}
+          </fieldset>
+        ) : (
+          children
+        )}
+      </main>
     </div>
   );
 }

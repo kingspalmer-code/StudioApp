@@ -2,21 +2,21 @@
 
 import { revalidatePath } from "next/cache";
 import { STAGE_COLORS } from "@/lib/priority";
-import { requireMember } from "@/lib/session";
+import { requireEditor } from "@/lib/session";
 import { slugify } from "@/lib/workspace";
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const done = () => revalidatePath("/", "layout");
 
 export async function renameWorkspace(formData: FormData) {
-  const { supabase, workspace } = await requireMember(["designer"]);
+  const { supabase, workspace } = await requireEditor(["designer"]);
   const name = text(formData, "name");
   if (name) await supabase.from("workspaces").update({ name }).eq("id", workspace.id);
   done();
 }
 
 export async function saveStage(id: number, formData: FormData) {
-  const { supabase } = await requireMember(["designer"]);
+  const { supabase } = await requireEditor(["designer"]);
   const label = text(formData, "label");
   const color = text(formData, "color");
   if (!label) return;
@@ -28,7 +28,7 @@ export async function saveStage(id: number, formData: FormData) {
 }
 
 export async function addStage(formData: FormData) {
-  const { supabase, ctx, workspace } = await requireMember(["designer"]);
+  const { supabase, ctx, workspace } = await requireEditor(["designer"]);
   const label = text(formData, "label");
   if (!label) return;
   // New stages go just before the last one, which stays the "finished" stage.
@@ -47,7 +47,7 @@ export async function addStage(formData: FormData) {
 
 // Moves a stage up or down by swapping places with its neighbour.
 export async function moveStage(id: number, dir: -1 | 1) {
-  const { supabase, ctx } = await requireMember(["designer"]);
+  const { supabase, ctx } = await requireEditor(["designer"]);
   const i = ctx.stages.findIndex((s) => s.id === id);
   const j = i + dir;
   if (i < 0 || j < 0 || j >= ctx.stages.length) return;
@@ -58,7 +58,7 @@ export async function moveStage(id: number, dir: -1 | 1) {
 }
 
 export async function deleteStage(id: number) {
-  const { supabase, ctx } = await requireMember(["designer"]);
+  const { supabase, ctx } = await requireEditor(["designer"]);
   const stage = ctx.stages.find((s) => s.id === id);
   if (!stage || ctx.stages.length <= 2) return;
   const { count } = await supabase.from("tickets").select("id", { count: "exact", head: true }).eq("status", stage.key);
@@ -68,7 +68,7 @@ export async function deleteStage(id: number) {
 }
 
 export async function saveType(id: number, formData: FormData) {
-  const { supabase } = await requireMember(["designer"]);
+  const { supabase } = await requireEditor(["designer"]);
   const name = text(formData, "name");
   const lead = Math.max(0, Math.min(365, parseInt(text(formData, "lead_days"), 10) || 0));
   if (name) await supabase.from("job_types").update({ name, lead_days: lead }).eq("id", id);
@@ -76,7 +76,7 @@ export async function saveType(id: number, formData: FormData) {
 }
 
 export async function addType(formData: FormData) {
-  const { supabase, ctx, workspace } = await requireMember(["designer"]);
+  const { supabase, ctx, workspace } = await requireEditor(["designer"]);
   const name = text(formData, "name");
   const lead = Math.max(0, Math.min(365, parseInt(text(formData, "lead_days"), 10) || 3));
   if (!name) return;
@@ -86,14 +86,14 @@ export async function addType(formData: FormData) {
 }
 
 export async function deleteType(id: number) {
-  const { supabase, ctx } = await requireMember(["designer"]);
+  const { supabase, ctx } = await requireEditor(["designer"]);
   if (ctx.types.length <= 1) return;
   await supabase.from("job_types").delete().eq("id", id);
   done();
 }
 
 export async function saveCustomer(id: string | null, formData: FormData) {
-  const { supabase } = await requireMember(["designer"]);
+  const { supabase } = await requireEditor(["designer"]);
   const name = text(formData, "name");
   if (!name) return;
   const fields = {
@@ -110,7 +110,7 @@ export async function saveCustomer(id: string | null, formData: FormData) {
 
 // Only customers with no jobs can be removed, so no history is lost.
 export async function deleteCustomer(id: string) {
-  const { supabase } = await requireMember(["designer"]);
+  const { supabase } = await requireEditor(["designer"]);
   const { count } = await supabase.from("tickets").select("id", { count: "exact", head: true }).eq("business_id", id);
   if (count) return;
   await supabase.from("businesses").delete().eq("id", id);

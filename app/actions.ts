@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireMember } from "@/lib/session";
+import { requireEditor } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import type { Role, Status } from "@/lib/types";
 
@@ -13,21 +13,21 @@ export async function signOut() {
 }
 
 export async function setStatus(id: number, status: Status) {
-  const { supabase, ctx } = await requireMember(["designer"]);
+  const { supabase, ctx } = await requireEditor(["designer"]);
   if (!ctx.stages.some((s) => s.key === status)) return;
   await supabase.from("tickets").update({ status }).eq("id", id);
   revalidatePath("/", "layout");
 }
 
 export async function setPinned(id: number, pinned: boolean) {
-  const { supabase } = await requireMember(["designer"]);
+  const { supabase } = await requireEditor(["designer"]);
   await supabase.from("tickets").update({ pinned }).eq("id", id);
   revalidatePath("/", "layout");
 }
 
 // Quote, payment and site details on a trade job.
 export async function updateJob(id: number, formData: FormData) {
-  const { supabase } = await requireMember(["designer"]);
+  const { supabase } = await requireEditor(["designer"]);
   const amount = (k: string) => {
     const n = parseFloat(String(formData.get(k) ?? "").replace(/[£,\s]/g, ""));
     return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
@@ -45,7 +45,7 @@ export async function updateJob(id: number, formData: FormData) {
 }
 
 export async function deleteTicket(id: number) {
-  const { supabase } = await requireMember(["designer"]);
+  const { supabase } = await requireEditor(["designer"]);
   const { data: files } = await supabase.from("ticket_files").select("path").eq("ticket_id", id);
   if (files?.length) await supabase.storage.from("inspiration").remove(files.map((f) => f.path));
   await supabase.from("tickets").delete().eq("id", id);
@@ -56,13 +56,13 @@ export async function deleteTicket(id: number) {
 export async function addNote(id: number, formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return;
-  const { supabase, member } = await requireMember(["designer", "client"]);
+  const { supabase, member } = await requireEditor(["designer", "client"]);
   await supabase.from("ticket_notes").insert({ ticket_id: id, body, author_name: member.full_name || member.email });
   revalidatePath(`/tickets/${id}`);
 }
 
 export async function addMember(_prev: string | null, formData: FormData): Promise<string | null> {
-  const { supabase } = await requireMember(["designer"]);
+  const { supabase } = await requireEditor(["designer"]);
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const full_name = String(formData.get("full_name") ?? "").trim();
   const role = String(formData.get("role") ?? "") as Role;
@@ -77,7 +77,7 @@ export async function addMember(_prev: string | null, formData: FormData): Promi
 }
 
 export async function removeMember(email: string) {
-  const { supabase, member } = await requireMember(["designer"]);
+  const { supabase, member } = await requireEditor(["designer"]);
   if (email === member.email) return;
   await supabase.from("members").delete().eq("email", email);
   revalidatePath("/people");

@@ -1,12 +1,12 @@
 import Shell from "@/components/Shell";
 import TicketRow from "@/components/TicketRow";
-import { requireMember } from "@/lib/session";
+import { requireEditor } from "@/lib/session";
 import { isDone } from "@/lib/priority";
 import type { Ticket } from "@/lib/types";
 import NewRequestForm from "./NewRequestForm";
 
 export default async function PortalPage() {
-  const { supabase, member, businesses, ctx, workspace, shell } = await requireMember(["client", "designer"]);
+  const { supabase, member, businesses, ctx, workspace, shell } = await requireEditor(["client", "designer"]);
   const trade = workspace.kind === "trade";
   const owner = workspace.owner_name || "the studio";
   const isDesigner = member.role === "designer";
