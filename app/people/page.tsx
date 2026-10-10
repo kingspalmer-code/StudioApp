@@ -28,7 +28,7 @@ export default async function PeoplePage() {
             {(data ?? []).map((m) => {
               const b = m.business_id ? byId[m.business_id] : undefined;
               return (
-                <div className="row" key={m.email}>
+                <div className="row person-row" key={m.email}>
                   {b ? <BizBadge biz={b} /> : <span className="badge" style={{ width: 28, height: 28, background: "var(--fill)" }} />}
                   <div className="ctl">
                     <div style={{ fontWeight: 600 }}>{m.full_name || m.email}</div>
@@ -37,11 +37,13 @@ export default async function PeoplePage() {
                       {!hasSignedIn.has(m.email) && " · Not signed in yet"}
                     </div>
                   </div>
-                  {!hasSignedIn.has(m.email) && m.email !== member.email && <InviteButton email={m.email} />}
                   {m.email !== member.email && (
-                    <form action={removeMember.bind(null, m.email)}>
-                      <button className="link" style={{ color: "var(--red)" }} type="submit">Remove</button>
-                    </form>
+                    <span className="person-actions">
+                      {!hasSignedIn.has(m.email) && <InviteButton email={m.email} />}
+                      <form action={removeMember.bind(null, m.email)}>
+                        <button className="link" style={{ color: "var(--red)" }} type="submit">Remove</button>
+                      </form>
+                    </span>
                   )}
                 </div>
               );

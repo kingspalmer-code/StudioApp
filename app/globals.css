@@ -270,3 +270,13 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 .login-screen .seg.wide-seg button { flex: 1; color: var(--oat-cream); padding: 10px 12px; font-size: 14px; }
 .login-screen .seg.wide-seg button[aria-pressed="true"] { background: var(--oat-cream); color: #17110f; }
 @media (max-width: 480px) { .profiles { grid-template-columns: 1fr; } }
+
+/* People list: long emails wrap, and on phones the buttons sit under each person */
+.person-row .ctl .when { overflow-wrap: anywhere; }
+.person-actions { display: flex; align-items: center; gap: 16px; flex: none; }
+@media (max-width: 600px) {
+  .person-row { flex-wrap: wrap; row-gap: 6px; }
+  .person-actions { flex-basis: 100%; justify-content: flex-end; }
+}
+/* On phones the header scrolls away instead of covering a third of the screen */
+@media (max-width: 700px) { .bar { position: static; } }
