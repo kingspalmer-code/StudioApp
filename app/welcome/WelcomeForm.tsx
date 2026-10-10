@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { signOut } from "@/app/actions";
 import { PROFILES, type Profile } from "@/lib/profiles";
 import { createClient } from "@/lib/supabase/client";
 
@@ -66,6 +67,11 @@ export default function WelcomeForm({ email, hasPassword }: { email: string; has
           </div>
         </div>
         <button className="btn wide" style={{ marginTop: 16 }}>Next</button>
+        <div className="login-divider"><span>Were you invited?</span></div>
+        <p className="foot" style={{ textAlign: "center" }}>
+          If someone like your designer added you, they used a different email to {email}.{" "}
+          <button type="button" className="link" onClick={() => signOut()}>Sign out</button> and use that one instead.
+        </p>
       </form>
     );
 

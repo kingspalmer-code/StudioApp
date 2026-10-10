@@ -5,7 +5,7 @@ import { addMember } from "@/app/actions";
 import type { Business } from "@/lib/types";
 
 export default function AddMember({ businesses }: { businesses: Business[] }) {
-  const [error, action, pending] = useActionState(addMember, null);
+  const [state, action, pending] = useActionState(addMember, null);
   const [role, setRole] = useState("client");
   return (
     <form action={action}>
@@ -40,8 +40,9 @@ export default function AddMember({ businesses }: { businesses: Business[] }) {
           </div>
         )}
       </div>
-      <p className="foot">They sign in at this site with that email. No invite email is sent, so let them know.</p>
-      {error && <p className="error">{error}</p>}
+      <p className="foot">We&apos;ll email them a link straight away. It takes them straight to the right place, with no set-up questions.</p>
+      {state?.error && <p className="error">{state.error}</p>}
+      {state?.ok && <p className="foot" style={{ color: "var(--green)", fontWeight: 600 }}>{state.ok}</p>}
       <button className="btn wide" disabled={pending}>{pending ? "Adding…" : "Add person"}</button>
     </form>
   );

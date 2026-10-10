@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireEditor } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { appliesTo, readFields, type JobField } from "@/lib/fields";
+import { emailInvite } from "@/lib/invite";
 import type { Role, Status } from "@/lib/types";
 
 export async function signOut() {
@@ -64,19 +65,33 @@ export async function addNote(id: number, formData: FormData) {
   revalidatePath(`/tickets/${id}`);
 }
 
-export async function addMember(_prev: string | null, formData: FormData): Promise<string | null> {
-  const { supabase } = await requireEditor(["designer"]);
+export type AddState = { error?: string; ok?: string } | null;
+
+export async function addMember(_prev: AddState, formData: FormData): Promise<AddState> {
+  const { supabase, member, workspace } = await requireEditor(["designer"]);
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const full_name = String(formData.get("full_name") ?? "").trim();
   const role = String(formData.get("role") ?? "") as Role;
   const business_id = role === "client" ? String(formData.get("business_id") ?? "") || null : null;
-  if (!email.includes("@")) return "Enter a valid email address.";
-  if (!["designer", "manager", "client"].includes(role)) return "Choose a role.";
-  if (role === "client" && !business_id) return "Choose which business they work for.";
+  if (!email.includes("@")) return { error: "Enter a valid email address." };
+  if (!["designer", "manager", "client"].includes(role)) return { error: "Choose a role." };
+  if (role === "client" && !business_id) return { error: "Choose which business they work for." };
   const { error } = await supabase.from("members").upsert({ email, full_name, role, business_id });
-  if (error) return `Couldn't save: ${error.message}`;
+  if (error) return { error: `Couldn't save: ${error.message}` };
   revalidatePath("/people");
-  return null;
+  const failed = await emailInvite(email, member.full_name || workspace.owner_name || workspace.name, workspace.name);
+  return failed
+    ? { ok: `Added, but the invite email didn't send (${failed}). Use Send invite next to their name to try again.` }
+    : { ok: `Added. We've emailed ${email} a link to sign in.` };
+}
+
+// Emails someone already on the People page a fresh sign-in link.
+export async function inviteMember(email: string, _prev: AddState): Promise<AddState> {
+  const { supabase, member, workspace } = await requireEditor(["designer"]);
+  const { data: found } = await supabase.from("members").select("email").eq("email", email).maybeSingle();
+  if (!found) return { error: "They're not on your list." };
+  const failed = await emailInvite(email, member.full_name || workspace.owner_name || workspace.name, workspace.name);
+  return failed ? { error: failed } : { ok: "Invite sent" };
 }
 
 export async function removeMember(email: string) {

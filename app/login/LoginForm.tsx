@@ -22,7 +22,7 @@ export default function LoginForm({ initialError }: { initialError: string | nul
     setError(null);
     const { error } = await createClient().auth.signInWithPassword({ email: address(), password });
     setBusy(false);
-    if (error) setError("That email and password don't match. New here? Use \"Create an account\" below.");
+    if (error) setError("That email and password don't match. No password yet? Use \"Email me a link\" below.");
     else router.replace("/");
   }
 
@@ -35,7 +35,7 @@ export default function LoginForm({ initialError }: { initialError: string | nul
     const { data: allowed } = mode === "forgot" ? await supabase.rpc("is_member", { check_email: address() }) : { data: true };
     if (!allowed) {
       setBusy(false);
-      setError("There's no Oatcake account for that email yet. Use \"Create an account\" instead.");
+      setError("That email isn't on Oatcake yet. Check it's the one you were invited with, or use \"Get started\".");
       return;
     }
     const { error } = await supabase.auth.signInWithOtp({
@@ -96,12 +96,12 @@ export default function LoginForm({ initialError }: { initialError: string | nul
   if (mode === "new" || mode === "forgot") {
     return (
       <form onSubmit={sendLink}>
-        <p className="login-step">{mode === "new" ? "Create your account" : "Reset your password"}</p>
+        <p className="login-step">{mode === "new" ? "Get started" : "Sign in by email"}</p>
         <div className="group">{emailRow}</div>
         <p className="foot">
           {mode === "new"
-            ? "We'll email you a link to confirm it's you. If someone has invited you, use the email they added."
-            : "We'll email you a link. Open it to sign in and choose a new password."}
+            ? "We'll email you a link. If someone has added you to their Oatcake, use that email and it takes you straight there. Otherwise you'll set up your own."
+            : "For anyone without a password yet, or who's forgotten it. Open the link to sign in, then choose a password."}
         </p>
         {error && <p className="error">{error}</p>}
         <button className="btn wide" disabled={busy}>{busy ? "Sending…" : "Email me a link"}</button>
@@ -126,10 +126,10 @@ export default function LoginForm({ initialError }: { initialError: string | nul
       {error && <p className="error">{error}</p>}
       <button className="btn wide" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
       <p className="foot" style={{ textAlign: "center", marginTop: 12 }}>
-        <button type="button" className="link" onClick={switchTo("forgot")}>Forgot your password?</button>
+        <button type="button" className="link" onClick={switchTo("forgot")}>No password, or forgotten it? Email me a link</button>
       </p>
       <div className="login-divider"><span>New to Oatcake?</span></div>
-      <button type="button" className="btn wide outline" onClick={switchTo("new")}>Create an account</button>
+      <button type="button" className="btn wide outline" onClick={switchTo("new")}>Get started</button>
     </form>
   );
 }

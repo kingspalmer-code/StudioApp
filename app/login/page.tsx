@@ -13,7 +13,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <LoginForm
           initialError={
             error === "no-access"
-              ? "That email isn't set up yet. Use \"Create an account\" below."
+              ? "That email isn't on Oatcake yet. Use \"Get started\" below."
               : error === "link"
                 ? "That sign-in link has expired or was already used. Request a new one."
                 : null
