@@ -32,14 +32,14 @@ Each project type has a lead time in working days (`lib/priority.ts`). A request
    ```sql
    insert into public.members (email, full_name, role) values ('you@example.com', 'Kingsley', 'designer');
    ```
-4. Go to **Authentication > Email Templates**. In both **Magic Link** and **Confirm signup**, replace the body with:
+4. Go to **Authentication > Emails > Templates** ([direct link](https://supabase.com/dashboard/project/_/auth/templates)). In both **Magic Link** and **Confirm signup**, replace the body with:
    ```html
    <h2>Sign in to Studio Desk</h2>
    <p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email">Sign in</a></p>
    <p>Or enter this code: <strong>{{ .Token }}</strong></p>
    ```
    The code lets people sign in even when their email app opens links in a different browser.
-5. Supabase's built-in email sender only allows a few emails an hour. Before inviting clients, connect your own sender under **Project Settings > Authentication > SMTP Settings** ([Resend](https://resend.com) has a free tier).
+5. Supabase's built-in email sender only allows a few emails an hour. Before inviting clients, connect your own sender under **Authentication > Emails > SMTP Settings** ([Resend](https://resend.com) has a free tier).
 6. Copy the **Project URL** and **anon / publishable key** from **Project Settings > API**.
 
 ### 2. Vercel
