@@ -134,7 +134,7 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 :root { --oat-brown: #382a25; --oat-cream: #f3e9dc; }
 .login-screen { min-height: 100dvh; background: var(--oat-brown); color: var(--oat-cream); padding: 0 16px; display: flex; }
 .login-screen .auth { margin: auto; width: 100%; max-width: 400px; padding: 48px 0; }
-.login-logo { display: flex; justify-content: center; margin-bottom: 14px; }
+.login-logo { display: flex; justify-content: center; margin-bottom: 20px; }
 .login-sub { text-align: center; color: color-mix(in srgb, var(--oat-cream) 72%, transparent); margin: 0 0 26px; font-size: 14px; text-wrap: balance; }
 .login-screen .btn { background: var(--oat-cream); color: var(--oat-brown); }
 .login-screen .foot, .login-screen .foot .link { color: color-mix(in srgb, var(--oat-cream) 75%, transparent); }
@@ -142,3 +142,4 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 .login-screen .error { color: #ffb4a8; }
 .oatcake-word { font-family: ui-serif, "New York", Georgia, serif; font-weight: 600; letter-spacing: -.03em; line-height: 1; color: var(--oat-cream); }
 .login-screen .group { color: var(--label); }
+.brand-pill { background: var(--oat-brown); border-radius: 8px; padding: 7px 12px; display: inline-flex; box-shadow: inset 0 0 0 1px rgba(243,233,220,.14); }

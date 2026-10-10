@@ -7,7 +7,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <div className="login-screen">
       <main className="auth">
         <div className="login-logo">
-          <OatcakeLogo height={56} />
+          <OatcakeLogo height={44} />
         </div>
         <p className="login-sub">Design requests for The Brewery Tap, HopRocket, Boom Towers, Motherchip and Queens.</p>
         <LoginForm
