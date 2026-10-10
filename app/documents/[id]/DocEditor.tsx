@@ -115,8 +115,8 @@ export default function DocEditor({
           <p className="eyebrow">Line items</p>
           {ai && !readOnly && (
             <div className="doc-ai">
-              <input value={extra} onChange={(e) => setExtra(e.target.value)} placeholder="Anything to include? e.g. two site visits" aria-label="Notes for the AI draft" />
-              <button type="button" className="btn small" onClick={draft} disabled={drafting}>{drafting ? "Drafting…" : "✨ Draft with AI"}</button>
+              <input value={extra} onChange={(e) => setExtra(e.target.value)} placeholder="Anything to include? e.g. two site visits" aria-label="Notes for Oatcake's draft" />
+              <button type="button" className="btn small" onClick={draft} disabled={drafting}>{drafting ? "Drafting…" : "✨ Draft with Oatcake"}</button>
             </div>
           )}
         </div>

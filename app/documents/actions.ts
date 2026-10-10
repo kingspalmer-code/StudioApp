@@ -164,7 +164,7 @@ const ITEMS_SCHEMA = {
 } as const;
 
 export async function draftItems(id: number, extra: string): Promise<{ items?: LineItem[]; notes?: string; error?: string }> {
-  if (!process.env.ANTHROPIC_API_KEY) return { error: "AI drafting isn't switched on." };
+  if (!process.env.ANTHROPIC_API_KEY) return { error: "Drafting isn't switched on yet." };
   const { supabase, workspace } = await owner();
   const { data: row } = await supabase.from("documents").select("*").eq("id", id).maybeSingle();
   if (!row) return { error: "Not found" };
@@ -217,7 +217,7 @@ notes: one or two short sentences for the bottom of the ${KIND_LABEL[doc.kind].t
     return { items, notes: String(out?.notes ?? "").slice(0, 1500) };
   } catch (e) {
     console.error("draftItems", e);
-    return { error: "Couldn't reach the AI just now. Try again, or fill it in yourself." };
+    return { error: "Oatcake couldn't draft this just now. Try again, or fill it in yourself." };
   }
 }
 
