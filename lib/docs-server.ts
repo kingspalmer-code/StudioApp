@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { cleanItems, DEFAULT_SETTINGS, type Doc, type DocSettings } from "./documents";
+import { cleanItems, CUSTOM_FONT, DEFAULT_SETTINGS, FONTS, type Doc, type DocSettings } from "./documents";
 import { renderDocPdf } from "./pdf";
 
 // Server-side helpers for quotes and invoices. Every read goes through the signed-in person's
@@ -8,6 +8,33 @@ import { renderDocPdf } from "./pdf";
 export async function loadSettings(supabase: SupabaseClient, workspaceId: string): Promise<DocSettings> {
   const { data } = await supabase.from("doc_settings").select("*").eq("workspace_id", workspaceId).maybeSingle<DocSettings>();
   return { ...DEFAULT_SETTINGS, workspace_id: workspaceId, ...(data ?? {}), vat_rate: Number(data?.vat_rate ?? DEFAULT_SETTINGS.vat_rate) };
+}
+
+// The settings form, cleaned up. Used to save it, and to preview changes before they're saved.
+export function readSettingsForm(f: FormData) {
+  const str = (k: string, max: number) => String(f.get(k) ?? "").trim().slice(0, max);
+  const num = (k: string, d: number, max: number) => {
+    const n = Math.round(Number(f.get(k)));
+    return Number.isFinite(n) ? Math.max(0, Math.min(max, n)) : d;
+  };
+  const font = str("font", 20);
+  const accent = str("accent", 7);
+  return {
+    business_name: str("business_name", 120),
+    address: str("address", 400),
+    email: str("email", 200).toLowerCase(),
+    phone: str("phone", 60),
+    website: str("website", 200),
+    vat_registered: f.get("vat_registered") === "on",
+    vat_number: str("vat_number", 40),
+    vat_rate: Math.max(0, Math.min(100, Number(f.get("vat_rate")) || 20)),
+    bank_details: str("bank_details", 600),
+    payment_days: num("payment_days", 14, 365),
+    quote_days: num("quote_days", 30, 365),
+    footer: str("footer", 200),
+    font: font === CUSTOM_FONT || FONTS.some((x) => x.key === font) ? font : "helvetica",
+    accent: /^#[0-9a-f]{6}$/i.test(accent) ? accent : "#382a25",
+  };
 }
 
 export function asDoc(row: Record<string, unknown>): Doc {

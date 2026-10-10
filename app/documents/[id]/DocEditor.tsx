@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deleteDocument, draftItems, saveDocument, sendDocument, setDocStatus, type DocDraft } from "@/app/documents/actions";
-import { gbp, round2, totals, type Doc, type LineItem } from "@/lib/documents";
+import PdfSheet, { type PdfRequest } from "@/components/PdfSheet";
+import { docName, gbp, round2, totals, type Doc, type LineItem } from "@/lib/documents";
 
 export default function DocEditor({
   doc,
@@ -64,13 +65,11 @@ export default function DocEditor({
     return true;
   }
 
-  const openPdf = (download: boolean) =>
+  const [preview, setPreview] = useState<PdfRequest | null>(null);
+  const openPdf = () =>
     start(async () => {
-      const w = download ? null : window.open("", "_blank");
-      if (dirty && !(await save())) return w?.close();
-      const url = `/documents/${doc.id}/pdf${download ? "?download=1" : ""}`;
-      if (w) w.location.href = url;
-      else window.location.href = url;
+      if (dirty && !(await save())) return;
+      setPreview({ url: `/documents/${doc.id}/pdf?t=${Date.now()}`, filename: `${docName(doc)}${d.customer_name ? ` - ${d.customer_name}` : ""}.pdf`.replace(/[^\w .,&()-]/g, "") });
     });
 
   async function draft() {
@@ -96,112 +95,123 @@ export default function DocEditor({
   }
 
   return (
-    <fieldset disabled={readOnly || pending} className="doc-editor">
-      <p className="eyebrow">{quote ? "Prepared for" : "Bill to"}</p>
-      <div className="group">
-        <div className="row"><label htmlFor="cn">Name</label><div className="ctl"><input id="cn" value={d.customer_name} onChange={(e) => set("customer_name", e.target.value)} placeholder="Customer or business name" /></div></div>
-        <div className="row"><label htmlFor="ce">Email</label><div className="ctl"><input id="ce" type="email" value={d.customer_email} onChange={(e) => { set("customer_email", e.target.value); setTo(e.target.value); }} placeholder="Where to send it" /></div></div>
-        <div className="row"><label htmlFor="ca">Address</label><div className="ctl"><input id="ca" value={d.customer_address} onChange={(e) => set("customer_address", e.target.value)} placeholder="Optional" /></div></div>
-      </div>
-
-      <p className="eyebrow">What it&apos;s for</p>
-      <div className="group">
-        <div className="row"><label htmlFor="ti">Title</label><div className="ctl"><input id="ti" value={d.title} onChange={(e) => set("title", e.target.value)} /></div></div>
-        <div className="row"><label htmlFor="is">Date</label><div className="ctl"><input id="is" type="date" value={d.issued_on} onChange={(e) => set("issued_on", e.target.value)} /></div></div>
-        <div className="row"><label htmlFor="du">{quote ? "Valid until" : "Payment due"}</label><div className="ctl"><input id="du" type="date" value={d.due_on ?? ""} onChange={(e) => set("due_on", e.target.value || null)} /></div></div>
-      </div>
-
-      <div className="doc-items-head">
-        <p className="eyebrow">Line items</p>
-        {ai && !readOnly && (
-          <div className="doc-ai">
-            <input value={extra} onChange={(e) => setExtra(e.target.value)} placeholder="Anything to include? e.g. two site visits" aria-label="Notes for the AI draft" />
-            <button type="button" className="btn small" onClick={draft} disabled={drafting}>{drafting ? "Drafting…" : "✨ Draft with AI"}</button>
-          </div>
-        )}
-      </div>
-      <div className="group doc-items">
-        <div className="row doc-item head" aria-hidden="true">
-          <span className="desc">Description</span><span className="qty">Qty</span><span className="price">Price</span><span className="amt">Amount</span><span className="x" />
+    <>
+      <fieldset disabled={readOnly || pending} className="doc-editor">
+        <p className="eyebrow">{quote ? "Prepared for" : "Bill to"}</p>
+        <div className="group">
+          <div className="row"><label htmlFor="cn">Name</label><div className="ctl"><input id="cn" value={d.customer_name} onChange={(e) => set("customer_name", e.target.value)} placeholder="Customer or business name" /></div></div>
+          <div className="row"><label htmlFor="ce">Email</label><div className="ctl"><input id="ce" type="email" value={d.customer_email} onChange={(e) => { set("customer_email", e.target.value); setTo(e.target.value); }} placeholder="Where to send it" /></div></div>
+          <div className="row"><label htmlFor="ca">Address</label><div className="ctl"><input id="ca" value={d.customer_address} onChange={(e) => set("customer_address", e.target.value)} placeholder="Optional" /></div></div>
         </div>
-        {d.items.map((it, i) => (
-          <div className="row doc-item" key={i}>
-            <input className="desc" aria-label={`Item ${i + 1}`} value={it.description} onChange={(e) => setItem(i, { description: e.target.value })} placeholder="What it's for" />
-            <input className="qty" aria-label="Quantity" type="number" min={0} step="any" value={it.qty} onChange={(e) => setItem(i, { qty: Number(e.target.value) })} />
-            <input className="price" aria-label="Price (£)" type="number" step="0.01" value={it.unit_price} onChange={(e) => setItem(i, { unit_price: Number(e.target.value) })} />
-            <span className="amt">{gbp(round2((it.qty || 0) * (it.unit_price || 0)))}</span>
-            <button type="button" className="x" aria-label="Remove line" onClick={() => set("items", d.items.filter((_, j) => j !== i))}>×</button>
-          </div>
-        ))}
-        <div className="row">
-          <button type="button" className="link" onClick={() => set("items", [...d.items, { description: "", qty: 1, unit_price: 0 }])}>+ Add a line</button>
+
+        <p className="eyebrow">What it&apos;s for</p>
+        <div className="group">
+          <div className="row"><label htmlFor="ti">Title</label><div className="ctl"><input id="ti" value={d.title} onChange={(e) => set("title", e.target.value)} /></div></div>
+          <div className="row"><label htmlFor="is">Date</label><div className="ctl"><input id="is" type="date" value={d.issued_on} onChange={(e) => set("issued_on", e.target.value)} /></div></div>
+          <div className="row"><label htmlFor="du">{quote ? "Valid until" : "Payment due"}</label><div className="ctl"><input id="du" type="date" value={d.due_on ?? ""} onChange={(e) => set("due_on", e.target.value || null)} /></div></div>
         </div>
-      </div>
 
-      <div className="group doc-totals">
-        {vatRegistered && (
-          <label className="row">
-            <span className="k">Add VAT at {doc.vat_rate ?? vatRate}%</span>
-            <div className="ctl" style={{ textAlign: "right" }}><input type="checkbox" checked={d.vat} onChange={(e) => set("vat", e.target.checked)} /></div>
-          </label>
-        )}
-        {rate != null && (
-          <>
-            <div className="row"><span className="k">Subtotal</span><div className="ctl num">{gbp(t.subtotal)}</div></div>
-            <div className="row"><span className="k">VAT</span><div className="ctl num">{gbp(t.vat)}</div></div>
-          </>
-        )}
-        <div className="row total"><span className="k">{quote ? "Total" : "Amount due"}</span><div className="ctl num">{gbp(t.total)}</div></div>
-      </div>
-
-      <p className="eyebrow">Notes</p>
-      <div className="group">
-        <div className="row stack">
-          <textarea value={d.notes} onChange={(e) => set("notes", e.target.value)} placeholder={quote ? "What's included, timings, anything else" : "Thanks for your business"} rows={3} aria-label="Notes" />
-        </div>
-      </div>
-
-      {msg && <p className={msg.bad ? "error" : "foot"}>{msg.text}</p>}
-
-      {!readOnly && (
-        <>
-          <div className="doc-actions">
-            <button type="button" className="btn" onClick={() => start(async () => { if (await save()) setMsg({ text: "Saved." }); })} disabled={!dirty}>
-              {dirty ? "Save" : "Saved"}
-            </button>
-            <button type="button" className="btn plain" onClick={() => openPdf(false)}>Preview PDF</button>
-            <button type="button" className="btn plain" onClick={() => openPdf(true)}>Download</button>
-            {email && <button type="button" className="btn plain" onClick={() => setSending((s) => !s)}>Email to customer</button>}
-          </div>
-
-          {sending && (
-            <div className="group doc-send">
-              <div className="row"><label htmlFor="to">To</label><div className="ctl"><input id="to" type="email" value={to} onChange={(e) => setTo(e.target.value)} /></div></div>
-              <div className="row stack"><textarea value={note} onChange={(e) => setNote(e.target.value)} rows={6} aria-label="Message" /></div>
-              <div className="row">
-                <span className="when">The PDF is attached. Replies come back to you.</span>
-                <button type="button" className="btn small" onClick={send}>Send</button>
-              </div>
+        <div className="doc-items-head">
+          <p className="eyebrow">Line items</p>
+          {ai && !readOnly && (
+            <div className="doc-ai">
+              <input value={extra} onChange={(e) => setExtra(e.target.value)} placeholder="Anything to include? e.g. two site visits" aria-label="Notes for the AI draft" />
+              <button type="button" className="btn small" onClick={draft} disabled={drafting}>{drafting ? "Drafting…" : "✨ Draft with AI"}</button>
             </div>
           )}
-
-          <div className="doc-actions secondary">
-            {quote && doc.status !== "accepted" && (
-              <button type="button" className="btn plain small" onClick={() => start(() => setDocStatus(doc.id, "accepted"))}>Mark accepted</button>
-            )}
-            {!quote && doc.status !== "paid" && (
-              <button type="button" className="btn plain small" onClick={() => start(() => setDocStatus(doc.id, "paid"))}>Mark paid</button>
-            )}
-            <button
-              type="button"
-              className="btn danger small"
-              onClick={() => confirm(`Delete this ${quote ? "quote" : "invoice"}?`) && start(() => deleteDocument(doc.id))}
-            >
-              Delete
-            </button>
+        </div>
+        <div className="group doc-items">
+          <div className="row doc-item head" aria-hidden="true">
+            <span className="desc">Description</span><span className="qty">Qty</span><span className="price">Price</span><span className="amt">Amount</span><span className="x" />
           </div>
-        </>
-      )}
-    </fieldset>
+          {d.items.map((it, i) => (
+            <div className="row doc-item" key={i}>
+              <input className="desc" aria-label={`Item ${i + 1}`} value={it.description} onChange={(e) => setItem(i, { description: e.target.value })} placeholder="What it's for" />
+              <input className="qty" aria-label="Quantity" type="number" min={0} step="any" value={it.qty} onChange={(e) => setItem(i, { qty: Number(e.target.value) })} />
+              <input className="price" aria-label="Price (£)" type="number" step="0.01" value={it.unit_price} onChange={(e) => setItem(i, { unit_price: Number(e.target.value) })} />
+              <span className="amt">{gbp(round2((it.qty || 0) * (it.unit_price || 0)))}</span>
+              <button type="button" className="x" aria-label="Remove line" onClick={() => set("items", d.items.filter((_, j) => j !== i))}>×</button>
+            </div>
+          ))}
+          <div className="row">
+            <button type="button" className="link" onClick={() => set("items", [...d.items, { description: "", qty: 1, unit_price: 0 }])}>+ Add a line</button>
+          </div>
+        </div>
+
+        <div className="group doc-totals">
+          {vatRegistered && (
+            <label className="row">
+              <span className="k">Add VAT at {doc.vat_rate ?? vatRate}%</span>
+              <div className="ctl" style={{ textAlign: "right" }}><input type="checkbox" checked={d.vat} onChange={(e) => set("vat", e.target.checked)} /></div>
+            </label>
+          )}
+          {rate != null && (
+            <>
+              <div className="row"><span className="k">Subtotal</span><div className="ctl num">{gbp(t.subtotal)}</div></div>
+              <div className="row"><span className="k">VAT</span><div className="ctl num">{gbp(t.vat)}</div></div>
+            </>
+          )}
+          <div className="row total"><span className="k">{quote ? "Total" : "Amount due"}</span><div className="ctl num">{gbp(t.total)}</div></div>
+        </div>
+
+        <p className="eyebrow">Notes</p>
+        <div className="group">
+          <div className="row stack">
+            <textarea value={d.notes} onChange={(e) => set("notes", e.target.value)} placeholder={quote ? "What's included, timings, anything else" : "Thanks for your business"} rows={3} aria-label="Notes" />
+          </div>
+        </div>
+
+        {msg && <p className={msg.bad ? "error" : "foot"}>{msg.text}</p>}
+
+        {!readOnly && (
+          <>
+            <div className="doc-actions">
+              <button type="button" className="btn" onClick={() => start(async () => { if (await save()) setMsg({ text: "Saved." }); })} disabled={!dirty}>
+                {dirty ? "Save" : "Saved"}
+              </button>
+              <button type="button" className="btn plain" onClick={openPdf}>Preview PDF</button>
+              {email && <button type="button" className="btn plain" onClick={() => setSending((s) => !s)}>Email to customer</button>}
+            </div>
+
+            {sending && (
+              <div className="group doc-send">
+                <div className="row"><label htmlFor="to">To</label><div className="ctl"><input id="to" type="email" value={to} onChange={(e) => setTo(e.target.value)} /></div></div>
+                <div className="row stack"><textarea value={note} onChange={(e) => setNote(e.target.value)} rows={6} aria-label="Message" /></div>
+                <div className="row">
+                  <span className="when">The PDF is attached. Replies come back to you.</span>
+                  <button type="button" className="btn small" onClick={send}>Send</button>
+                </div>
+              </div>
+            )}
+
+            <div className="doc-actions secondary">
+              {quote && doc.status !== "accepted" && (
+                <button type="button" className="btn plain small" onClick={() => start(() => setDocStatus(doc.id, "accepted"))}>Mark accepted</button>
+              )}
+              {!quote && doc.status !== "paid" && (
+                <button type="button" className="btn plain small" onClick={() => start(() => setDocStatus(doc.id, "paid"))}>Mark paid</button>
+              )}
+              <button
+                type="button"
+                className="btn danger small"
+                onClick={() => confirm(`Delete this ${quote ? "quote" : "invoice"}?`) && start(() => deleteDocument(doc.id))}
+              >
+                Delete
+              </button>
+            </div>
+          </>
+        )}
+      </fieldset>
+      <PdfSheet
+        request={preview}
+        title={docName(doc)}
+        onClose={() => setPreview(null)}
+        actions={
+          email && !readOnly ? (
+            <button type="button" className="btn" onClick={() => { setPreview(null); setSending(true); }}>Email to customer</button>
+          ) : null
+        }
+      />
+    </>
   );
 }

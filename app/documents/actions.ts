@@ -4,42 +4,20 @@ import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { addDays, cleanItems, CUSTOM_FONT, docName, FONTS, gbp, KIND_LABEL, type DocKind, type LineItem } from "@/lib/documents";
-import { asDoc, loadSettings, pdfFor } from "@/lib/docs-server";
+import { addDays, cleanItems, CUSTOM_FONT, docName, gbp, KIND_LABEL, type DocKind, type LineItem } from "@/lib/documents";
+import { asDoc, loadSettings, pdfFor, readSettingsForm } from "@/lib/docs-server";
 import { requireEditor } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
 
 const owner = () => requireEditor(["designer"]);
 const today = () => new Date().toISOString().slice(0, 10);
-const str = (f: FormData, k: string, max = 500) => String(f.get(k) ?? "").trim().slice(0, max);
 
 // Settings → Quotes & invoices ---------------------------------------------------------------
 export async function saveDocSettings(formData: FormData) {
   const { supabase, workspace } = await owner();
-  const font = str(formData, "font", 20);
-  const accent = str(formData, "accent", 7);
-  const num = (k: string, d: number, max: number) => {
-    const n = Math.round(Number(formData.get(k)));
-    return Number.isFinite(n) ? Math.max(0, Math.min(max, n)) : d;
-  };
-  const { error } = await supabase.from("doc_settings").upsert({
-    workspace_id: workspace.id,
-    business_name: str(formData, "business_name", 120),
-    address: str(formData, "address", 400),
-    email: str(formData, "email", 200).toLowerCase(),
-    phone: str(formData, "phone", 60),
-    website: str(formData, "website", 200),
-    vat_registered: formData.get("vat_registered") === "on",
-    vat_number: str(formData, "vat_number", 40),
-    vat_rate: Math.max(0, Math.min(100, Number(formData.get("vat_rate")) || 20)),
-    bank_details: str(formData, "bank_details", 600),
-    payment_days: num("payment_days", 14, 365),
-    quote_days: num("quote_days", 30, 365),
-    footer: str(formData, "footer", 200),
-    font: font === CUSTOM_FONT || FONTS.some((f) => f.key === font) ? font : "helvetica",
-    accent: /^#[0-9a-f]{6}$/i.test(accent) ? accent : "#382a25",
-    updated_at: new Date().toISOString(),
-  });
+  const { error } = await supabase
+    .from("doc_settings")
+    .upsert({ workspace_id: workspace.id, ...readSettingsForm(formData), updated_at: new Date().toISOString() });
   if (error) throw new Error(error.message);
   revalidatePath("/settings/documents");
 }
