@@ -8,8 +8,10 @@ import { requireEditor } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
 import ClientRequests from "./ClientRequests";
 import NewRequestForm from "./NewRequestForm";
+import Walkthrough from "@/components/Walkthrough";
 
-export default async function PortalPage() {
+export default async function PortalPage({ searchParams }: { searchParams: Promise<{ tour?: string }> }) {
+  const { tour } = await searchParams;
   const { supabase, member, businesses, ctx, workspace, shell } = await requireEditor(["client", "designer"]);
   const trade = workspace.kind === "trade";
   const owner = workspace.owner_name || "the studio";
@@ -57,7 +59,7 @@ export default async function PortalPage() {
         />
 
         <p className="eyebrow">In progress</p>
-        <div className="group">
+        <div className="group" data-tour="in-progress">
           {open.length ? (
             open.map((t) => <TicketRow key={t.id} t={t} biz={myBiz} ctx={ctx} showBusiness={false} />)
           ) : (
@@ -71,7 +73,7 @@ export default async function PortalPage() {
               <p className="eyebrow">Completed</p>
               <Link href="/portal/archive" className="eyebrow-link">See all {finished.length} ›</Link>
             </div>
-            <div className="gallery">
+            <div className="gallery" data-tour="completed">
               {finished.slice(0, 6).map((t) => (
                 <Link key={t.id} href={`/tickets/${t.id}`} className="gallery-card">
                   <span className="gallery-img">
@@ -84,6 +86,8 @@ export default async function PortalPage() {
             </div>
           </>
         )}
+
+        <Walkthrough force={tour === "1"} client={{ business: myBiz?.name ?? "", studio: owner }} />
 
         <p className="foot portal-foot">
           <Link href="/portal/brand">Change your logo and colour</Link>

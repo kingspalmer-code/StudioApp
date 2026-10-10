@@ -54,6 +54,12 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                 </div>
                 <span className="when">›</span>
               </Link>
+              {member.role === "client" && (
+                <Link href="/portal?tour=1" className="row nav-row">
+                  <div className="ctl" style={{ fontWeight: 600 }}>Show me around again</div>
+                  <span className="when">›</span>
+                </Link>
+              )}
               <UsageStats on={shell.track} />
             </div>
 

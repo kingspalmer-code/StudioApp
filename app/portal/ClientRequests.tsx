@@ -24,6 +24,7 @@ export default function ClientRequests({ startOpen, form }: { startOpen: boolean
         <button
           type="button"
           className="btn wide new-request-btn"
+          data-tour="new-request"
           onClick={() => {
             setSent("");
             setOpen(true);
@@ -43,7 +44,7 @@ export default function ClientRequests({ startOpen, form }: { startOpen: boolean
             transition={{ type: "spring", stiffness: 260, damping: 32 }}
             style={{ overflow: "hidden" }}
           >
-            <div className="request-drawer-head">
+            <div className="request-drawer-head" data-tour="new-request">
               <b>New request</b>
               {!startOpen || round > 0 ? (
                 <button type="button" className="link" onClick={() => setOpen(false)}>Cancel</button>

@@ -15,8 +15,28 @@ const SPRING = { type: "spring", stiffness: 260, damping: 30 } as const;
 const SOFT = { type: "spring", stiffness: 170, damping: 26 } as const;
 const DONE_KEY = "oc-walkthrough-done";
 
-export default function Walkthrough({ force = false, job = "job", clients = "customers" }: { force?: boolean; job?: string; clients?: string }) {
-  const steps: Step[] = useMemo(() => [
+export default function Walkthrough({
+  force = false,
+  job = "job",
+  clients = "customers",
+  client,
+}: {
+  force?: boolean;
+  job?: string;
+  clients?: string;
+  // For a client's portal: their business and the studio they're working with.
+  client?: { business: string; studio: string };
+}) {
+  const home = client ? "/portal" : "/queue";
+  const business = client?.business;
+  const studio = client?.studio;
+  const steps: Step[] = useMemo(() => studio != null ? [
+    { title: business ? `Welcome, ${business}` : "Welcome", text: `This is where you send ${studio} design requests and see how they're going. A quick look around.` },
+    { target: "new-request", title: "Need something?", text: "Tap here whenever you need something designed. Not sure what to ask for? Oatcake helps you write the brief." },
+    { target: "in-progress", title: "Where everything's up to", text: "Each request shows its stage, so you can see progress without chasing." },
+    { target: ["completed", "in-progress"], title: "Finished work", text: "Finished requests land in Completed with their files to view and download. Everything is kept in your archive." },
+    { target: "me", title: "You", text: "Help, your password and signing out are in here. You can replay this tour from there too." },
+  ] : [
     { title: "Welcome to Oatcake", text: "A quick look around. It takes about twenty seconds." },
     { target: "summary", title: "What needs you", text: `One line telling you what to start now and what's due this week.` },
     { target: "list", title: "Your next move, at the top", text: `Every open ${job}, ordered by when to start it, worked back from the deadline. Tap one to move it on, add notes or send a quote.` },
@@ -24,7 +44,7 @@ export default function Walkthrough({ force = false, job = "job", clients = "cus
     { target: "new", title: `Add a ${job}`, text: `Add a ${job} the moment it comes in. New ${clients} are saved for you.` },
     { target: "ask", title: "Ask Oatcake", text: "Stuck, or after a quick answer? Ask about your jobs, money or how to do something." },
     { target: "me", title: "Make it yours", text: `Settings, your photo, light or dark, and sign out are all in here. Settings holds your stages, the ${job} form and your quote style.` },
-  ], [job, clients]);
+  ], [job, clients, business, studio]);
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [i, setI] = useState(0);
@@ -100,8 +120,8 @@ export default function Walkthrough({ force = false, job = "job", clients = "cus
       localStorage.setItem(DONE_KEY, "1");
     } catch {}
     createClient().auth.updateUser({ data: { walkthrough_done: true } });
-    if (force) router.replace("/queue");
-  }, [force, router]);
+    if (force) router.replace(home);
+  }, [force, router, home]);
 
   useEffect(() => {
     if (!open) return;
