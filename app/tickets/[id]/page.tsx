@@ -9,6 +9,10 @@ import { dueLabel, formatDate, isDone, money, startBy, startLabel } from "@/lib/
 import { requireMember } from "@/lib/session";
 import type { Note, Ticket, TicketFile } from "@/lib/types";
 import DeleteTicket from "./DeleteTicket";
+import Link from "next/link";
+import { createDocument } from "@/app/documents/actions";
+import { docName, gbp, STATUS_LABEL } from "@/lib/documents";
+import { asDoc } from "@/lib/docs-server";
 
 const IMAGE = /\.(png|jpe?g|gif|webp|svg)$/i;
 
@@ -20,11 +24,15 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   const { data: t } = await supabase.from("tickets").select("*").eq("id", id).maybeSingle<Ticket>();
   if (!t) notFound();
 
-  const [{ data: notes }, { data: files }, { data: fields }] = await Promise.all([
+  const [{ data: notes }, { data: files }, { data: fields }, { data: docRows }] = await Promise.all([
     supabase.from("ticket_notes").select("*").eq("ticket_id", id).order("created_at").returns<Note[]>(),
     supabase.from("ticket_files").select("*").eq("ticket_id", id).order("created_at").returns<TicketFile[]>(),
     supabase.from("job_fields").select("*").order("position").order("id").returns<JobField[]>(),
+    member.role === "designer"
+      ? supabase.from("documents").select("*").eq("ticket_id", id).order("created_at")
+      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
   ]);
+  const docs = (docRows ?? []).map(asDoc);
   const signed = files?.length
     ? (await supabase.storage.from("inspiration").createSignedUrls(files.map((f) => f.path), 3600)).data ?? []
     : [];
@@ -140,6 +148,34 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           </>
         )}
 
+        {isDesigner && (
+          <>
+            <p className="eyebrow">Quotes &amp; invoices</p>
+            {done && !docs.some((d) => d.kind === "invoice") && !viewing && (
+              <form action={createDocument.bind(null, t.id, "invoice")} className="notice doc-nudge">
+                <span>This {terms.job}&apos;s finished. Send the invoice?</span>
+                <button className="btn small" type="submit">Create invoice</button>
+              </form>
+            )}
+            <div className="group">
+              {docs.map((d) => (
+                <Link key={d.id} href={`/documents/${d.id}`} className="row nav-row">
+                  <div className="ctl">
+                    <div style={{ fontWeight: 600 }}>{docName(d)}</div>
+                    <div className="when">{gbp(d.total)}{d.sent_to ? ` · sent to ${d.sent_to}` : ""}</div>
+                  </div>
+                  <span className={`chip doc-status ${d.status}`}>{STATUS_LABEL[d.status]}</span>
+                </Link>
+              ))}
+              {!viewing && (
+                <div className="row doc-make">
+                  <form action={createDocument.bind(null, t.id, "quote")}><button className="btn plain small" type="submit">+ New quote</button></form>
+                  <form action={createDocument.bind(null, t.id, "invoice")}><button className="btn plain small" type="submit">+ New invoice</button></form>
+                </div>
+              )}
+            </div>
+          </>
+        )}
         {isDesigner && !viewing && editable.length > 0 && (
           <details className="edit-details">
             <summary className="btn plain small">Edit details</summary>

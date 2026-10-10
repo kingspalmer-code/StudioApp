@@ -40,6 +40,17 @@ export default async function SettingsPage() {
           </Link>
         </div>
 
+        <p className="eyebrow">Quotes &amp; invoices</p>
+        <div className="group">
+          <Link href="/settings/documents" className="row nav-row">
+            <div className="ctl">
+              <div style={{ fontWeight: 600 }}>Your quote and invoice style</div>
+              <div className="when">Logo, font, colour, business and bank details</div>
+            </div>
+            <span className="when">›</span>
+          </Link>
+        </div>
+
         <p className="eyebrow">Stages</p>
         <div className="group">
           {ctx.stages.map((s, i) => (
