@@ -216,13 +216,85 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 @media (max-width: 700px) {
   .bar-in > nav.seg, .bar-in > .who, .bar-in > .theme-toggle { display: none; }
   .tabbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--bar); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-top: .5px solid var(--sep); padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px)); }
-  .tabbar a { flex: 1; display: grid; justify-items: center; gap: 2px; color: var(--label-3); font-size: 10.5px; font-weight: 600; padding: 2px 0; -webkit-tap-highlight-color: transparent; }
-  .tabbar a svg { width: 24px; height: 24px; }
+  .tabbar a, .tabbar button { border: 0; background: none; cursor: pointer; font-family: inherit; flex: 1; display: grid; justify-items: center; gap: 2px; color: var(--label-3); font-size: 10.5px; font-weight: 600; padding: 2px 0; -webkit-tap-highlight-color: transparent; }
+  .tabbar a svg, .tabbar button svg { width: 24px; height: 24px; }
   .tabbar a[aria-current="page"] { color: var(--accent); }
-  .tabbar a.add svg { width: 30px; height: 30px; padding: 5px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); margin-top: -3px; }
-  .tabbar a.add { color: var(--label-2); }
+  .tabbar .add svg { width: 30px; height: 30px; padding: 5px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); margin-top: -3px; }
+  .tabbar .add { color: var(--label-2); }
   main.has-tabbar { padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* iPad and desktop: the top bar turns into a slim rail down the left, with create at the top,
+   the sections as icons, and Ask Oatcake and your account at the bottom. */
+.rail-new, .rail-nav { display: none; }
+@media (min-width: 701px) {
+  .has-rail { padding-left: 68px; }
+  .has-rail > .bar { position: fixed; top: 0; bottom: 0; left: 0; width: 68px; border-bottom: 0; border-right: .5px solid var(--sep); background: var(--surface-2); backdrop-filter: none; -webkit-backdrop-filter: none; z-index: 25; }
+  .has-rail > .bar .bar-in { height: 100%; max-width: none; flex-direction: column; flex-wrap: nowrap; padding: 16px 0 18px; gap: 6px; }
+  .has-rail > .bar .brand { display: none; }
+  .rail-new { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 0; cursor: pointer; background: var(--accent); color: var(--accent-ink); margin-bottom: 10px; flex: none; transition: transform .15s; }
+  .rail-new:hover { transform: scale(1.06); }
+  .rail-new svg { width: 20px; height: 20px; }
+  .rail-nav { display: flex; flex-direction: column; gap: 6px; margin-bottom: auto; }
+  .rail-nav a { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; color: var(--label-2); transition: background .15s, color .15s; }
+  .rail-nav a:hover { color: var(--label); background: var(--fill); }
+  .rail-nav a[aria-current="page"] { color: var(--label); background: var(--fill); }
+  .rail-nav a[aria-current="page"]::before { content: ""; position: absolute; left: -12px; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+  .rail-nav svg { width: 22px; height: 22px; }
+  .has-rail > .bar .ask-btn { width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: 12px; background: transparent; color: var(--label); }
+  .has-rail > .bar .ask-btn:hover { background: var(--fill); }
+  .has-rail > .bar .ask-btn span { display: none; }
+  .has-rail > .bar .ask-btn .oc-biscuit { width: 28px; height: 28px; --oat-fill: color-mix(in srgb, var(--accent) 22%, var(--surface)); }
+  .has-rail > .bar .ask-hint { right: auto; left: calc(100% + 10px); top: 50%; margin-top: -15px; transform-origin: left center; }
+  .has-rail > .bar .me-btn { width: 34px; height: 34px; margin-top: 6px; }
+}
+
+/* Create new: dark tiles, a sheet on phones and a panel beside the rail on bigger screens.
+   It keeps the dark roast in both themes, so it reads as a layer above the page. */
+.ct-layer { position: fixed; inset: 0; z-index: 60; }
+.ct-scrim { position: absolute; inset: 0; background: rgba(15,10,8,.36); }
+.ct-panel { position: absolute; left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); background: #1f1815; color: #f3e9dc; border-radius: 30px; padding: 10px 14px 16px; box-shadow: 0 20px 60px rgba(0,0,0,.35); max-height: calc(100dvh - 60px); overflow: auto; }
+.ct-grab { width: 36px; height: 5px; border-radius: 3px; background: rgba(243,233,220,.28); margin: 0 auto 14px; }
+.ct-title { display: flex; align-items: center; gap: 4px; font-size: 17px; font-weight: 600; margin: 0 6px 14px; letter-spacing: -.01em; }
+.ct-back { border: 0; background: none; color: inherit; cursor: pointer; display: grid; place-items: center; width: 30px; height: 30px; margin-left: -8px; border-radius: 8px; }
+.ct-back svg { width: 20px; height: 20px; }
+.ct-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ct-tile { position: relative; border: 0; cursor: pointer; text-align: left; font: inherit; color: inherit; background: #2c231f; border-radius: 18px; aspect-ratio: 1 / .96; padding: 14px 13px 12px; display: flex; flex-direction: column; justify-content: space-between; transition: background .15s; -webkit-tap-highlight-color: transparent; }
+.ct-tile:hover, .ct-tile:focus-visible { background: #3a2e29; }
+.ct-tile:active { transform: scale(.97); }
+.ct-tile svg { width: 30px; height: 30px; opacity: .92; }
+.ct-tile span { font-size: 14px; font-weight: 500; }
+.ct-tile kbd { display: none; position: absolute; top: 10px; left: 13px; font: 600 11px var(--font); color: rgba(243,233,220,.4); }
+.ct-task { display: flex; gap: 8px; }
+.ct-task input { flex: 1; min-width: 0; border: 0; outline: none; background: #2c231f; color: inherit; border-radius: 14px; padding: 12px 14px; }
+.ct-task input::placeholder { color: rgba(243,233,220,.35); }
+.ct-add { border: 0; cursor: pointer; border-radius: 14px; padding: 0 18px; font-weight: 600; background: #e6d4bc; color: #382a25; }
+.ct-add:disabled { opacity: .6; }
+.ct-foot { font-size: 13px; color: rgba(243,233,220,.5); margin: 10px 6px 2px; }
+.ct-jobs { display: flex; flex-direction: column; gap: 4px; max-height: 50vh; overflow: auto; }
+.ct-job { border: 0; cursor: pointer; text-align: left; font: inherit; color: inherit; background: #2c231f; border-radius: 12px; padding: 11px 14px; display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.ct-job:hover, .ct-job:focus-visible { background: #3a2e29; }
+.ct-job span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-job small { flex: none; color: rgba(243,233,220,.5); font-size: 12.5px; }
+.ct-job:disabled { opacity: .5; cursor: default; }
+@media (min-width: 701px) {
+  .ct-scrim { background: rgba(15,10,8,.12); }
+  .ct-panel { left: 76px; right: auto; top: 14px; bottom: auto; width: 380px; border-radius: 20px; padding: 16px; max-height: calc(100vh - 28px); }
+  .ct-grab { display: none; }
+  .ct-title { font-size: 15px; margin: 2px 4px 12px; }
+  .ct-grid { gap: 7px; }
+  .ct-tile { aspect-ratio: auto; height: 104px; border-radius: 14px; padding: 11px 12px; }
+  .ct-tile svg { width: 26px; height: 26px; margin-top: 14px; }
+  .ct-tile span { font-size: 13.5px; }
+  .ct-tile kbd { display: block; }
+}
+:root[data-theme="dark"] .ct-panel { background: #0f0b0a; box-shadow: 0 0 0 .5px rgba(243,233,220,.12), 0 20px 60px rgba(0,0,0,.5); }
+:root[data-theme="dark"] .ct-tile, :root[data-theme="dark"] .ct-job, :root[data-theme="dark"] .ct-task input { background: #1e1714; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ct-panel { background: #0f0b0a; box-shadow: 0 0 0 .5px rgba(243,233,220,.12), 0 20px 60px rgba(0,0,0,.5); }
+  :root:not([data-theme="light"]) .ct-tile, :root:not([data-theme="light"]) .ct-job, :root:not([data-theme="light"]) .ct-task input { background: #1e1714; }
+}
+#add { scroll-margin-top: 24px; }
 
 /* Titles, headline numbers and business names use the Oatcake title face. */
 .large, .stat b, .biz h4, .smart-tile b { font-family: var(--font-title); letter-spacing: 0; }

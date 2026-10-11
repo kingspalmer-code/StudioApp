@@ -4,10 +4,13 @@ import { brandFor, brandThemeCss } from "@/lib/brands";
 import type { Business, Member, Workspace } from "@/lib/types";
 import AskOatcake from "./AskOatcake";
 import BizBadge from "./BizBadge";
+import CreateMenu from "./CreateMenu";
 import NavLinks from "./NavLinks";
+import RailNav from "./RailNav";
 import TabBar from "./TabBar";
 import Tracker from "./Tracker";
 import { OatcakeMark } from "./OatcakeLogo";
+import { termsFor } from "@/lib/workspace";
 
 function linksFor(member: Member, workspace: Workspace, viewing: boolean) {
   if (member.role === "manager") return [{ href: "/overview", label: "Overview" }];
@@ -67,9 +70,13 @@ export default function Shell({
   const biz = member.role === "client" ? businesses.find((b) => b.id === member.business_id) : undefined;
   const brand = biz ? brandFor(biz) : undefined;
   const links = linksFor(member, workspace, viewing);
+  // Anyone with more than one section gets the sidebar rail on bigger screens (the tab bar on phones).
+  const rail = links.length > 1;
+  const canCreate = member.role === "designer" && !viewing;
+  const terms = termsFor(workspace.kind);
 
   return (
-    <div className={brand ? "brand-theme" : undefined}>
+    <div className={[brand ? "brand-theme" : "", rail ? "has-rail" : ""].filter(Boolean).join(" ") || undefined}>
       {brand && <style>{brandThemeCss(".brand-theme", brand)}</style>}
       <header className="bar">
         <div className="bar-in">
@@ -86,7 +93,7 @@ export default function Shell({
               <OatcakeMark height={22} />
             </Link>
           )}
-          <NavLinks links={links} />
+          {rail ? <RailNav links={links} canCreate={canCreate} /> : <NavLinks links={links} />}
           {member.role === "designer" && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake hint={askHint} opens={askOpens} since={askSince} />}
           {/* Your photo or initials, opening your account: settings, appearance and sign out live there, so the bar stays calm. */}
           <Link href="/account" className="me-btn" aria-label={helpUnread ? "Your account. New reply from Oatcake" : "Your account and settings"} data-tour="me">
@@ -113,6 +120,14 @@ export default function Shell({
         )}
       </main>
       <TabBar links={links} />
+      {canCreate && (
+        <CreateMenu
+          trade={workspace.kind === "trade"}
+          Job={terms.Job}
+          Client={terms.Client}
+          clientNames={Object.fromEntries(businesses.map((b) => [b.id, b.name]))}
+        />
+      )}
       {track && !viewing && <Tracker />}
     </div>
   );
