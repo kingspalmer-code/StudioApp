@@ -16,7 +16,7 @@ export default function LoginIntro({ children }: { children: React.ReactNode }) 
     const root = document.documentElement;
     if (!root.classList.contains("oc-intro") || !scope.current) return;
     const logo = scope.current.querySelector<HTMLElement>(".login-logo");
-    const rest = Array.from(scope.current.querySelectorAll<HTMLElement>(".login-sub, .login-wheels, .login-invited, .auth form > *, .auth > div:not(.login-logo) > *"));
+    const rest = Array.from(scope.current.querySelectorAll<HTMLElement>(".login-wheels, .auth form > *, .auth > div:not(.login-logo) > *"));
     const done = () => {
       try { sessionStorage.setItem(INTRO_KEY, "1"); } catch {}
     };

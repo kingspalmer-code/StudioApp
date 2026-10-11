@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, MotionConfig } from "motion/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 const DOES = [
   "projects",
@@ -13,7 +13,7 @@ const DOES = [
   "briefs",
   "file delivery",
   "client portals",
-  "planning your day",
+  "daily plans",
 ];
 
 const FOR = [
@@ -53,18 +53,10 @@ const ROW = 28;
 const spring = { type: "spring", stiffness: 170, damping: 24, mass: 0.9 } as const;
 
 // A word that turns over by itself like an alarm-clock picker: the current word rolls up and
-// away as the next rolls in from below, and the space it takes eases to fit each word.
+// away as the next rolls in from below. The column is as wide as the longest word, so the words
+// stay anchored left and nothing around them moves.
 function Wheel({ items, every, delay }: { items: string[]; every: number; delay: number }) {
   const [at, setAt] = useState(0);
-  const [widths, setWidths] = useState<number[] | null>(null);
-  const sizer = useRef<HTMLSpanElement>(null);
-
-  useLayoutEffect(() => {
-    const measure = () => setWidths(Array.from(sizer.current?.children ?? [], (el) => (el as HTMLElement).offsetWidth));
-    measure();
-    document.fonts?.ready.then(measure);
-  }, []);
-
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | undefined;
     const start = setTimeout(() => {
@@ -81,14 +73,8 @@ function Wheel({ items, every, delay }: { items: string[]; every: number; delay:
 
   const n = items.length;
   return (
-    <motion.span
-      className="wheel"
-      initial={false}
-      style={widths ? { width: widths[0] } : undefined}
-      animate={widths ? { width: widths[at % n] } : undefined}
-      transition={spring}
-    >
-      <span className="wheel-size" ref={sizer}>
+    <span className="wheel" aria-hidden="true">
+      <span className="wheel-size">
         {items.map((w) => <span key={w}>{w}</span>)}
       </span>
       {items.map((w, i) => {
@@ -108,7 +94,7 @@ function Wheel({ items, every, delay }: { items: string[]; every: number; delay:
           </motion.span>
         );
       })}
-    </motion.span>
+    </span>
   );
 }
 
@@ -119,14 +105,10 @@ export default function Wheels() {
         <p className="sr-only">
           Oatcake is one place for projects, to-do lists, quotes, invoices and client requests, built for small creative businesses and trades.
         </p>
-        <span className="wheel-pair" aria-hidden="true">
-          <span className="wheel-label">One place for</span>
-          <Wheel items={DOES} every={2600} delay={1400} />
-        </span>
-        <span className="wheel-pair" aria-hidden="true">
-          <span className="wheel-label">Built for</span>
-          <Wheel items={FOR} every={2200} delay={2500} />
-        </span>
+        <span className="wheel-label" aria-hidden="true">One place for</span>
+        <Wheel items={DOES} every={2600} delay={1400} />
+        <span className="wheel-label" aria-hidden="true">Built for</span>
+        <Wheel items={FOR} every={2200} delay={2500} />
       </div>
     </MotionConfig>
   );

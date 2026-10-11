@@ -129,10 +129,12 @@ export default function LoginForm({ initialError }: { initialError: string | nul
       {error && <p className="error">{error}</p>}
       <button className="btn wide" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
       <p className="foot" style={{ textAlign: "center", marginTop: 12 }}>
-        <button type="button" className="link" onClick={switchTo("forgot")}>No password, or forgotten it? Email me a link</button>
+        <button type="button" className="link login-quiet" onClick={switchTo("forgot")}>No password? Email me a link</button>
       </p>
-      <div className="login-divider"><span>New to Oatcake?</span></div>
-      <button type="button" className="btn wide outline" onClick={switchTo("tour")}>Get started</button>
+      <p className="login-new">
+        New to Oatcake?
+        <button type="button" className="link" onClick={switchTo("tour")}>Get started</button>
+      </p>
     </form>
   );
 }

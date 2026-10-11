@@ -14,9 +14,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="login-logo">
           <OatcakeLogo height={44} />
         </div>
-        <p className="login-sub">Organised by design.</p>
         <Wheels />
-        <p className="login-invited">Invited by your designer? Sign in with the email they used.</p>
         <LoginForm
           initialError={
             error === "no-access"

@@ -147,17 +147,15 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 .login-screen { min-height: 100dvh; background: #17110f; color: var(--oat-cream); padding: 0 16px; display: flex; position: relative; overflow: hidden; isolation: isolate; }
 .login-screen .auth { position: relative; z-index: 1; }
 .login-screen .auth { margin: auto; width: 100%; max-width: 400px; padding: 48px 0; }
-.login-logo { display: flex; justify-content: center; margin-bottom: 20px; }
-.login-sub { text-align: center; color: var(--oat-cream); margin: 0 0 10px; font: 700 22px/1.2 var(--font-title); text-wrap: balance; }
-.login-wheels { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 2px 0 16px; }
-@media (min-width: 700px) { .login-wheels { flex-direction: row; justify-content: center; gap: 26px; margin-inline: -120px; } }
-.wheel-pair { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
-.wheel-label { font-size: 14.5px; color: color-mix(in srgb, var(--oat-cream) 62%, transparent); }
-.wheel { position: relative; display: inline-block; height: 34px; perspective: 300px; clip-path: inset(0 -400px); font: 700 19px/28px var(--font-title); color: var(--oat-cream); }
-.wheel-size { display: grid; height: 0; overflow: hidden; visibility: hidden; justify-items: start; }
+.login-logo { display: flex; justify-content: center; margin-bottom: 22px; }
+.login-sub { text-align: center; color: color-mix(in srgb, var(--oat-cream) 72%, transparent); margin: 0 0 26px; font-size: 14px; text-wrap: balance; }
+.login-wheels { display: grid; grid-template-columns: auto auto; justify-content: center; align-items: center; column-gap: 8px; row-gap: 2px; margin: 4px 0 30px; }
+@media (min-width: 700px) { .login-wheels { grid-template-columns: auto auto auto auto; margin-inline: -120px; } .login-wheels > .wheel:nth-child(3) { margin-right: 26px; } }
+.wheel-label { text-align: right; white-space: nowrap; font-size: 14.5px; color: color-mix(in srgb, var(--oat-cream) 55%, transparent); }
+.wheel { position: relative; display: block; height: 34px; perspective: 300px; overflow: hidden; font: 700 19px/28px var(--font-title); color: var(--oat-cream); }
+.wheel-size { display: grid; height: 0; overflow: hidden; visibility: hidden; }
 .wheel-size > span { grid-area: 1 / 1; white-space: nowrap; }
 .wheel-item { position: absolute; left: 0; top: 3px; white-space: nowrap; transform-origin: 50% 50% -14px; backface-visibility: hidden; }
-.login-invited { text-align: center; color: color-mix(in srgb, var(--oat-cream) 50%, transparent); margin: 0 0 26px; font-size: 13px; text-wrap: balance; }
 .login-screen .btn { background: var(--oat-cream); color: #17110f; }
 .login-screen .foot, .login-screen .foot .link { color: color-mix(in srgb, var(--oat-cream) 75%, transparent); }
 .login-screen .foot .link { color: var(--oat-cream); text-decoration: underline; text-underline-offset: 2px; }
@@ -165,6 +163,9 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 .login-screen .btn.outline { background: transparent; color: var(--oat-cream); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--oat-cream) 55%, transparent); }
 .login-divider { display: flex; align-items: center; gap: 12px; margin: 26px 0 14px; font-size: 13px; color: color-mix(in srgb, var(--oat-cream) 60%, transparent); }
 .login-divider::before, .login-divider::after { content: ""; flex: 1; border-top: 1px solid color-mix(in srgb, var(--oat-cream) 18%, transparent); }
+.login-new { text-align: center; margin: 28px 0 0; font-size: 14px; color: color-mix(in srgb, var(--oat-cream) 55%, transparent); }
+.login-screen .login-new .link { color: var(--oat-cream); font-weight: 600; margin-left: 4px; }
+.login-screen .foot .link.login-quiet { color: color-mix(in srgb, var(--oat-cream) 60%, transparent); text-decoration: none; font-size: 13.5px; }
 .login-step { text-align: center; font-weight: 600; margin: 0 0 12px; }
 .oatcake-word { font-family: ui-serif, "New York", Georgia, serif; font-weight: 600; letter-spacing: -.03em; line-height: 1; color: var(--oat-cream); }
 .login-screen .group { color: var(--label); }
@@ -427,7 +428,7 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 .swatch-row label.swatch { flex: 0 0 30px; }
 
 /* Sign-in entrance: hidden before first paint on a first visit, then LoginIntro animates it in. */
-.oc-intro .login-screen .login-logo, .oc-intro .login-screen .login-sub, .oc-intro .login-screen .login-wheels, .oc-intro .login-screen .login-invited, .oc-intro .login-screen .auth form > * { opacity: 0; }
+.oc-intro .login-screen .login-logo, .oc-intro .login-screen .login-sub, .oc-intro .login-screen .login-wheels, .oc-intro .login-screen .auth form > * { opacity: 0; }
 
 /* Film grain over the dark sign-in background, drawn fresh every frame by components/FilmGrain. */
 .login-screen { --grain: .07; } /* grain strength: higher shows more */
