@@ -8,7 +8,7 @@ export default function AddMember({ businesses }: { businesses: Business[] }) {
   const [state, action, pending] = useActionState(addMember, null);
   const [role, setRole] = useState("client");
   return (
-    <form action={action}>
+    <form action={action} id="add">
       <p className="eyebrow">Add someone</p>
       <div className="group">
         <div className="row">

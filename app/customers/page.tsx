@@ -60,7 +60,7 @@ export default async function CustomersPage() {
             {!businesses.length && <div className="empty">No {terms.clients} yet. Add one here, or just type a new name when you add a {terms.job}.</div>}
           </div>
         </div>
-        <form action={saveCustomer.bind(null, null)}>
+        <form action={saveCustomer.bind(null, null)} id="add">
           <p className="eyebrow">Add a {terms.client}</p>
           <CustomerFields />
           <button className="btn wide" style={{ marginTop: 14 }}>Add {terms.client}</button>
