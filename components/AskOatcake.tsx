@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { track } from "@/lib/track";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import OatcakeBiscuit from "./OatcakeBiscuit";
 
 // Ask Oatcake: one small button in the top bar that opens a sheet for questions about your work,
 // or how to do something. Nothing else on the page changes; "/" or ⌘K opens it on a keyboard.
@@ -231,7 +232,7 @@ export default function AskOatcake({ hint = false, opens = 0, since = 0 }: { hin
             )}
           </AnimatePresence>
           <button type="button" className="ask-btn" onClick={() => setOpen(true)} aria-label="Ask Oatcake" data-tour="ask">
-            <svg ref={scope} viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.6" fill="none" stroke="currentColor" strokeWidth="2.6" /></svg>
+            <OatcakeBiscuit small ref={scope} />
             <span>Ask</span>
           </button>
         </span>
@@ -292,7 +293,7 @@ export default function AskOatcake({ hint = false, opens = 0, since = 0 }: { hin
                       ) : t.content ? (
                         <Answer text={t.content} onNav={close} />
                       ) : (
-                        <span className="ask-dots" aria-label="Thinking"><i /><i /><i /></span>
+                        <span role="img" aria-label="Thinking"><OatcakeBiscuit eating className="ask-eating" /></span>
                       )}
                     </motion.div>
                   ))
