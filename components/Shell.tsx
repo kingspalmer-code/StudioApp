@@ -7,6 +7,8 @@ import BizBadge from "./BizBadge";
 import CreateMenu from "./CreateMenu";
 import NavLinks from "./NavLinks";
 import RailNav from "./RailNav";
+import Search from "./Search";
+import SearchButton from "./SearchButton";
 import TabBar from "./TabBar";
 import Tracker from "./Tracker";
 import { OatcakeMark } from "./OatcakeLogo";
@@ -94,6 +96,7 @@ export default function Shell({
             </Link>
           )}
           {rail ? <RailNav links={links} canCreate={canCreate} /> : <NavLinks links={links} />}
+          {canCreate && <SearchButton />}
           {member.role === "designer" && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake hint={askHint} opens={askOpens} since={askSince} />}
           {/* Your photo or initials, opening your account: settings, appearance and sign out live there, so the bar stays calm. */}
           <Link href="/account" className="me-btn" aria-label={helpUnread ? "Your account. New reply from Oatcake" : "Your account and settings"} data-tour="me">
@@ -126,6 +129,14 @@ export default function Shell({
           Job={terms.Job}
           Client={terms.Client}
           clientNames={Object.fromEntries(businesses.map((b) => [b.id, b.name]))}
+        />
+      )}
+      {canCreate && (
+        <Search
+          trade={workspace.kind === "trade"}
+          Job={terms.Job}
+          Client={terms.Client}
+          clients={businesses.map((b) => ({ id: b.id, name: b.name, slug: b.slug }))}
         />
       )}
       {track && !viewing && <Tracker />}
