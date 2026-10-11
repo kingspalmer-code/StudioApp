@@ -644,7 +644,6 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 /* Brief helper on requests */
 .brief-help { margin: 14px 0 4px; }
 .brief-help-open { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; background: var(--surface); border: 1px dashed var(--sep); border-radius: var(--r); padding: 12px 14px; cursor: pointer; color: var(--label); font: inherit; }
-.brief-help-open > span:first-child { font-size: 20px; }
 .brief-help-open b { display: block; font-size: 15px; }
 .brief-help-open small { display: block; color: var(--label-2); font-size: 13px; }
 .brief-help-card { background: var(--surface); border-radius: var(--r); padding: 14px; }
