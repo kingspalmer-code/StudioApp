@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { useState } from "react";
+import OatcakeBiscuit from "@/components/OatcakeBiscuit";
 import { helpWithBrief, type BriefHelp } from "./actions";
 
 const pinterest = (q: string) => `https://www.pinterest.co.uk/search/pins/?q=${encodeURIComponent(q)}`;
@@ -49,6 +50,7 @@ export default function BriefHelper({
               setOpen(true);
             }}
           >
+            <OatcakeBiscuit />
             <span>
               <b>Not sure what to ask for?</b>
               <small>Oatcake can help you write the brief and find references.</small>
@@ -57,7 +59,7 @@ export default function BriefHelper({
         ) : (
           <motion.div className="brief-help-card" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}>
             <div className="brief-help-head">
-              <b>Help with the brief</b>
+              <span><OatcakeBiscuit eating={busy} /><b>Help with the brief</b></span>
               <button type="button" className="link" onClick={() => setOpen(false)}>Close</button>
             </div>
             <textarea
