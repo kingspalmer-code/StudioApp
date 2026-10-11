@@ -1,16 +1,16 @@
 "use client";
 
 import { motion, MotionConfig } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const DOES = [
-  "project organisation",
+  "projects",
   "to-do lists",
   "quotes",
   "invoices",
   "client requests",
   "job tracking",
-  "creative briefs",
+  "briefs",
   "file delivery",
   "client portals",
   "planning your day",
@@ -49,12 +49,21 @@ const FOR = [
   "architects",
 ];
 
-const ROW = 30;
+const ROW = 28;
+const spring = { type: "spring", stiffness: 170, damping: 24, mass: 0.9 } as const;
 
-// One column of an alarm-clock style picker that turns by itself: the chosen word sits in the
-// middle, its neighbours tilt away above and below, and every few seconds it rolls on one.
+// A word that turns over by itself like an alarm-clock picker: the current word rolls up and
+// away as the next rolls in from below, and the space it takes eases to fit each word.
 function Wheel({ items, every, delay }: { items: string[]; every: number; delay: number }) {
   const [at, setAt] = useState(0);
+  const [widths, setWidths] = useState<number[] | null>(null);
+  const sizer = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    const measure = () => setWidths(Array.from(sizer.current?.children ?? [], (el) => (el as HTMLElement).offsetWidth));
+    measure();
+    document.fonts?.ready.then(measure);
+  }, []);
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | undefined;
@@ -72,33 +81,34 @@ function Wheel({ items, every, delay }: { items: string[]; every: number; delay:
 
   const n = items.length;
   return (
-    <span className="wheel" aria-hidden="true">
-      <span className="wheel-size">
+    <motion.span
+      className="wheel"
+      initial={false}
+      style={widths ? { width: widths[0] } : undefined}
+      animate={widths ? { width: widths[at % n] } : undefined}
+      transition={spring}
+    >
+      <span className="wheel-size" ref={sizer}>
         {items.map((w) => <span key={w}>{w}</span>)}
       </span>
       {items.map((w, i) => {
-        // Distance from the middle row, wrapped so the list loops round like a drum.
+        // Rows from the current word, wrapped so the list loops round like a drum.
         let d = (((i - at) % n) + n) % n;
         if (d > n / 2) d -= n;
-        const off = Math.abs(d) > 1;
-        const gone = Math.abs(d) > 2;
+        const near = Math.abs(d) <= 1;
         return (
           <motion.span
             key={w}
             className="wheel-item"
             initial={false}
-            animate={{
-              y: d * ROW,
-              rotateX: Math.max(-70, Math.min(70, d * -38)),
-              opacity: off ? 0 : d === 0 ? 1 : 0.3,
-            }}
-            transition={gone ? { duration: 0 } : { type: "spring", stiffness: 170, damping: 22, mass: 0.9 }}
+            animate={{ y: d * ROW, rotateX: d * -60, opacity: d === 0 ? 1 : 0 }}
+            transition={near ? spring : { duration: 0 }}
           >
             {w}
           </motion.span>
         );
       })}
-    </span>
+    </motion.span>
   );
 }
 
@@ -107,14 +117,16 @@ export default function Wheels() {
     <MotionConfig reducedMotion="user">
       <div className="login-wheels">
         <p className="sr-only">
-          Oatcake does project organisation, to-do lists, quotes, invoices and client requests in one place, for small creative businesses and trades.
+          Oatcake is one place for projects, to-do lists, quotes, invoices and client requests, built for small creative businesses and trades.
         </p>
-        <span className="wheel-band" aria-hidden="true" />
-        <span className="wheel-label" aria-hidden="true">One place for</span>
-        <Wheel items={DOES} every={2600} delay={1400} />
-        <span className="wheel-band" aria-hidden="true" />
-        <span className="wheel-label" aria-hidden="true">Built for</span>
-        <Wheel items={FOR} every={1900} delay={2300} />
+        <span className="wheel-pair" aria-hidden="true">
+          <span className="wheel-label">One place for</span>
+          <Wheel items={DOES} every={2600} delay={1400} />
+        </span>
+        <span className="wheel-pair" aria-hidden="true">
+          <span className="wheel-label">Built for</span>
+          <Wheel items={FOR} every={2200} delay={2500} />
+        </span>
       </div>
     </MotionConfig>
   );
