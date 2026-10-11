@@ -49,7 +49,6 @@ export default function BriefHelper({
               setOpen(true);
             }}
           >
-            <span aria-hidden="true">✨</span>
             <span>
               <b>Not sure what to ask for?</b>
               <small>Oatcake can help you write the brief and find references.</small>
