@@ -148,7 +148,9 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 .login-screen .auth { position: relative; z-index: 1; }
 .login-screen .auth { margin: auto; width: 100%; max-width: 400px; padding: 48px 0; }
 .login-logo { display: flex; justify-content: center; margin-bottom: 20px; }
-.login-sub { text-align: center; color: color-mix(in srgb, var(--oat-cream) 72%, transparent); margin: 0 0 26px; font-size: 14px; text-wrap: balance; }
+.login-sub { text-align: center; color: var(--oat-cream); margin: 0 0 10px; font: 700 22px/1.2 var(--font-title); text-wrap: balance; }
+.login-what { text-align: center; color: color-mix(in srgb, var(--oat-cream) 72%, transparent); margin: 0 auto 8px; max-width: 340px; font-size: 14.5px; line-height: 1.5; text-wrap: balance; }
+.login-invited { text-align: center; color: color-mix(in srgb, var(--oat-cream) 50%, transparent); margin: 0 0 26px; font-size: 13px; text-wrap: balance; }
 .login-screen .btn { background: var(--oat-cream); color: #17110f; }
 .login-screen .foot, .login-screen .foot .link { color: color-mix(in srgb, var(--oat-cream) 75%, transparent); }
 .login-screen .foot .link { color: var(--oat-cream); text-decoration: underline; text-underline-offset: 2px; }

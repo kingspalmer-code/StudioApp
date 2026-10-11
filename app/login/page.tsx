@@ -14,6 +14,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <OatcakeLogo height={44} />
         </div>
         <p className="login-sub">Organised by design.</p>
+        <p className="login-what">
+          Every job, client request, quote and invoice in one place, and a clear view of what to start today. Made for designers, signwriters and small studios.
+        </p>
+        <p className="login-invited">Invited by your designer? Sign in with the email they used.</p>
         <LoginForm
           initialError={
             error === "no-access"
