@@ -53,8 +53,7 @@ const ROW = 28;
 const spring = { type: "spring", stiffness: 170, damping: 24, mass: 0.9 } as const;
 
 // A word that turns over by itself like an alarm-clock picker: the current word rolls up and
-// away as the next rolls in from below. The column is as wide as the longest word, so the words
-// stay anchored left and nothing around them moves.
+// away as the next rolls in from below, centred in a column that never changes size.
 function Wheel({ items, every, delay }: { items: string[]; every: number; delay: number }) {
   const [at, setAt] = useState(0);
   useEffect(() => {
