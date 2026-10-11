@@ -98,6 +98,10 @@ function Wheel({ items, every, delay }: { items: string[]; every: number; delay:
 }
 
 export default function Wheels() {
+  // On a first visit the wheels blur in after the logo (see LoginIntro), so they wait a little
+  // longer before their first turn. The class is still on the page when this first renders.
+  const [intro] = useState(() => typeof document !== "undefined" && document.documentElement.classList.contains("oc-intro"));
+  const wait = intro ? 1300 : 0;
   return (
     <MotionConfig reducedMotion="user">
       <div className="login-wheels">
@@ -105,9 +109,9 @@ export default function Wheels() {
           Oatcake is one place for projects, to-do lists, quotes, invoices and client requests, built for small creative businesses and trades.
         </p>
         <span className="wheel-label" aria-hidden="true">One place for</span>
-        <Wheel items={DOES} every={2600} delay={1400} />
+        <Wheel items={DOES} every={2600} delay={1400 + wait} />
         <span className="wheel-label" aria-hidden="true">Built for</span>
-        <Wheel items={FOR} every={2200} delay={2500} />
+        <Wheel items={FOR} every={2200} delay={2500 + wait} />
       </div>
     </MotionConfig>
   );

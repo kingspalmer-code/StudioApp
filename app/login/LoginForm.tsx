@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Tour from "./Tour";
+import Wheels from "./Wheels";
 
 type Mode = "password" | "tour" | "new" | "forgot" | "sent";
 
@@ -116,25 +117,28 @@ export default function LoginForm({ initialError }: { initialError: string | nul
   }
 
   return (
-    <form onSubmit={signIn}>
-      <div className="group">
-        {emailRow}
-        <div className="row">
-          <label htmlFor="password">Password</label>
-          <div className="ctl">
-            <input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" />
+    <>
+      <Wheels />
+      <form onSubmit={signIn}>
+        <div className="group">
+          {emailRow}
+          <div className="row">
+            <label htmlFor="password">Password</label>
+            <div className="ctl">
+              <input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" />
+            </div>
           </div>
         </div>
-      </div>
-      {error && <p className="error">{error}</p>}
-      <button className="btn wide" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
-      <p className="foot" style={{ textAlign: "center", marginTop: 12 }}>
-        <button type="button" className="link login-quiet" onClick={switchTo("forgot")}>No password? Email me a link</button>
-      </p>
-      <p className="login-new">
-        New to Oatcake?
-        <button type="button" className="link" onClick={switchTo("tour")}>Get started</button>
-      </p>
-    </form>
+        {error && <p className="error">{error}</p>}
+        <button className="btn wide" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+        <p className="foot" style={{ textAlign: "center", marginTop: 12 }}>
+          <button type="button" className="link login-quiet" onClick={switchTo("forgot")}>No password? Email me a link</button>
+        </p>
+        <p className="login-new">
+          New to Oatcake?
+          <button type="button" className="link" onClick={switchTo("tour")}>Get started</button>
+        </p>
+      </form>
+    </>
   );
 }

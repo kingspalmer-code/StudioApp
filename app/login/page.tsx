@@ -2,7 +2,6 @@ import FilmGrain from "@/components/FilmGrain";
 import OatcakeLogo from "@/components/OatcakeLogo";
 import LoginForm from "./LoginForm";
 import LoginIntro, { INTRO_SCRIPT } from "./LoginIntro";
-import Wheels from "./Wheels";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
@@ -14,7 +13,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="login-logo">
           <OatcakeLogo height={44} />
         </div>
-        <Wheels />
         <LoginForm
           initialError={
             error === "no-access"
