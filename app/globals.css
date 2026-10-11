@@ -149,8 +149,8 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 .login-screen .auth { margin: auto; width: 100%; max-width: 400px; padding: 48px 0; }
 .login-logo { display: flex; justify-content: center; margin-bottom: 22px; }
 .login-sub { text-align: center; color: color-mix(in srgb, var(--oat-cream) 72%, transparent); margin: 0 0 26px; font-size: 14px; text-wrap: balance; }
-.login-wheels { display: grid; grid-template-columns: auto auto; justify-content: center; align-items: center; column-gap: 8px; row-gap: 2px; margin: 4px 0 30px; }
-@media (min-width: 700px) { .login-wheels { grid-template-columns: auto auto auto auto; margin-inline: -120px; } .login-wheels > .wheel:nth-child(3) { margin-right: 26px; } }
+.login-wheels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; column-gap: 8px; row-gap: 2px; margin: 4px 0 30px; }
+@media (min-width: 700px) { .login-wheels { grid-template-columns: auto auto auto auto; justify-content: center; margin-inline: -120px; } .login-wheels > .wheel:nth-child(3) { margin-right: 26px; } }
 .wheel-label { text-align: right; white-space: nowrap; font-size: 14.5px; color: color-mix(in srgb, var(--oat-cream) 55%, transparent); }
 .wheel { position: relative; display: block; height: 34px; perspective: 300px; overflow: hidden; font: 700 19px/28px var(--font-title); color: var(--oat-cream); }
 .wheel-size { display: grid; height: 0; overflow: hidden; visibility: hidden; }
@@ -177,7 +177,7 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 /* Personal to-dos */
 .personal { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 28px; align-items: start; margin-top: 12px; }
 @media (max-width: 860px) { .personal { grid-template-columns: minmax(0, 1fr); } }
-.smart { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.smart { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .smart-tile { background: var(--surface); border-radius: var(--r); padding: 10px 12px; color: var(--label); display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 2px 8px; }
 .smart-tile b { justify-self: end; font: 700 22px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
 .smart-tile span:last-child { grid-column: 1 / -1; font-size: 13px; color: var(--label-2); font-weight: 600; }
@@ -596,7 +596,7 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 .clamp { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 700px) {
   .admin-table .table-head { display: none; }
-  .admin-table .row, .people-table .row { grid-template-columns: 1fr 1fr; }
+  .admin-table .row, .people-table .row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .admin-table .row > span:first-child { grid-column: 1 / -1; }
   .funnel-row .k { flex-basis: 120px; font-size: 13px; }
 }
@@ -625,7 +625,7 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 .gallery-card b { font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .archive-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 .portal-foot { margin-top: 26px; text-align: center; }
-@media (max-width: 700px) { .gallery { grid-template-columns: 1fr 1fr; gap: 12px; } }
+@media (max-width: 700px) { .gallery { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; } }
 
 /* Finished files on a job */
 .deliveries { border-radius: var(--r); transition: box-shadow .2s; }
