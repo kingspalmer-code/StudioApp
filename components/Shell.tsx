@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { stopViewing } from "@/app/admin/actions";
+import { startPreview, stopPreview } from "@/app/actions";
 import { brandFor, brandThemeCss } from "@/lib/brands";
 import type { Business, Member, Workspace } from "@/lib/types";
 import AskOatcake from "./AskOatcake";
@@ -52,6 +53,7 @@ export default function Shell({
   askSince = 0,
   helpUnread = false,
   track = false,
+  preview,
   children,
 }: {
   member: Member;
@@ -66,6 +68,7 @@ export default function Shell({
   askSince?: number;
   helpUnread?: boolean;
   track?: boolean;
+  preview?: Business;
   children: React.ReactNode;
 }) {
   // Clients see their own business's identity; the workspace owner and manager see Oatcake.
@@ -113,8 +116,28 @@ export default function Shell({
           <button className="btn small" type="submit">Back to my workspace</button>
         </form>
       )}
+      {preview && (
+        <div className="viewing-bar preview-bar">
+          <span>
+            Previewing what <b>{preview.name}</b> sees. Nothing can be changed here.
+          </span>
+          <span className="preview-actions">
+            {businesses.length > 1 && (
+              <form action={startPreview} className="preview-switch">
+                <select name="business" defaultValue={preview.id} aria-label="Preview another client">
+                  {businesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+                <button className="link" type="submit">Switch</button>
+              </form>
+            )}
+            <form action={stopPreview}>
+              <button className="btn small" type="submit">Exit preview</button>
+            </form>
+          </span>
+        </div>
+      )}
       <main className={links.length > 1 ? "has-tabbar" : undefined}>
-        {viewing ? (
+        {viewing || preview ? (
           <fieldset disabled className="read-only">
             {children}
           </fieldset>
@@ -139,7 +162,7 @@ export default function Shell({
           clients={businesses.map((b) => ({ id: b.id, name: b.name, slug: b.slug }))}
         />
       )}
-      {track && !viewing && <Tracker />}
+      {track && !viewing && !preview && <Tracker />}
     </div>
   );
 }

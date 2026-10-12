@@ -1,9 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireEditor } from "@/lib/session";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, PREVIEW_COOKIE } from "@/lib/supabase/server";
 import { appliesTo, readFields, type JobField } from "@/lib/fields";
 import { emailInvite } from "@/lib/invite";
 import type { Role, Status } from "@/lib/types";
@@ -99,4 +100,18 @@ export async function removeMember(email: string) {
   if (email === member.email) return;
   await supabase.from("members").delete().eq("email", email);
   revalidatePath("/people");
+}
+
+// See the request pages exactly as one client sees them, read-only, until "Exit preview".
+export async function startPreview(formData: FormData) {
+  const { businesses } = await requireEditor(["designer"]);
+  const biz = businesses.find((b) => b.id === String(formData.get("business") ?? ""));
+  if (!biz) return;
+  (await cookies()).set(PREVIEW_COOKIE, biz.id, { path: "/", httpOnly: true, sameSite: "lax", secure: true, maxAge: 60 * 60 * 2 });
+  redirect("/portal");
+}
+
+export async function stopPreview() {
+  (await cookies()).delete(PREVIEW_COOKIE);
+  redirect("/people");
 }

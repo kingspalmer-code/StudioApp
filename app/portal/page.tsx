@@ -4,15 +4,17 @@ import TicketRow from "@/components/TicketRow";
 import { coversFor } from "@/lib/deliveries";
 import type { JobField } from "@/lib/fields";
 import { formatDate, isDone } from "@/lib/priority";
-import { requireEditor } from "@/lib/session";
+import { asClient, requireEditor } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
 import ClientRequests from "./ClientRequests";
 import NewRequestForm from "./NewRequestForm";
 import Walkthrough from "@/components/Walkthrough";
+import { startPreview } from "@/app/actions";
 
 export default async function PortalPage({ searchParams }: { searchParams: Promise<{ tour?: string }> }) {
   const { tour } = await searchParams;
-  const { supabase, member, businesses, ctx, workspace, shell } = await requireEditor(["client", "designer"]);
+  const { supabase, member, businesses, ctx, workspace, shell } = asClient(await requireEditor(["client", "designer"]));
+  const previewing = Boolean(shell.preview);
   const trade = workspace.kind === "trade";
   const owner = workspace.owner_name || "the studio";
   const isDesigner = member.role === "designer";
@@ -31,6 +33,15 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
           {trade ? "Add a job as soon as it comes in. New customers are saved automatically." : "Log a request that came in by WhatsApp or email so it joins the queue."}{" "}
           <Link href="/settings/form">Change what this form asks</Link>
         </p>
+        {!trade && businesses.length > 0 && (
+          <form action={startPreview} className="preview-switch preview-start">
+            <span className="when">See the request pages as a client sees them:</span>
+            <select name="business" aria-label="Client to preview">
+              {businesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+            <button className="link" type="submit">Preview</button>
+          </form>
+        )}
         <div style={{ maxWidth: 640 }}>
           <NewRequestForm businesses={businesses} defaultName={member.full_name} isDesigner types={ctx.types} fields={formFields} trade={trade} ownerName={owner} helper={helper} />
         </div>
@@ -39,7 +50,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   }
 
   // A client: their own portal. New request, what's in progress, and what's been finished.
-  const { data } = await supabase.from("tickets").select("*").order("deadline").returns<Ticket[]>();
+  const { data } = await supabase.from("tickets").select("*").eq("business_id", member.business_id).order("deadline").returns<Ticket[]>();
   const all = data ?? [];
   const open = all.filter((t) => !isDone(t, ctx));
   const finished = all
@@ -54,7 +65,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
         <p className="sub">Send {owner} a new request, and see how each one is going.</p>
 
         <ClientRequests
-          startOpen={all.length === 0}
+          startOpen={all.length === 0 || previewing}
           form={{ businesses: myBiz ? [myBiz] : [], defaultName: member.full_name, isDesigner: false, types: ctx.types, fields: formFields, trade, ownerName: owner, helper }}
         />
 
@@ -87,7 +98,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
           </>
         )}
 
-        <Walkthrough force={tour === "1"} client={{ business: myBiz?.name ?? "", studio: owner }} />
+        {!previewing && <Walkthrough force={tour === "1"} client={{ business: myBiz?.name ?? "", studio: owner }} />}
 
         <p className="foot portal-foot">
           <Link href="/portal/brand">Change your logo and colour</Link>

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import type { Ctx } from "./priority";
 import { cookies } from "next/headers";
-import { createClient, VIEW_COOKIE } from "./supabase/server";
+import { createClient, PREVIEW_COOKIE, VIEW_COOKIE } from "./supabase/server";
 import type { Business, JobType, Member, Role, Stage, Workspace } from "./types";
 import { termsFor } from "./workspace";
 
@@ -25,7 +25,8 @@ export async function requireMember(roles?: Role[]) {
   if (roles && !roles.includes(member.role)) redirect(HOME[member.role]);
 
   // An admin viewing someone else's workspace sees it read-only; the database enforces that too.
-  const rawView = (await cookies()).get(VIEW_COOKIE)?.value ?? "";
+  const jar = await cookies();
+  const rawView = jar.get(VIEW_COOKIE)?.value ?? "";
   const viewId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawView) ? rawView : null;
   const [{ data: businesses }, { data: workspace }, { data: stages }, { data: types }, { data: isAdmin }, { data: replies }] = await Promise.all([
     supabase.from("businesses").select("*").order("name").returns<Business[]>(),
@@ -43,6 +44,9 @@ export async function requireMember(roles?: Role[]) {
   const own = workspace?.find((w) => w.id === member.workspace_id);
   const ws: Workspace = viewed ?? own ?? { id: member.workspace_id, name: "Oatcake", kind: "studio", owner_name: "" };
   const viewing = Boolean(viewed);
+  // The studio previewing one client's request pages; only the client pages act on it (see asClient).
+  const rawPreview = jar.get(PREVIEW_COOKIE)?.value ?? "";
+  const preview = member.role === "designer" && !viewing ? (businesses ?? []).find((b) => b.id === rawPreview) : undefined;
   const ctx: Ctx = { stages: stages ?? [], types: types ?? [] };
   const terms = termsFor(ws.kind);
   const avatar = typeof user.user_metadata?.avatar_url === "string" ? (user.user_metadata.avatar_url as string) : null;
@@ -60,8 +64,19 @@ export async function requireMember(roles?: Role[]) {
   const helpUnread = (replies ?? []).some((r) => r.updated_at > r.user_seen_at);
   // Usage stats are on unless you've turned them off in your account.
   const track = !user.user_metadata?.no_tracking;
-  const shell = { member, businesses: businesses ?? [], workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials, askHint, askOpens, askSince, helpUnread, track };
-  return { supabase, member, businesses: businesses ?? [], workspace: ws, ctx, terms, shell, viewing };
+  const shell = { member, businesses: businesses ?? [], workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials, askHint, askOpens, askSince, helpUnread, track, preview: undefined as Business | undefined };
+  return { supabase, member, businesses: businesses ?? [], workspace: ws, ctx, terms, shell, viewing, preview };
+}
+
+type Session = Awaited<ReturnType<typeof requireMember>>;
+
+// Client pages call this so that, while the studio is previewing a client, they render exactly as
+// that client sees them. The shell shows a preview bar and makes the page read-only.
+export function asClient<S extends Session>(session: S, businessId?: string): S {
+  const { preview } = session;
+  if (!preview || (businessId && businessId !== preview.id)) return session;
+  const member = { ...session.member, role: "client" as Role, business_id: preview.id };
+  return { ...session, member, shell: { ...session.shell, member, preview } };
 }
 
 // For anything that changes data: an admin viewing someone else's workspace can only look.
