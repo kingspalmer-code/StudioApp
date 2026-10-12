@@ -13,11 +13,13 @@
     "@react-pdf/renderer": "4.9.0",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.117.1",
+    "@types/web-push": "3.6.4",
     "motion": "12.43.0",
     "next": "15.5.26",
     "pdfjs-dist": "6.3.289",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "web-push": "3.6.7"
   },
   "devDependencies": {
     "@types/node": "22.15.0",

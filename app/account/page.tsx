@@ -2,7 +2,9 @@ import Link from "next/link";
 import { signOut } from "@/app/actions";
 import Shell from "@/components/Shell";
 import ThemeToggle from "@/components/ThemeToggle";
+import { pushReady, pushRpc, VAPID_PUBLIC } from "@/lib/push";
 import { requireMember } from "@/lib/session";
+import PhoneAlerts from "./PhoneAlerts";
 import ProfilePhoto from "./ProfilePhoto";
 import SetPassword from "./SetPassword";
 import UsageStats from "./UsageStats";
@@ -14,6 +16,10 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
     data: { user },
   } = await supabase.auth.getUser();
   const hasPassword = Boolean(user?.user_metadata?.has_password);
+  // Alerts are for whoever runs the workspace; which kinds you get is shared by all your devices.
+  const alerts = member.role === "designer";
+  const ready = pushReady();
+  const kinds = alerts && ready ? (await pushRpc<{ new_requests: boolean; morning: boolean }[]>("push_kinds", { p_email: member.email }))?.[0] : null;
 
   return (
     <Shell {...shell}>
@@ -44,6 +50,15 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                 <div className="ctl" style={{ display: "flex", justifyContent: "flex-end" }}><ThemeToggle /></div>
               </div>
             </div>
+
+            {alerts && (
+              <>
+                <p className="eyebrow">Alerts</p>
+                <div className="group">
+                  <PhoneAlerts ready={ready} publicKey={VAPID_PUBLIC} kinds={kinds ?? { new_requests: true, morning: true }} />
+                </div>
+              </>
+            )}
 
             <div className="group" style={{ marginTop: 22 }}>
               <Link href="/help" className="row nav-row">

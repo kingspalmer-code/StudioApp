@@ -2,7 +2,10 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
+import { formatDate } from "@/lib/priority";
+import { firstTime, pushReady, pushRpc, sendAlert } from "@/lib/push";
 import { requireEditor } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 
 export type BriefHelp = {
   brief: string;
@@ -81,4 +84,41 @@ export async function saveBrand(businessId: string, logo: string, accent: string
   if (error) return { error: error.message };
   revalidatePath("/", "layout");
   return {};
+}
+
+// A client just sent a request: alert the people who run the workspace on their phones. Only the
+// person who sent it can trigger this, only shortly after, and only once per request.
+export async function alertNewRequest(ticketId: number) {
+  if (!pushReady()) return;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const email = user?.email?.toLowerCase();
+  if (!email) return;
+  const [{ data: me }, { data: ticket }] = await Promise.all([
+    supabase.from("members").select("role, full_name").eq("email", email).maybeSingle<{ role: string; full_name: string }>(),
+    supabase
+      .from("tickets")
+      .select("id, title, type, deadline, created_by, created_at, requester_name")
+      .eq("id", ticketId)
+      .maybeSingle<{ id: number; title: string; type: string; deadline: string; created_by: string; created_at: string; requester_name: string }>(),
+  ]);
+  if (me?.role !== "client" || !ticket || ticket.created_by !== email) return;
+  if (Date.now() - Date.parse(ticket.created_at) > 15 * 60_000) return;
+  if (!(await firstTime("new_request", String(ticket.id)))) return;
+
+  const [info] = (await pushRpc<{ business: string; emails: string[] }[]>("push_request_info", { p_ticket: ticket.id })) ?? [];
+  if (!info?.emails?.length) return;
+  const who = ticket.requester_name || me.full_name || email;
+  await sendAlert(
+    info.emails,
+    {
+      title: `New request from ${info.business || who}`,
+      body: `${ticket.title} (${ticket.type}), needed by ${formatDate(ticket.deadline)}. Sent by ${who}.`,
+      url: `/tickets/${ticket.id}`,
+      tag: `ticket-${ticket.id}`,
+    },
+    "new_requests"
+  );
 }
