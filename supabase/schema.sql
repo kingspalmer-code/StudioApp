@@ -1647,6 +1647,8 @@ create table if not exists public.push_subscriptions (
   device text not null default '',
   new_requests boolean not null default true,
   morning boolean not null default true,
+  -- Turned off or forgotten by the push service. Kept rather than deleted; saving the device again revives it.
+  gone boolean not null default false,
   created_at timestamptz not null default now()
 );
 create index if not exists push_subscriptions_email on public.push_subscriptions (email);
@@ -1676,19 +1678,19 @@ returns void language plpgsql security definer set search_path = public as $$
 declare prev record;
 begin
   perform push_check(p_secret);
-  select new_requests, morning into prev from push_subscriptions where email = lower(p_email) limit 1;
-  insert into push_subscriptions (endpoint, email, p256dh, auth, device, new_requests, morning)
-  values (p_endpoint, lower(p_email), p_p256dh, p_auth, p_device, coalesce(prev.new_requests, true), coalesce(prev.morning, true))
+  select new_requests, morning into prev from push_subscriptions where email = lower(p_email) and not gone limit 1;
+  insert into push_subscriptions (endpoint, email, p256dh, auth, device, new_requests, morning, gone)
+  values (p_endpoint, lower(p_email), p_p256dh, p_auth, p_device, coalesce(prev.new_requests, true), coalesce(prev.morning, true), false)
   on conflict (endpoint) do update set email = excluded.email, p256dh = excluded.p256dh, auth = excluded.auth,
-    device = excluded.device, new_requests = excluded.new_requests, morning = excluded.morning;
+    device = excluded.device, new_requests = excluded.new_requests, morning = excluded.morning, gone = false;
 end $$;
 
--- Pass p_email to only remove the device if it's that person's; null removes it whoever's it is.
+-- Pass p_email to only turn off the device if it's that person's; null turns it off whoever's it is.
 create or replace function public.push_forget(p_secret text, p_endpoint text, p_email text)
 returns void language plpgsql security definer set search_path = public as $$
 begin
   perform push_check(p_secret);
-  delete from push_subscriptions where endpoint = p_endpoint and (p_email is null or email = lower(p_email));
+  update push_subscriptions set gone = true where endpoint = p_endpoint and (p_email is null or email = lower(p_email));
 end $$;
 
 create or replace function public.push_kinds(p_secret text, p_email text)
@@ -1696,7 +1698,7 @@ returns table (new_requests boolean, morning boolean)
 language plpgsql security definer set search_path = public as $$
 begin
   perform push_check(p_secret);
-  return query select s.new_requests, s.morning from push_subscriptions s where s.email = lower(p_email) limit 1;
+  return query select s.new_requests, s.morning from push_subscriptions s where s.email = lower(p_email) and not s.gone limit 1;
 end $$;
 
 create or replace function public.push_set_kinds(p_secret text, p_email text, p_new_requests boolean, p_morning boolean)
@@ -1713,7 +1715,7 @@ language plpgsql security definer set search_path = public as $$
 begin
   perform push_check(p_secret);
   return query select s.endpoint, s.p256dh, s.auth from push_subscriptions s
-  where s.email = any (select lower(e) from unnest(p_emails) e)
+  where not s.gone and s.email = any (select lower(e) from unnest(p_emails) e)
     and (p_kind is null or (p_kind = 'new_requests' and s.new_requests) or (p_kind = 'morning' and s.morning));
 end $$;
 
@@ -1747,7 +1749,7 @@ begin
   perform push_check(p_secret);
   return query
   with people as (
-    select distinct s.email from push_subscriptions s where s.morning
+    select distinct s.email from push_subscriptions s where s.morning and not s.gone
   ),
   last_stage as (
     select distinct on (st.workspace_id) st.workspace_id, st.key from stages st order by st.workspace_id, st.position desc, st.id desc
@@ -1773,3 +1775,6 @@ begin
 end $$;
 
 revoke execute on function public.push_check(text) from public, anon, authenticated;
+
+-- Then, once, with the same value as PUSH_SECRET in Vercel:
+-- insert into public.private_settings (name, value) values ('push_secret', '<PUSH_SECRET>');

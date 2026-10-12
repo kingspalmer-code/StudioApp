@@ -31,7 +31,7 @@ export type AlertKind = "new_requests" | "morning";
 type Sub = { endpoint: string; p256dh: string; auth: string };
 
 // Sends an alert to every device these people have turned alerts on for. Pass kind to skip devices
-// that have that kind switched off. Devices the push service has forgotten are removed.
+// that have that kind switched off. Devices the push service has forgotten are turned off.
 export async function sendAlert(emails: string[], alert: Alert, kind?: AlertKind): Promise<number> {
   if (!pushReady() || !emails.length) return 0;
   webpush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:support@oatcake.xyz", VAPID_PUBLIC, process.env.VAPID_PRIVATE_KEY!);
