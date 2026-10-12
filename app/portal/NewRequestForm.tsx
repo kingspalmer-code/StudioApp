@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import BriefHelper from "./BriefHelper";
+import { alertNewRequest } from "./actions";
 import { createClient } from "@/lib/supabase/client";
 import { PRIORITIES, daysFromToday, todayISO } from "@/lib/priority";
 import FieldInput from "@/components/FieldInput";
@@ -126,6 +127,8 @@ export default function NewRequestForm({
       setError(`${job} wasn't saved: ${insertError?.message ?? "unknown error"}. Try again.`);
       return;
     }
+    // Lets the studio know on their phone. Clients only; the studio doesn't need alerting about its own jobs.
+    if (!isDesigner && !trade) void alertNewRequest(ticket.id).catch(() => {});
 
     const failed: string[] = [];
     for (const file of files) {
