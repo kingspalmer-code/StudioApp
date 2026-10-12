@@ -1,4 +1,4 @@
-import { firstTime, pushAdmin, pushReady, sendAlert } from "@/lib/push";
+import { firstTime, pushReady, pushRpc, sendAlert } from "@/lib/push";
 import { todayISO } from "@/lib/priority";
 
 // Vercel runs this each morning (see vercel.json): one alert per person listing their to-dos
@@ -9,13 +9,9 @@ export async function GET(req: Request) {
   if (!pushReady()) return Response.json({ sent: 0, reason: "alerts not set up" });
 
   const today = todayISO();
-  const { data, error } = await pushAdmin().rpc("push_morning_digest", { p_today: today });
-  if (error) {
-    console.error("morning digest", error.message);
-    return Response.json({ error: error.message }, { status: 500 });
-  }
-
-  const rows = (data ?? []) as { email: string; tasks: number; jobs: number; first_title: string }[];
+  const data = await pushRpc<{ email: string; tasks: number; jobs: number; first_title: string }[]>("push_morning_digest", { p_today: today });
+  if (!data) return Response.json({ error: "couldn't read what's due" }, { status: 500 });
+  const rows = data;
   let sent = 0;
   for (const row of rows) {
     if (!(await firstTime("morning", `${row.email}:${today}`))) continue;

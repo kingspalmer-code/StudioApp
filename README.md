@@ -49,7 +49,7 @@ Each project type has a lead time in working days (`lib/priority.ts`). A request
    - `NEXT_PUBLIC_SUPABASE_URL`: the Project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: the anon / publishable key
    - `NEXT_PUBLIC_TIMEZONE`: `Europe/London` (or your timezone)
-   - For phone alerts (optional): `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` (make a pair with `npx web-push generate-vapid-keys`), `SUPABASE_SERVICE_ROLE_KEY` (the service_role key from Supabase), and `CRON_SECRET` (any long random string, used by the morning nudge in `vercel.json`)
+   - For phone alerts (optional): `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` (make a pair with `npx web-push generate-vapid-keys`), `PUSH_SECRET` (a long random string, also saved in the database as `private_settings.push_secret`), and `CRON_SECRET` (any long random string, used by the morning nudge in `vercel.json`)
 3. Deploy.
 
 ### 3. Connect the two

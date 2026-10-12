@@ -2,18 +2,27 @@ import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 
 // Phone alerts through Web Push. Needs NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and
-// SUPABASE_SERVICE_ROLE_KEY in Vercel; without them nothing is sent and the Account page says so.
+// PUSH_SECRET in Vercel; without them nothing is sent and the Account page says so.
+// The database only lets the push_* functions in with PUSH_SECRET (see migration 014).
 export const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
+const SECRET = process.env.PUSH_SECRET ?? "";
 
 export function pushReady() {
-  return Boolean(VAPID_PUBLIC && process.env.VAPID_PRIVATE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return Boolean(VAPID_PUBLIC && process.env.VAPID_PRIVATE_KEY && SECRET);
 }
 
-// The subscriptions table is only reachable with the service key, never from the browser.
-export function pushAdmin() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+// Calls one of the push_* database functions with the alerts secret. Null means it failed.
+export async function pushRpc<T>(fn: string, args: Record<string, unknown>): Promise<T | null> {
+  const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+  const { data, error } = await db.rpc(fn, { p_secret: SECRET, ...args });
+  if (error) {
+    console.error(fn, error.message);
+    return null;
+  }
+  // Functions that return nothing come back as null; count them as done.
+  return (data ?? true) as T;
 }
 
 export type Alert = { title: string; body: string; url: string; tag?: string };
@@ -26,24 +35,17 @@ type Sub = { endpoint: string; p256dh: string; auth: string };
 export async function sendAlert(emails: string[], alert: Alert, kind?: AlertKind): Promise<number> {
   if (!pushReady() || !emails.length) return 0;
   webpush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:support@oatcake.xyz", VAPID_PUBLIC, process.env.VAPID_PRIVATE_KEY!);
-  const db = pushAdmin();
-  let query = db.from("push_subscriptions").select("endpoint, p256dh, auth").in("email", emails);
-  if (kind) query = query.eq(kind, true);
-  const { data, error } = await query.returns<Sub[]>();
-  if (error) {
-    console.error("push subscriptions", error.message);
-    return 0;
-  }
+  const subs = (await pushRpc<Sub[]>("push_targets", { p_emails: emails, p_kind: kind ?? null })) ?? [];
   const payload = JSON.stringify(alert);
   let sent = 0;
   await Promise.all(
-    (data ?? []).map(async (s) => {
+    subs.map(async (s) => {
       try {
         await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 12 * 3600 });
         sent++;
       } catch (e) {
         const status = (e as { statusCode?: number }).statusCode;
-        if (status === 404 || status === 410) await db.from("push_subscriptions").delete().eq("endpoint", s.endpoint);
+        if (status === 404 || status === 410) await pushRpc("push_forget", { p_endpoint: s.endpoint, p_email: null });
         else console.error("push send", status, (e as Error).message);
       }
     })
@@ -53,7 +55,5 @@ export async function sendAlert(emails: string[], alert: Alert, kind?: AlertKind
 
 // Records that an alert went out. False if it already had, so callers send each one once.
 export async function firstTime(kind: string, ref: string): Promise<boolean> {
-  const { error } = await pushAdmin().from("push_log").insert({ kind, ref });
-  if (error && error.code !== "23505") console.error("push log", error.message);
-  return !error;
+  return (await pushRpc<boolean>("push_first", { p_kind: kind, p_ref: ref })) === true;
 }

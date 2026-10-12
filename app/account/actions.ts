@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { deviceLabel } from "@/lib/support";
-import { pushAdmin, pushReady, sendAlert } from "@/lib/push";
+import { pushReady, pushRpc, sendAlert } from "@/lib/push";
 
 async function myEmail() {
   const supabase = await createClient();
@@ -20,34 +20,27 @@ export async function saveDevice(sub: Keys): Promise<{ error?: string }> {
   if (!email) return { error: "Sign in again, then try that." };
   if (!pushReady()) return { error: "Alerts aren't set up on the server yet." };
   if (!/^https:\/\//.test(sub.endpoint) || !sub.keys?.p256dh || !sub.keys?.auth) return { error: "This browser gave Oatcake an address it can't use." };
-  const db = pushAdmin();
-  const { data: other } = await db.from("push_subscriptions").select("new_requests, morning").eq("email", email).limit(1).maybeSingle();
-  const { error } = await db.from("push_subscriptions").upsert({
-    endpoint: sub.endpoint,
-    email,
-    p256dh: sub.keys.p256dh,
-    auth: sub.keys.auth,
-    device: await deviceLabel(),
-    new_requests: other?.new_requests ?? true,
-    morning: other?.morning ?? true,
+  const ok = await pushRpc("push_save", {
+    p_email: email,
+    p_endpoint: sub.endpoint,
+    p_p256dh: sub.keys.p256dh,
+    p_auth: sub.keys.auth,
+    p_device: await deviceLabel(),
   });
-  return error ? { error: "Couldn't save that. Try again." } : {};
+  return ok === null ? { error: "Couldn't save that. Try again." } : {};
 }
 
 export async function forgetDevice(endpoint: string) {
   const email = await myEmail();
   if (!email || !pushReady()) return;
-  await pushAdmin().from("push_subscriptions").delete().eq("endpoint", endpoint).eq("email", email);
+  await pushRpc("push_forget", { p_endpoint: endpoint, p_email: email });
 }
 
 // Which alerts you get applies to all your devices.
 export async function setAlertKinds(kinds: { new_requests: boolean; morning: boolean }) {
   const email = await myEmail();
   if (!email || !pushReady()) return;
-  await pushAdmin()
-    .from("push_subscriptions")
-    .update({ new_requests: Boolean(kinds.new_requests), morning: Boolean(kinds.morning) })
-    .eq("email", email);
+  await pushRpc("push_set_kinds", { p_email: email, p_new_requests: Boolean(kinds.new_requests), p_morning: Boolean(kinds.morning) });
 }
 
 export async function sendTestAlert(): Promise<{ error?: string }> {

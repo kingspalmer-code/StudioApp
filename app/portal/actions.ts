@@ -3,7 +3,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { formatDate } from "@/lib/priority";
-import { firstTime, pushAdmin, pushReady, sendAlert } from "@/lib/push";
+import { firstTime, pushReady, pushRpc, sendAlert } from "@/lib/push";
 import { requireEditor } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -100,24 +100,21 @@ export async function alertNewRequest(ticketId: number) {
     supabase.from("members").select("role, full_name").eq("email", email).maybeSingle<{ role: string; full_name: string }>(),
     supabase
       .from("tickets")
-      .select("id, title, type, deadline, created_by, created_at, workspace_id, business_id, requester_name")
+      .select("id, title, type, deadline, created_by, created_at, requester_name")
       .eq("id", ticketId)
-      .maybeSingle<{ id: number; title: string; type: string; deadline: string; created_by: string; created_at: string; workspace_id: string; business_id: string; requester_name: string }>(),
+      .maybeSingle<{ id: number; title: string; type: string; deadline: string; created_by: string; created_at: string; requester_name: string }>(),
   ]);
   if (me?.role !== "client" || !ticket || ticket.created_by !== email) return;
   if (Date.now() - Date.parse(ticket.created_at) > 15 * 60_000) return;
   if (!(await firstTime("new_request", String(ticket.id)))) return;
 
-  const db = pushAdmin();
-  const [{ data: business }, { data: studio }] = await Promise.all([
-    db.from("businesses").select("name").eq("id", ticket.business_id).maybeSingle<{ name: string }>(),
-    db.from("members").select("email").eq("workspace_id", ticket.workspace_id).eq("role", "designer").returns<{ email: string }[]>(),
-  ]);
+  const [info] = (await pushRpc<{ business: string; emails: string[] }[]>("push_request_info", { p_ticket: ticket.id })) ?? [];
+  if (!info?.emails?.length) return;
   const who = ticket.requester_name || me.full_name || email;
   await sendAlert(
-    (studio ?? []).map((m) => m.email),
+    info.emails,
     {
-      title: `New request from ${business?.name ?? who}`,
+      title: `New request from ${info.business || who}`,
       body: `${ticket.title} (${ticket.type}), needed by ${formatDate(ticket.deadline)}. Sent by ${who}.`,
       url: `/tickets/${ticket.id}`,
       tag: `ticket-${ticket.id}`,

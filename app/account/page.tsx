@@ -2,7 +2,7 @@ import Link from "next/link";
 import { signOut } from "@/app/actions";
 import Shell from "@/components/Shell";
 import ThemeToggle from "@/components/ThemeToggle";
-import { pushAdmin, pushReady, VAPID_PUBLIC } from "@/lib/push";
+import { pushReady, pushRpc, VAPID_PUBLIC } from "@/lib/push";
 import { requireMember } from "@/lib/session";
 import PhoneAlerts from "./PhoneAlerts";
 import ProfilePhoto from "./ProfilePhoto";
@@ -19,10 +19,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   // Alerts are for whoever runs the workspace; which kinds you get is shared by all your devices.
   const alerts = member.role === "designer";
   const ready = pushReady();
-  const { data: kinds } =
-    alerts && ready
-      ? await pushAdmin().from("push_subscriptions").select("new_requests, morning").eq("email", member.email).limit(1).maybeSingle()
-      : { data: null };
+  const kinds = alerts && ready ? (await pushRpc<{ new_requests: boolean; morning: boolean }[]>("push_kinds", { p_email: member.email }))?.[0] : null;
 
   return (
     <Shell {...shell}>
