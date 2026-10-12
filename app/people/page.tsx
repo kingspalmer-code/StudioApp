@@ -1,6 +1,6 @@
 import BizBadge from "@/components/BizBadge";
 import Shell from "@/components/Shell";
-import { removeMember } from "@/app/actions";
+import { removeMember, startPreview } from "@/app/actions";
 import { requireMember } from "@/lib/session";
 import type { Member } from "@/lib/types";
 import AddMember from "./AddMember";
@@ -21,6 +21,15 @@ export default async function PeoplePage() {
     <Shell {...shell}>
       <h1 className="large">People</h1>
       <p className="sub">Only people listed here can get in. Clients see their own business's requests; managers see the overview. Anyone who hasn't signed in yet can be sent an invite.</p>
+      {businesses.length > 0 && (
+        <form action={startPreview} className="preview-switch preview-start">
+          <span className="when">See the request pages as a client sees them:</span>
+          <select name="business" aria-label="Client to preview">
+            {businesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+          <button className="link" type="submit">Preview</button>
+        </form>
+      )}
       <div className="cols">
         <div>
           <p className="eyebrow">Who has access</p>

@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 
 // Oatcake admins looking inside another workspace send it along; the database ignores it for everyone else.
 export const VIEW_COOKIE = "view_ws";
+// The studio previewing its request pages as one of its clients would see them (a business id).
+export const PREVIEW_COOKIE = "preview_biz";
 
 export async function createClient() {
   const cookieStore = await cookies();

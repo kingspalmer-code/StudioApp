@@ -3,15 +3,15 @@ import { redirect } from "next/navigation";
 import Shell from "@/components/Shell";
 import { coversFor } from "@/lib/deliveries";
 import { formatDate, isDone } from "@/lib/priority";
-import { requireMember } from "@/lib/session";
+import { asClient, requireMember } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
 
 // Every finished project for this business as a gallery, newest first, to look back on or download again.
 export default async function ArchivePage({ searchParams }: { searchParams: Promise<{ year?: string; type?: string }> }) {
   const { year, type } = await searchParams;
-  const { supabase, member, ctx, shell } = await requireMember();
+  const { supabase, member, ctx, shell } = asClient(await requireMember());
   if (member.role !== "client") redirect("/");
-  const { data } = await supabase.from("tickets").select("*").returns<Ticket[]>();
+  const { data } = await supabase.from("tickets").select("*").eq("business_id", member.business_id).returns<Ticket[]>();
   const finished = (data ?? [])
     .filter((t) => isDone(t, ctx))
     .map((t) => ({ ...t, when: t.delivered_at ?? t.deadline }))

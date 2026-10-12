@@ -6,7 +6,7 @@ import { addNote, saveDetails, setPinned, setStatus } from "@/app/actions";
 import FieldInput from "@/components/FieldInput";
 import { appliesTo, groupFields, hasValue, showValue, valueOf, type JobField } from "@/lib/fields";
 import { dueLabel, formatDate, isDone, money, startBy, startLabel } from "@/lib/priority";
-import { requireMember } from "@/lib/session";
+import { asClient, requireMember } from "@/lib/session";
 import type { Note, Ticket, TicketFile } from "@/lib/types";
 import DeleteTicket from "./DeleteTicket";
 import Link from "next/link";
@@ -21,10 +21,12 @@ const IMAGE = /\.(png|jpe?g|gif|webp|svg)$/i;
 export default async function TicketPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: rawId } = await params;
   const id = Number(rawId);
-  const { supabase, member, businesses, ctx, terms, workspace, shell, viewing } = await requireMember();
-  const trade = workspace.kind === "trade";
-  const { data: t } = await supabase.from("tickets").select("*").eq("id", id).maybeSingle<Ticket>();
+  const session = await requireMember();
+  const { data: t } = await session.supabase.from("tickets").select("*").eq("id", id).maybeSingle<Ticket>();
   if (!t) notFound();
+  // While previewing a client, their own jobs show as they see them; anything else shows as usual.
+  const { supabase, member, businesses, ctx, terms, workspace, shell, viewing } = asClient(session, t.business_id);
+  const trade = workspace.kind === "trade";
 
   const [{ data: notes }, { data: files }, { data: fields }, { data: docRows }] = await Promise.all([
     supabase.from("ticket_notes").select("*").eq("ticket_id", id).order("created_at").returns<Note[]>(),

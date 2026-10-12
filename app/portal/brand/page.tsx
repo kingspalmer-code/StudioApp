@@ -2,12 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import Shell from "@/components/Shell";
 import { brandFor } from "@/lib/brands";
-import { requireEditor } from "@/lib/session";
+import { asClient, requireEditor } from "@/lib/session";
 import BrandForm from "./BrandForm";
 
 // A business sets its own logo and colour, which theme its portal and its cards in the studio's queue.
 export default async function BrandPage() {
-  const { member, businesses, shell } = await requireEditor(["client"]);
+  const { member, businesses, shell } = asClient(await requireEditor(["client", "designer"]));
+  if (member.role !== "client") redirect("/portal");
   const biz = businesses.find((b) => b.id === member.business_id);
   if (!biz) redirect("/portal");
   const brand = brandFor(biz);
