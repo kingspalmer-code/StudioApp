@@ -153,7 +153,7 @@ export default function Shell({
           children
         )}
       </main>
-      <TabBar links={links} />
+      <TabBar links={links} canCreate={canCreate} />
       {canCreate && (
         <CreateMenu
           trade={workspace.kind === "trade"}
