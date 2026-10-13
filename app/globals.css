@@ -736,6 +736,8 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 .gallery-card:hover .gallery-img img { transform: scale(1.03); }
 .gallery-img > span { font-size: 13px; font-weight: 600; color: var(--label-3); padding: 8px; text-align: center; }
 .gallery-card b { font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gallery-biz { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.gallery-biz .badge { flex: none; border-radius: 4px; }
 .archive-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 .portal-foot { margin-top: 26px; text-align: center; }
 @media (max-width: 700px) { .gallery { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; } }

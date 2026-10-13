@@ -16,12 +16,13 @@ import { OatcakeMark } from "./OatcakeLogo";
 import { termsFor } from "@/lib/workspace";
 
 function linksFor(member: Member, workspace: Workspace, viewing: boolean) {
-  // Managers can look at the queue and every job in it; nothing there lets them change anything.
+  // Managers can look at the queue, every job in it and the gallery of finished work; nothing there lets them change anything.
   // Managers linked to businesses on the People page can also send requests for them.
   if (member.role === "manager")
     return [
       { href: "/queue", label: workspace.kind === "trade" ? "Jobs" : "Queue" },
       { href: "/overview", label: "Overview" },
+      { href: "/gallery", label: "Gallery" },
       ...(member.business_ids?.length && !viewing ? [{ href: "/portal", label: "New request" }] : []),
     ];
   if (member.role === "client") return [{ href: "/portal", label: "Requests" }];
