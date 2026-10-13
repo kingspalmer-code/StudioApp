@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { groupByDay, hrefFor, initialsOf, NOTIFICATION_COLUMNS, phrase, whenLabel, type Notification } from "@/lib/notifications";
+import { groupByDay, hrefFor, initialsOf, isMessage, NOTIFICATION_COLUMNS, people, phrase, stackPhrase, stackUp, whenLabel, type Notification } from "@/lib/notifications";
 
 export type Tab = "unread" | "read" | "archived";
 export const TABS: { key: Tab; label: string }[] = [
@@ -38,29 +38,38 @@ export function useNotifications(tab: Tab, limit: number, enabled = true) {
   };
   const now = () => new Date().toISOString();
 
+  const markRead = (ns: Notification[]) => {
+    const ids = ns.filter((n) => !n.read_at).map((n) => n.id);
+    if (!ids.length) return;
+    setItems((list) => list?.map((n) => (ids.includes(n.id) ? { ...n, read_at: now() } : n)) ?? null);
+    void save(supabase.from("notifications").update({ read_at: now() }).in("id", ids).is("read_at", null));
+  };
+
   return {
     items,
     load,
-    markRead(id: number) {
-      setItems((list) => list?.map((n) => (n.id === id && !n.read_at ? { ...n, read_at: now() } : n)) ?? null);
-      void save(supabase.from("notifications").update({ read_at: now() }).eq("id", id).is("read_at", null));
-    },
+    markRead,
     markAllRead() {
       setItems((list) => (tab === "unread" ? [] : list?.map((n) => (n.read_at ? n : { ...n, read_at: now() })) ?? null));
       void save(supabase.from("notifications").update({ read_at: now() }).is("read_at", null).is("archived_at", null));
     },
-    archive(n: Notification) {
-      setItems((list) => list?.filter((x) => x.id !== n.id) ?? null);
-      void save(supabase.from("notifications").update({ archived_at: now(), read_at: n.read_at ?? now() }).eq("id", n.id));
+    archive(ns: Notification[]) {
+      const ids = ns.map((n) => n.id);
+      setItems((list) => list?.filter((x) => !ids.includes(x.id)) ?? null);
+      void save(supabase.from("notifications").update({ archived_at: now() }).in("id", ids));
+      markRead(ns);
     },
-    restore(n: Notification) {
-      setItems((list) => list?.filter((x) => x.id !== n.id) ?? null);
-      void save(supabase.from("notifications").update({ archived_at: null }).eq("id", n.id));
+    restore(ns: Notification[]) {
+      const ids = ns.map((n) => n.id);
+      setItems((list) => list?.filter((x) => !ids.includes(x.id)) ?? null);
+      void save(supabase.from("notifications").update({ archived_at: null }).in("id", ids));
     },
   };
 }
 
-function Avatar({ n }: { n: Notification }) {
+type Feed = ReturnType<typeof useNotifications>;
+
+function Avatar({ n }: { n: Pick<Notification, "actor_avatar" | "actor_name"> }) {
   return (
     <span className="nt-avatar" aria-hidden="true">
       {n.actor_avatar ? <img src={n.actor_avatar} alt="" /> : initialsOf(n.actor_name || "?")}
@@ -75,18 +84,111 @@ const ArchiveIcon = () => (
   </svg>
 );
 
-// Grouped by day, newest first: who did what to which job, when, and what they said.
-export function NotificationList({
-  feed,
-  tab,
-  onOpen,
-  max,
-}: {
-  feed: ReturnType<typeof useNotifications>;
-  tab: Tab;
-  onOpen?: () => void;
-  max?: number;
-}) {
+function Actions({ items, feed, tab }: { items: Notification[]; feed: Feed; tab: Tab }) {
+  const unread = items.some((n) => !n.read_at);
+  return (
+    <>
+      {unread && <span className="nt-dot" aria-label="Unread" />}
+      {tab === "archived" ? (
+        <button type="button" className="nt-act nt-restore" onClick={() => feed.restore(items)}>Move back</button>
+      ) : (
+        <button type="button" className="nt-act" onClick={() => feed.archive(items)} aria-label="Archive" title="Archive">
+          <ArchiveIcon />
+        </button>
+      )}
+    </>
+  );
+}
+
+// One thing that happened, or the same person doing it again on the same job (shown once, with
+// each of their messages). Tapping it opens the job there.
+function OneCard({ items, feed, tab, onOpen }: { items: Notification[]; feed: Feed; tab: Tab; onOpen?: () => void }) {
+  const n = items[0];
+  const [before, after] = phrase({ kind: n.kind, count: items.reduce((sum, x) => sum + x.count, 0) });
+  const message = isMessage(n);
+  const bodies = message ? [...new Set(items.map((x) => x.body).filter(Boolean))].slice(0, 3) : n.body && n.kind !== "files" ? [n.body] : [];
+  const times = items.length > 1 && !message && n.kind !== "files" ? items.length : 0;
+  return (
+    <li className={`nt-item${items.some((x) => !x.read_at) ? " unread" : ""}${message ? " msg" : ""}`}>
+      <Link
+        href={hrefFor(n)}
+        className="nt-open"
+        onClick={() => {
+          feed.markRead(items);
+          onOpen?.();
+        }}
+      >
+        <Avatar n={n} />
+        <span className="nt-text">
+          <span className="nt-line">
+            <b>{n.actor_name}</b> {before} <b>{n.title || "a job"}</b>{after ? ` ${after}` : ""}
+          </span>
+          <span className="nt-when">
+            {whenLabel(n.created_at)}
+            {times ? ` · ${times} times` : ""}
+          </span>
+          {n.kind === "files" && <span className="nt-files">{[...new Set(items.flatMap((x) => x.body.split(", ")))].filter(Boolean).join(", ")}</span>}
+          {bodies.map((b, i) => (
+            <span key={i} className="nt-body"><span className="nt-clamp">{b}</span></span>
+          ))}
+        </span>
+      </Link>
+      <Actions items={items} feed={feed} tab={tab} />
+    </li>
+  );
+}
+
+function bySame(items: Notification[]) {
+  const groups = new Map<string, Notification[]>();
+  for (const n of items) {
+    const k = `${n.ticket_id}:${n.actor_name}`;
+    groups.set(k, [...(groups.get(k) ?? []), n]);
+  }
+  return [...groups.values()];
+}
+
+// Several people, or several jobs, doing the same kind of thing: one card, stacked, that opens
+// up to show each one.
+function StackCard({ items, feed, tab, onOpen }: { items: Notification[]; feed: Feed; tab: Tab; onOpen?: () => void }) {
+  const [open, setOpen] = useState(false);
+  const faces = [...new Map(items.map((n) => [n.actor_name, n])).values()];
+  const jobs = [...new Set(items.map((n) => n.title || "a job"))];
+  const subs = stackUp(items).flatMap((c) =>
+    // Inside an open stack, each person-and-job is its own card.
+    c.kind === "one" ? [c.items] : bySame(c.items)
+  );
+  return (
+    <li className={`nt-item nt-stack${open ? " open" : ""}${items.some((x) => !x.read_at) ? " unread" : ""}`} data-depth={Math.min(subs.length, 3)}>
+      <button type="button" className="nt-open" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span className="nt-faces" aria-hidden="true">
+          <Avatar n={faces[0]} />
+          {faces.length > 1 && <span className="nt-plus">+{faces.length - 1}</span>}
+        </span>
+        <span className="nt-text">
+          <span className="nt-line">
+            <b>{people(items)}</b> {stackPhrase(items[0].kind, jobs.length)}
+          </span>
+          <span className="nt-when">{whenLabel(items[0].created_at)}</span>
+          <span className="nt-jobs">
+            {jobs.slice(0, 3).join(" · ")}
+            {jobs.length > 3 ? ` · +${jobs.length - 3} more` : ""}
+          </span>
+          <span className="nt-more">{open ? "Show less" : `Show all ${subs.length}`}</span>
+        </span>
+      </button>
+      <Actions items={items} feed={feed} tab={tab} />
+      {open && (
+        <ul className="nt-list nt-sublist">
+          {subs.map((g) => <OneCard key={g[0].id} items={g} feed={feed} tab={tab} onOpen={onOpen} />)}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+// Grouped by day, newest first, with like things stacked: who did what to which job, when, and
+// what they said.
+export function NotificationList({ feed, tab, onOpen }: { feed: Feed; tab: Tab; onOpen?: () => void }) {
   const { items } = feed;
   if (!items) return <p className="nt-empty">Loading…</p>;
   if (!items.length)
@@ -95,49 +197,21 @@ export function NotificationList({
         {tab === "unread" ? "You're all caught up." : tab === "read" ? "Nothing read yet." : "Nothing archived."}
       </p>
     );
-  const shown = max ? items.slice(0, max) : items;
   return (
     <div className="nt-groups">
-      {groupByDay(shown).map((g) => (
+      {groupByDay(items).map((g) => (
         <section key={g.label} className="nt-group" aria-label={g.label}>
           <p className="nt-day">
             {g.label} <span className="nt-count">{g.items.length}</span>
           </p>
           <ul className="nt-list">
-            {g.items.map((n) => {
-              const [before, after] = phrase(n);
-              const quote = n.body && n.kind !== "files";
-              return (
-                <li key={n.id} className={`nt-item${n.read_at ? "" : " unread"}`}>
-                  <Link
-                    href={hrefFor(n)}
-                    className="nt-open"
-                    onClick={() => {
-                      feed.markRead(n.id);
-                      onOpen?.();
-                    }}
-                  >
-                    <Avatar n={n} />
-                    <span className="nt-text">
-                      <span className="nt-line">
-                        <b>{n.actor_name}</b> {before} <b>{n.title || "a job"}</b>{after ? ` ${after}` : ""}
-                      </span>
-                      <span className="nt-when">{whenLabel(n.created_at)}</span>
-                      {n.kind === "files" && n.body && <span className="nt-files">{n.body}</span>}
-                      {quote && <span className="nt-body">{n.body}</span>}
-                    </span>
-                  </Link>
-                  {!n.read_at && <span className="nt-dot" aria-label="Unread" />}
-                  {tab === "archived" ? (
-                    <button type="button" className="nt-act nt-restore" onClick={() => feed.restore(n)}>Move back</button>
-                  ) : (
-                    <button type="button" className="nt-act" onClick={() => feed.archive(n)} aria-label="Archive" title="Archive">
-                      <ArchiveIcon />
-                    </button>
-                  )}
-                </li>
-              );
-            })}
+            {stackUp(g.items).map((c) =>
+              c.kind === "stack" ? (
+                <StackCard key={c.key} items={c.items} feed={feed} tab={tab} onOpen={onOpen} />
+              ) : (
+                <OneCard key={c.key} items={c.items} feed={feed} tab={tab} onOpen={onOpen} />
+              )
+            )}
           </ul>
         </section>
       ))}

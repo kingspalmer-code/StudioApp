@@ -73,3 +73,65 @@ export const initialsOf = (name: string) =>
     .slice(0, 2)
     .map((w) => w[0].toUpperCase())
     .join("");
+
+// Smart grouping, within a day's notifications (newest first):
+// - the same person doing the same thing to the same job again (two notes in a row) is one card;
+// - requests, files, drafts and other moves from several people or on several jobs stack into one
+//   card that opens up;
+// - notes, replies and approvals are never stacked with other people's: those are the messages.
+export type Card = { key: string; kind: "one" | "stack"; items: Notification[] };
+
+const MESSAGES = new Set<NotificationKind>(["note", "draft_note", "approval"]);
+export const isMessage = (n: Pick<Notification, "kind">) => MESSAGES.has(n.kind);
+
+export function stackUp(list: Notification[]): Card[] {
+  const cards: Card[] = [];
+  const same = new Map<string, Card>();
+  const stacks = new Map<string, Card>();
+  for (const n of list) {
+    const one = `${n.kind}:${n.ticket_id}:${n.actor_name}`;
+    const existing = same.get(one);
+    if (existing) {
+      existing.items.push(n);
+      continue;
+    }
+    if (!isMessage(n)) {
+      const stack = stacks.get(n.kind);
+      if (stack) {
+        stack.items.push(n);
+        stack.kind = "stack";
+        same.set(one, stack);
+        continue;
+      }
+    }
+    const card: Card = { key: `${n.id}`, kind: "one", items: [n] };
+    cards.push(card);
+    same.set(one, card);
+    if (!isMessage(n)) stacks.set(n.kind, card);
+  }
+  // A card whose items are all one person on one job reads as one thing, however many there are.
+  for (const c of cards) if (c.kind === "stack" && new Set(c.items.map((n) => `${n.ticket_id}:${n.actor_name}`)).size === 1) c.kind = "one";
+  return cards;
+}
+
+// "Dylan Stott", "Dylan Stott and Laura Hedley-White", "Dylan Stott and 4 others".
+export function people(items: Notification[]) {
+  const names = [...new Set(items.map((n) => n.actor_name))];
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names[0]} and ${names.length - 1} others`;
+}
+
+// What a stack of several jobs says: "sent 7 new requests".
+export function stackPhrase(kind: NotificationKind, jobs: number): string {
+  switch (kind) {
+    case "request": return `sent ${jobs} new requests`;
+    case "follow_up": return `asked for ${jobs} follow-ups`;
+    case "job": return `added ${jobs} jobs`;
+    case "files": return `added files to ${jobs} jobs`;
+    case "draft": return `shared ${jobs} drafts`;
+    case "review": return `sent ${jobs} jobs for review`;
+    case "finished": return `finished ${jobs} jobs`;
+    default: return `did ${jobs} things`;
+  }
+}

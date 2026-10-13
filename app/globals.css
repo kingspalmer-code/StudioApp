@@ -855,13 +855,13 @@ html.in-app .nt-layer { top: 28px; }
 .nt-scrim { position: absolute; inset: 0; }
 .nt-panel { position: absolute; top: calc(58px + env(safe-area-inset-top, 0px)); right: 12px; width: min(420px, calc(100vw - 24px)); max-height: calc(100dvh - 76px - env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; background: var(--surface); border-radius: 18px; box-shadow: 0 0 0 .5px var(--sep), 0 24px 60px rgba(23,17,15,.28); overflow: hidden; transform-origin: top right; }
 @media (max-width: 700px) { .nt-panel { left: 8px; right: 8px; width: auto; top: calc(52px + env(safe-area-inset-top, 0px)); max-height: calc(100dvh - 60px - 84px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); } }
-.nt-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 18px 12px; }
+.nt-head { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 18px 18px 12px; }
 .nt-head h2 { margin: 0; font: 700 22px/1.1 var(--font-display); letter-spacing: -.02em; }
 .nt-head .nt-close { position: static; transform: none; }
-.nt-tabs { display: flex; margin: 0 18px 6px; }
+.nt-tabs { display: flex; flex: none; overflow: visible; margin: 0 18px 6px; }
 .nt-tabs button { flex: 1; padding: 7px 10px; }
 .nt-scroll { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; padding: 0 12px 8px; overscroll-behavior: contain; }
-.nt-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 18px; border-top: .5px solid var(--sep); }
+.nt-foot { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 18px; border-top: .5px solid var(--sep); }
 .nt-all-read { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; color: var(--label); }
 .nt-all-read svg { width: 18px; height: 18px; }
 .nt-empty { text-align: center; color: var(--label-2); margin: 36px 0; }
@@ -877,7 +877,8 @@ html.in-app .nt-layer { top: 28px; }
 .nt-line { color: var(--label-2); font-size: 14.5px; line-height: 1.35; }
 .nt-line b { color: var(--label); font-weight: 600; }
 .nt-when { font-size: 12.5px; color: var(--label-3); }
-.nt-body { margin-top: 6px; background: var(--fill); border-radius: 10px; padding: 8px 11px; font-size: 14px; line-height: 1.4; color: var(--label); white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.nt-body { margin-top: 6px; background: var(--fill); border-radius: 10px; padding: 8px 11px; font-size: 14px; line-height: 1.4; color: var(--label); white-space: pre-wrap; overflow-wrap: anywhere; }
+.nt-clamp { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
 .nt-files { font-size: 13px; color: var(--label-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nt-dot { position: absolute; top: 16px; right: 14px; width: 9px; height: 9px; border-radius: 50%; background: var(--blue); }
 .nt-act { position: absolute; bottom: 8px; right: 8px; display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 8px; background: none; color: var(--label-3); cursor: pointer; padding: 0; }
@@ -932,3 +933,36 @@ html.in-app .nt-layer { top: 28px; }
 .cust-notes p { margin: 4px 0 0; white-space: pre-wrap; }
 .cust-reply { margin-top: 10px; display: grid; gap: 8px; justify-items: start; }
 .cust-reply .group { width: 100%; }
+
+/* The panel keeps a dark roast in both themes, like the reference, so it reads as a layer above the page. */
+.nt-panel {
+  --surface: #120d0c; --surface-2: #1d1715; --fill: rgba(243,233,220,.08); --sep: rgba(243,233,220,.10);
+  --label: #f3e9dc; --label-2: rgba(243,233,220,.62); --label-3: rgba(243,233,220,.36);
+  --accent: #e6d4bc; --accent-ink: #382a25; --blue: #7fa9d6;
+  color: var(--label); color-scheme: dark;
+  box-shadow: 0 0 0 .5px rgba(243,233,220,.12), 0 30px 80px rgba(0,0,0,.55);
+}
+.nt-panel .seg [aria-pressed="true"] { background: #2b2320; box-shadow: 0 0 0 .5px rgba(243,233,220,.14), 0 1px 3px rgba(0,0,0,.5); }
+.nt-panel .nt-item { background: #1b1513; box-shadow: 0 0 0 .5px rgba(243,233,220,.09), 0 1px 0 rgba(255,255,255,.03) inset; }
+.nt-panel .nt-item:hover { background: #211a17; }
+
+/* Messages stand out: the words get a lit bubble with an accent edge, brighter while unread. */
+.nt-item.msg .nt-body { background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 3px 0 0 var(--accent); color: var(--label); font-size: 14.5px; }
+.nt-item.msg.unread .nt-body { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.nt-item.msg .nt-body + .nt-body { margin-top: 4px; }
+
+/* Stacks: the cards behind peek out underneath until it's opened. */
+.nt-stack { margin-bottom: 0; }
+.nt-stack:not(.open)[data-depth="2"] { margin-bottom: 8px; }
+.nt-stack:not(.open)[data-depth="3"] { margin-bottom: 14px; }
+.nt-stack:not(.open)::before, .nt-stack:not(.open)::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: -7px; height: 20px; border-radius: 0 0 13px 13px; background: color-mix(in srgb, var(--surface-2) 82%, var(--label) 4%); box-shadow: 0 0 0 .5px var(--sep); z-index: -1; }
+.nt-stack:not(.open)[data-depth="3"]::after { left: 20px; right: 20px; bottom: -14px; background: color-mix(in srgb, var(--surface-2) 70%, var(--surface)); z-index: -2; }
+.nt-stack:not(.open)[data-depth="2"]::after { display: none; }
+.nt-list { isolation: isolate; }
+.nt-stack > .nt-open { width: 100%; border: 0; background: none; text-align: left; font: inherit; cursor: pointer; }
+.nt-faces { flex: none; position: relative; width: 38px; height: 38px; }
+.nt-plus { position: absolute; right: -6px; bottom: -4px; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 700; box-shadow: 0 0 0 2px var(--surface-2); }
+.nt-jobs { font-size: 13px; color: var(--label-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nt-more { font-size: 12.5px; font-weight: 600; color: var(--accent); margin-top: 2px; }
+.nt-sublist { padding: 0 8px 8px; }
+.nt-sublist .nt-item { background: rgba(243,233,220,.04); }
