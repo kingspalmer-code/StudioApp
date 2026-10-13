@@ -14,7 +14,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const theme = (await cookies()).get("theme")?.value;
   return (
     <html lang="en-GB" suppressHydrationWarning data-theme={theme === "light" || theme === "dark" ? theme : undefined}>
-      <body>{children}</body>
+      <body>
+        {/* Only shown in the Mac app: the strip behind the window buttons, which also moves the window. */}
+        <div className="app-drag" data-tauri-drag-region aria-hidden />
+        {children}
+      </body>
     </html>
   );
 }

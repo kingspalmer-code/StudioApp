@@ -802,3 +802,11 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 .ticket.picking + .ticket.ranked::before { left: 136px; }
 .pickbar { position: sticky; top: 8px; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--surface); box-shadow: var(--shadow); border-radius: var(--r); padding: 10px 12px; margin-bottom: 10px; }
 .pickbar .what { flex: 1; min-width: 140px; font-size: 14px; font-weight: 600; }
+
+/* The Mac app (desktop/) has no title bar of its own: a strip at the top holds the window buttons
+   and moves the window, and everything else starts below it. */
+.app-drag { display: none; }
+html.in-app .app-drag { display: block; position: fixed; top: 0; left: 0; right: 0; height: 28px; z-index: 50; background: var(--surface-2); border-bottom: .5px solid var(--sep); }
+html.in-app body { padding-top: 28px; }
+html.in-app .bar { top: 28px; }
+html.in-app .ct-layer, html.in-app .sr-layer, html.in-app .sheet-wrap { top: 28px; }

@@ -1,12 +1,14 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "oatcake",
-  "description": "Lets oatcake.xyz, shown in the app window, send Mac notifications.",
+  "description": "Lets oatcake.xyz, shown in the app window, send Mac notifications and move the window by its top strip.",
   "windows": ["main"],
   "remote": { "urls": ["https://oatcake.xyz/*", "https://*.oatcake.xyz/*"] },
   "permissions": [
     "notification:allow-notify",
     "notification:allow-is-permission-granted",
-    "notification:allow-request-permission"
+    "notification:allow-request-permission",
+    "core:window:allow-start-dragging",
+    "core:window:allow-internal-toggle-maximize"
   ]
 }
