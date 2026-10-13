@@ -1,6 +1,6 @@
 [package]
 name = "oatcake"
-version = "1.0.0"
+version = "1.0.1"
 description = "Oatcake for Mac"
 edition = "2021"
 

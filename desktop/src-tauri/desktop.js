@@ -3,6 +3,20 @@
 // one as a Mac notification.
 (function () {
   if (window.top !== window || !/(^|\.)oatcake\.xyz$/.test(location.hostname)) return;
+  // Tells the site it's inside the app, so it makes room for the window buttons (see globals.css).
+  var markApp = function () { document.documentElement.classList.add("in-app"); };
+  if (document.documentElement) markApp();
+  else document.addEventListener("DOMContentLoaded", markApp);
+
+  // Browser shortcuts the app window doesn't have on its own: reload, back and forward.
+  document.addEventListener("keydown", function (e) {
+    if (!e.metaKey || e.altKey || e.ctrlKey) return;
+    if (e.key === "r") location.reload();
+    else if (e.key === "[") history.back();
+    else if (e.key === "]") history.forward();
+    else return;
+    e.preventDefault();
+  });
   var invoke = function (cmd, args) {
     return window.__TAURI_INTERNALS__.invoke(cmd, args || {});
   };

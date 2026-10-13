@@ -31,7 +31,7 @@ pub fn run() {
             let nav_app = app.handle().clone();
             let popup_app = app.handle().clone();
             let download_app = app.handle().clone();
-            WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
+            let window = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
                 .title("Oatcake")
                 .inner_size(1280.0, 840.0)
                 .min_inner_size(420.0, 560.0)
@@ -74,8 +74,14 @@ pub fn run() {
                             .show();
                     }
                     true
-                })
-                .build()?;
+                });
+            // No grey Mac title bar: the page runs to the top of the window and draws its own
+            // strip behind the window buttons (html.in-app in globals.css, .app-drag to move it).
+            #[cfg(target_os = "macos")]
+            let window = window
+                .title_bar_style(tauri::TitleBarStyle::Overlay)
+                .hidden_title(true);
+            window.build()?;
             Ok(())
         })
         .build(tauri::generate_context!())

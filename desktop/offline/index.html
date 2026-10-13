@@ -15,12 +15,14 @@
   h1 { font-size: 20px; margin: 0 0 6px; }
   p { color: var(--soft); margin: 0 0 18px; }
   button { font: inherit; font-weight: 600; padding: 8px 20px; border-radius: 999px; border: 0; background: var(--ink); color: var(--bg); cursor: pointer; }
+  .drag { position: fixed; top: 0; left: 0; right: 0; height: 28px; }
   .wait h1, .wait p, .wait button { display: none; }
 </style>
 </head>
 <body class="wait">
 <!-- The app opens here first, then goes straight to oatcake.xyz. If the Mac is offline it says so
      and tries again as soon as the connection is back. -->
+<div class="drag" data-tauri-drag-region></div>
 <main>
   <div class="ring"></div>
   <h1>You're offline</h1>
