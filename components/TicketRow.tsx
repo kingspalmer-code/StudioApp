@@ -10,17 +10,21 @@ export default function TicketRow({
   ctx,
   rank,
   showBusiness = true,
+  select,
 }: {
   t: Ticket;
   biz?: Business;
   ctx: Ctx;
   rank?: number;
   showBusiness?: boolean;
+  // In Select mode the row ticks a box instead of opening the job.
+  select?: { checked: boolean; onToggle: () => void };
 }) {
   const done = isDone(t, ctx);
   const sb = startLabel(startBy(t, ctx));
-  return (
-    <Link href={`/tickets/${t.id}`} className={rank ? "ticket ranked" : "ticket"}>
+  const cls = rank ? "ticket ranked" : "ticket";
+  const body = (
+    <>
       {rank ? <span className="rank">{rank}</span> : null}
       <BizBadge biz={biz} />
       <span className="main">
@@ -39,6 +43,18 @@ export default function TicketRow({
         ) : null}
         <StatusChip status={t.status} ctx={ctx} />
       </span>
+    </>
+  );
+  if (select)
+    return (
+      <label className={`${cls} picking${select.checked ? " picked" : ""}`}>
+        <input type="checkbox" className="tick" checked={select.checked} onChange={select.onToggle} aria-label={`Select ${t.title}`} />
+        {body}
+      </label>
+    );
+  return (
+    <Link href={`/tickets/${t.id}`} className={cls}>
+      {body}
       <span className="chev" aria-hidden="true">›</span>
     </Link>
   );

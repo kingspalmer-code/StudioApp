@@ -1,7 +1,7 @@
 import BizBadge from "@/components/BizBadge";
 import Link from "next/link";
 import Shell from "@/components/Shell";
-import TicketRow from "@/components/TicketRow";
+import QueueList from "@/components/QueueList";
 import Walkthrough from "@/components/Walkthrough";
 import { daysFromToday, finalStage, formatDate, isDone, money, sortQueue, startBy, startLabel } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
@@ -34,6 +34,24 @@ export default async function QueuePage({
   ].filter((x): x is { n: number; text: string; color?: string } => Boolean(x));
   const final = finalStage(ctx);
   const showFilter = businesses.length > 1 && businesses.length <= 8;
+  const toolbar = (
+    <>
+      <p className="eyebrow">Queue</p>
+      <nav className="seg" aria-label="Layout" data-tour="layout">
+        <Link href={href("list", biz)} aria-current={view !== "board" ? "page" : undefined}>Priority list</Link>
+        <Link href={href("board", biz)} aria-current={view === "board" ? "page" : undefined}>Board</Link>
+      </nav>
+      {showFilter && <nav className="seg" aria-label={terms.Client}>
+        <Link href={href(view, "all")} aria-current={!filterBiz ? "page" : undefined}>All</Link>
+        {businesses.map((b) => (
+          <Link key={b.id} href={href(view, b.slug)} aria-current={filterBiz?.id === b.id ? "page" : undefined}>
+            {b.name}
+          </Link>
+        ))}
+      </nav>}
+    </>
+  );
+  const listed = queue.filter(keep);
 
   return (
     <Shell {...shell}>
@@ -51,35 +69,21 @@ export default async function QueuePage({
             : null}
       </p>
 
-      <div className="toolbar">
-        <p className="eyebrow">Queue</p>
-        <nav className="seg" aria-label="Layout" data-tour="layout">
-          <Link href={href("list", biz)} aria-current={view !== "board" ? "page" : undefined}>Priority list</Link>
-          <Link href={href("board", biz)} aria-current={view === "board" ? "page" : undefined}>Board</Link>
-        </nav>
-        {showFilter && <nav className="seg" aria-label={terms.Client}>
-          <Link href={href(view, "all")} aria-current={!filterBiz ? "page" : undefined}>All</Link>
-          {businesses.map((b) => (
-            <Link key={b.id} href={href(view, b.slug)} aria-current={filterBiz?.id === b.id ? "page" : undefined}>
-              {b.name}
-            </Link>
-          ))}
-        </nav>}
-      </div>
-
       {view !== "board" ? (
-        <>
-          <div className="group" data-tour="list">
-            {queue.filter(keep).length ? (
-              queue.filter(keep).map((t) => (
-                <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} rank={queue.indexOf(t) + 1} />
-              ))
-            ) : (
-              <div className="empty">Nothing open{filterBiz ? ` for ${filterBiz.name}` : ""}. New {terms.jobs} appear here as soon as they're added.</div>
-            )}
-          </div>
-        </>
+        <QueueList
+          toolbar={toolbar}
+          items={listed}
+          ranks={Object.fromEntries(queue.map((t, i) => [t.id, i + 1]))}
+          byId={byId}
+          ctx={ctx}
+          job={terms.job}
+          jobs={terms.jobs}
+          canEdit={!viewing}
+          empty={<div className="empty">Nothing open{filterBiz ? ` for ${filterBiz.name}` : ""}. New {terms.jobs} appear here as soon as they're added.</div>}
+        />
       ) : (
+        <>
+        <div className="toolbar">{toolbar}</div>
         <div className="board">
           {ctx.stages.map((st) => {
             const items =
@@ -120,6 +124,7 @@ export default async function QueuePage({
             );
           })}
         </div>
+        </>
       )}
       {!viewing && view !== "board" && <Walkthrough force={tour === "1"} job={terms.job} clients={terms.clients} />}
     </Shell>
