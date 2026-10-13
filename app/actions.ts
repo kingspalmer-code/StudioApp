@@ -15,7 +15,9 @@ import type { Role, Status } from "@/lib/types";
 
 export async function signOut() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  // Only this browser or app. Supabase's default signs you out everywhere, so signing out on one
+  // device (say, to try a client's login) logged you out of the Mac app, Safari and your phone too.
+  await supabase.auth.signOut({ scope: "local" });
   redirect("/login");
 }
 
