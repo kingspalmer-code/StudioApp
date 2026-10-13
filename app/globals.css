@@ -1071,3 +1071,27 @@ html.in-app .nt-layer { top: var(--app-bar); }
   html[data-rail="open"] .has-rail > .bar .ask-btn span { display: inline; font-size: 14px; font-weight: 500; }
   html[data-rail="open"] .has-rail > .bar .me-btn { margin-left: 6px; }
 }
+
+/* A job opened beside the queue (components/SplitPanel.tsx): the panel on the right, and the queue
+   shifted over to make room. Only on wide screens; narrower ones open the job's own page. */
+:root { --split-w: min(560px, 44vw); }
+.split-panel { display: none; }
+@media (min-width: 1100px) {
+  html.split-open main { max-width: none; margin-right: var(--split-w); padding-right: 20px; }
+  .split-panel { display: flex; flex-direction: column; position: fixed; top: var(--app-bar, 0px); right: 0; bottom: 0; width: var(--split-w); z-index: 15; background: var(--bg); border-left: .5px solid var(--sep); box-shadow: -8px 0 24px rgba(0,0,0,.06); animation: split-in .18s ease-out; }
+  .split-head { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: .5px solid var(--sep); background: var(--surface); }
+  .split-btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; min-width: 30px; justify-content: center; padding: 0 8px; border: 0; border-radius: 8px; background: none; color: var(--label-2); cursor: pointer; font: inherit; font-size: 13px; text-decoration: none; }
+  .split-btn:hover { background: var(--fill); color: var(--label); }
+  .split-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .split-full { margin-left: auto; }
+  .split-panel iframe { flex: 1; width: 100%; border: 0; background: var(--bg); }
+  .ticket.open { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+  .ticket.open::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
+}
+@keyframes split-in { from { transform: translateX(24px); opacity: 0; } }
+
+/* The job's own page inside that panel. */
+html.embedded body { padding-top: 0; }
+html.embedded .bar, html.embedded .app-bar, html.embedded .app-drag, html.embedded .tabbar, html.embedded .viewing-bar { display: none !important; }
+html.embedded .has-rail { padding-left: 0; }
+html.embedded main { padding: 16px 20px 48px; }
