@@ -122,3 +122,44 @@ export async function alertNewRequest(ticketId: number) {
     "new_requests"
   );
 }
+
+// A client added files to a job after sending it: alert the studio on their phones. Only files
+// added in the last few minutes count, and each batch alerts once.
+export async function alertNewFiles(ticketId: number) {
+  if (!pushReady()) return;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const email = user?.email?.toLowerCase();
+  if (!email) return;
+  const since = new Date(Date.now() - 10 * 60_000).toISOString();
+  const [{ data: me }, { data: ticket }, { data: files }] = await Promise.all([
+    supabase.from("members").select("role, full_name").eq("email", email).maybeSingle<{ role: string; full_name: string }>(),
+    supabase.from("tickets").select("id, title").eq("id", ticketId).maybeSingle<{ id: number; title: string }>(),
+    supabase
+      .from("ticket_files")
+      .select("id, name")
+      .eq("ticket_id", ticketId)
+      .gte("created_at", since)
+      .order("id", { ascending: false })
+      .returns<{ id: number; name: string }[]>(),
+  ]);
+  if (me?.role !== "client" || !ticket || !files?.length) return;
+  if (!(await firstTime("new_files", `${ticket.id}:${files[0].id}`))) return;
+
+  const [info] = (await pushRpc<{ business: string; emails: string[] }[]>("push_request_info", { p_ticket: ticket.id })) ?? [];
+  if (!info?.emails?.length) return;
+  const who = me.full_name || email;
+  const names = files.slice(0, 3).map((f) => f.name).join(", ") + (files.length > 3 ? ` and ${files.length - 3} more` : "");
+  await sendAlert(
+    info.emails,
+    {
+      title: `${who} added ${files.length > 1 ? `${files.length} files` : "a file"} to ${ticket.title}`,
+      body: `${names}${info.business ? ` · ${info.business}` : ""}`,
+      url: `/tickets/${ticket.id}`,
+      tag: `ticket-${ticket.id}-files`,
+    },
+    "new_requests"
+  );
+}

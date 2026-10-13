@@ -754,6 +754,7 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 .deliv-remove { font-size: 13px; color: var(--red); }
 .deliv-add { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
 .deliv-link { margin-top: 12px; }
+.group + .deliveries { margin-top: 12px; }
 
 /* Brief helper on requests */
 .brief-help { margin: 14px 0 4px; }
