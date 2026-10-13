@@ -1,5 +1,6 @@
 "use client";
 
+import ConfirmButton from "@/components/ConfirmButton";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deleteDocument, draftItems, saveDocument, sendDocument, setDocStatus, type DocDraft } from "@/app/documents/actions";
@@ -191,13 +192,13 @@ export default function DocEditor({
               {!quote && doc.status !== "paid" && (
                 <button type="button" className="btn plain small" onClick={() => start(() => setDocStatus(doc.id, "paid"))}>Mark paid</button>
               )}
-              <button
-                type="button"
+              <ConfirmButton
+                label="Delete"
                 className="btn danger small"
-                onClick={() => confirm(`Delete this ${quote ? "quote" : "invoice"}?`) && start(() => deleteDocument(doc.id))}
-              >
-                Delete
-              </button>
+                ask={`Delete this ${quote ? "quote" : "invoice"}?`}
+                yes="Delete"
+                onConfirm={() => start(() => deleteDocument(doc.id))}
+              />
             </div>
           </>
         )}
