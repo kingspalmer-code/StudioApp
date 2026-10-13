@@ -192,9 +192,9 @@ export async function alertNewNote(noteId: number) {
     supabase.from("members").select("role, full_name").eq("email", email).maybeSingle<{ role: string; full_name: string }>(),
     supabase
       .from("ticket_notes")
-      .select("id, ticket_id, draft_id, author_email, body, created_at")
+      .select("id, ticket_id, draft_id, author_email, body, kind, created_at")
       .eq("id", noteId)
-      .maybeSingle<{ id: number; ticket_id: number; draft_id: number | null; author_email: string; body: string; created_at: string }>(),
+      .maybeSingle<{ id: number; ticket_id: number; draft_id: number | null; author_email: string; body: string; kind: string; created_at: string }>(),
   ]);
   if ((me?.role !== "client" && me?.role !== "manager") || !note || note.author_email !== email) return;
   if (Date.now() - Date.parse(note.created_at) > 10 * 60_000) return;
@@ -214,7 +214,9 @@ export async function alertNewNote(noteId: number) {
   await sendAlert(
     info.emails,
     {
-      title: round ? `${who} left notes on draft ${round} of ${ticket.title}` : `${who} added a note to ${ticket.title}`,
+      title:
+        note.kind === "approval" ? `${who} approved ${round ? `draft ${round} of ` : ""}${ticket.title}`
+        : round ? `${who} left notes on draft ${round} of ${ticket.title}` : `${who} added a note to ${ticket.title}`,
       body,
       url: `/tickets/${ticket.id}`,
       tag: `ticket-${ticket.id}-notes`,

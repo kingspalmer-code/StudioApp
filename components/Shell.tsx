@@ -5,6 +5,7 @@ import { brandFor, brandThemeCss } from "@/lib/brands";
 import type { Business, Member, Workspace } from "@/lib/types";
 import AskOatcake from "./AskOatcake";
 import BizBadge from "./BizBadge";
+import Bell from "./Bell";
 import CreateMenu from "./CreateMenu";
 import NavLinks from "./NavLinks";
 import RailNav from "./RailNav";
@@ -109,6 +110,8 @@ export default function Shell({
           {rail ? <RailNav links={links} canCreate={canCreate} /> : <NavLinks links={links} />}
           {canCreate && <SearchButton />}
           {member.role === "designer" && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake hint={askHint} opens={askOpens} since={askSince} />}
+          {/* What other people have done on your jobs. Top right of the page, whatever the layout. */}
+          {!viewing && !preview && <Bell />}
           {/* Your photo or initials, opening your account: settings, appearance and sign out live there, so the bar stays calm. */}
           <Link href="/account" className="me-btn" aria-label={helpUnread ? "Your account. New reply from Oatcake" : "Your account and settings"} data-tour="me">
             {avatar ? <img src={avatar} alt="" /> : initials}

@@ -13,6 +13,7 @@ import AddFiles from "./AddFiles";
 import NewDraft from "./NewDraft";
 import KeptUpdated from "./KeptUpdated";
 import DraftActions from "./DraftActions";
+import ApproveDraft from "./ApproveDraft";
 import Link from "next/link";
 import { createDocument } from "@/app/documents/actions";
 import { docName, gbp, STATUS_LABEL } from "@/lib/documents";
@@ -134,9 +135,9 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
 
   const jobNotes = (notes ?? []).filter((n) => !n.draft_id);
   const noteRow = (n: Note) => (
-    <div className="row stack" key={n.id}>
+    <div className={`row stack${n.kind === "approval" ? " note-approval" : ""}`} key={n.id}>
       <span className="k">{n.author_name || n.author_email} · {formatDate(n.created_at)}</span>
-      <div className="copy">{n.body}</div>
+      <div className="copy">{n.kind === "approval" ? "✓ Approved this draft" : n.body}</div>
     </div>
   );
   const noteForm = (placeholder: string, draftId?: number) => (
@@ -155,19 +156,21 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   const draftsUp = !done && drafts.some((d) => !d.final_at);
   const draftSection = (drafts.length > 0 || (isDesigner && !viewing && !trade)) && (
     <>
-      <p className="eyebrow">Drafts</p>
+      <p className="eyebrow" id="drafts">Drafts</p>
       <div className="drafts">
         {isDesigner && !viewing && (
           <NewDraft ticketId={t.id} businessId={t.business_id} round={drafts.length + 1} clientName={biz?.name ?? `the ${terms.client}`} />
         )}
         {drafts.map((d, i) => ({ d, round: i + 1 })).reverse().map(({ d, round }) => {
           const said = (notes ?? []).filter((n) => n.draft_id === d.id);
+          const approval = said.find((n) => n.kind === "approval");
           return (
             <section className="draft" key={d.id} aria-label={`Draft ${round}`}>
               <div className="draft-head">
                 <b>Draft {round}</b>
                 <span className="when">{formatDate(d.created_at)}</span>
                 {d.final_at && <span className="chip draft-final">Sent as final</span>}
+                {approval && <span className="chip draft-approved">Approved by {approval.author_name || approval.author_email}</span>}
               </div>
               {d.message && <div className="copy">{d.message}</div>}
               <Deliveries ticketId={t.id} businessId={t.business_id} files={draftFiles.filter((f) => f.draft_id === d.id)} canEdit={false} clientName="" />
@@ -176,6 +179,9 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                   {said.map(noteRow)}
                   {canNote && noteForm(isDesigner ? "Reply about this draft…" : "Leave notes on this draft…", d.id)}
                 </div>
+              )}
+              {!isDesigner && canNote && !viewing && !d.final_at && !approval && (
+                <ApproveDraft ticketId={t.id} draftId={d.id} round={round} owner={owner} />
               )}
               {isDesigner && !viewing && (
                 <DraftActions ticketId={t.id} draftId={d.id} round={round} finalLabel={d.final_at ? "" : final?.label ?? "Done"} noun={terms.job} />
@@ -278,7 +284,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
 
         {(signed.length > 0 || canAddFiles) && (
           <>
-            <p className="eyebrow">{filesField?.label ?? "Files"}</p>
+            <p className="eyebrow" id="files">{filesField?.label ?? "Files"}</p>
             {signed.length > 0 && (
             <div className="group">
               <div className="row stack">
