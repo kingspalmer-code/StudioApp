@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import ConfirmButton from "./ConfirmButton";
 import { DELIVERY_MAX_MB, fileSize, isImage, isVideo, type Delivery, type Signed } from "@/lib/deliveries";
 
 const ext = (name: string) => (/\.([a-z0-9]{1,5})$/i.exec(name)?.[1] ?? "file").toUpperCase();
@@ -74,7 +75,6 @@ export default function Deliveries({
   }
 
   async function remove(f: Shown) {
-    if (!confirm(`Remove ${f.name}? ${clientName} won't see it any more.`)) return;
     const supabase = createClient();
     // A file sent as final from a draft stays on that draft, so only the finished copy goes.
     const onDraft = f.path ? (await supabase.from("ticket_draft_files").select("id", { count: "exact", head: true }).eq("path", f.path)).count : 0;
@@ -123,7 +123,7 @@ export default function Deliveries({
                   </a>
                 )}
                 {canEdit && (
-                  <button type="button" className="link deliv-remove" onClick={() => remove(f)} aria-label={`Remove ${f.name}`}>Remove</button>
+                  <ConfirmButton label="Remove" ask="Remove it?" yes="Remove" onConfirm={() => remove(f)} />
                 )}
               </div>
             </div>
