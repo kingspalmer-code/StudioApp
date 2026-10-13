@@ -16,7 +16,12 @@ import { OatcakeMark } from "./OatcakeLogo";
 import { termsFor } from "@/lib/workspace";
 
 function linksFor(member: Member, workspace: Workspace, viewing: boolean) {
-  if (member.role === "manager") return [{ href: "/overview", label: "Overview" }];
+  // Managers can look at the queue and every job in it; nothing there lets them change anything.
+  if (member.role === "manager")
+    return [
+      { href: "/queue", label: workspace.kind === "trade" ? "Jobs" : "Queue" },
+      { href: "/overview", label: "Overview" },
+    ];
   if (member.role === "client") return [{ href: "/portal", label: "Requests" }];
   if (viewing)
     return [

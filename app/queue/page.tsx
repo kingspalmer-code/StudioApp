@@ -13,7 +13,9 @@ export default async function QueuePage({
   searchParams: Promise<{ view?: string; biz?: string; tour?: string }>;
 }) {
   const { view = "list", biz = "all", tour } = await searchParams;
-  const { supabase, businesses, ctx, terms, workspace, shell, viewing } = await requireMember(["designer"]);
+  const { supabase, member, businesses, ctx, terms, workspace, shell, viewing } = await requireMember(["designer", "manager"]);
+  // Managers see the same queue, read-only: no Select, no delivering or deleting, no tour.
+  const canEdit = member.role === "designer" && !viewing;
   const trade = workspace.kind === "trade";
   const { data } = await supabase.from("tickets").select("*").returns<Ticket[]>();
   const all = data ?? [];
@@ -78,7 +80,7 @@ export default async function QueuePage({
           ctx={ctx}
           job={terms.job}
           jobs={terms.jobs}
-          canEdit={!viewing}
+          canEdit={canEdit}
           empty={<div className="empty">Nothing open{filterBiz ? ` for ${filterBiz.name}` : ""}. New {terms.jobs} appear here as soon as they're added.</div>}
         />
       ) : (
@@ -126,7 +128,7 @@ export default async function QueuePage({
         </div>
         </>
       )}
-      {!viewing && view !== "board" && <Walkthrough force={tour === "1"} job={terms.job} clients={terms.clients} />}
+      {canEdit && view !== "board" && <Walkthrough force={tour === "1"} job={terms.job} clients={terms.clients} />}
     </Shell>
   );
 }
