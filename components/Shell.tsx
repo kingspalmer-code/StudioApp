@@ -30,6 +30,8 @@ function linksFor(member: Member, workspace: Workspace, viewing: boolean) {
       ...(member.business_ids?.length && !viewing ? [{ href: "/portal", label: "New request" }] : []),
     ];
   if (member.role === "client") return [{ href: "/portal", label: "Requests" }];
+  // Employees only see the to-do list the owner sets them.
+  if (member.role === "staff") return [{ href: "/tasks", label: "To-do" }];
   // Who the work is for: businesses (with their staff) on People, customers on Customers, and nobody when working alone.
   const clients =
     workspace.kind === "studio" ? [{ href: "/people", label: "People" }]
@@ -41,6 +43,7 @@ function linksFor(member: Member, workspace: Workspace, viewing: boolean) {
     { href: "/overview", label: "Overview" },
     { href: "/portal", label: `New ${terms.job}` },
     ...clients,
+    { href: "/team", label: "Team" },
     { href: "/personal", label: "Personal" },
   ];
 }

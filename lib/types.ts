@@ -1,4 +1,5 @@
-export type Role = "designer" | "manager" | "client";
+// staff: an employee the owner sets tasks for. They only see their own to-do list.
+export type Role = "designer" | "manager" | "client" | "staff";
 // A stage key. Each workspace defines its own stages; the last one means finished.
 export type Status = string;
 export type Priority = "Standard" | "High" | "Urgent";
@@ -91,3 +92,17 @@ export type PersonalTask = {
   done_at: string | null;
   created_at: string;
 };
+
+// A to-do on an employee's list (Team). Daily ones come back unticked each day.
+export type StaffTask = {
+  id: number;
+  assignee: string;
+  title: string;
+  due: string | null;
+  daily: boolean;
+  created_by: string;
+  created_at: string;
+};
+
+// One ticking-off of a task: one per day for daily tasks, with a note on how it went.
+export type StaffTick = { task_id: number; day: string; done: boolean; note: string; done_by: string; done_at: string };

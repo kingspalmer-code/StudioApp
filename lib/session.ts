@@ -6,7 +6,7 @@ import { createClient, PREVIEW_COOKIE, VIEW_COOKIE } from "./supabase/server";
 import type { Business, JobType, Member, Role, Stage, Workspace } from "./types";
 import { clientsLogIn, isSelf, termsFor } from "./workspace";
 
-export const HOME: Record<Role, string> = { designer: "/queue", manager: "/overview", client: "/portal" };
+export const HOME: Record<Role, string> = { designer: "/queue", manager: "/overview", client: "/portal", staff: "/tasks" };
 
 // Loads the signed-in member and their workspace, or sends them to sign in. Pass roles to restrict a page.
 // Every database call goes out at once: the sign-in is checked from the session token itself, so
@@ -58,7 +58,7 @@ const loadMember = cache(async () => {
   const viewing = Boolean(viewed);
   // Clients and managers only have a way in while the workspace takes work from businesses. If the
   // owner switched to Customers or Just me, their logins are paused until it switches back.
-  if (member.role !== "designer" && !clientsLogIn(ws.kind)) redirect("/paused");
+  if ((member.role === "client" || member.role === "manager") && !clientsLogIn(ws.kind)) redirect("/paused");
   // The hidden business a solo workspace's projects belong to stays out of every list of clients.
   const self = (businesses ?? []).find(isSelf);
   const clients = (businesses ?? []).filter((b) => !isSelf(b));

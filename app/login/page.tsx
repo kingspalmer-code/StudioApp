@@ -3,8 +3,8 @@ import OatcakeLogo from "@/components/OatcakeLogo";
 import LoginForm from "./LoginForm";
 import LoginIntro, { INTRO_SCRIPT } from "./LoginIntro";
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const { error } = await searchParams;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; email?: string }> }) {
+  const { error, email } = await searchParams;
   return (
     <div className="login-screen">
       <FilmGrain />
@@ -14,6 +14,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <OatcakeLogo height={44} />
         </div>
         <LoginForm
+          initialEmail={typeof email === "string" ? email.slice(0, 200) : ""}
           initialError={
             error === "no-access"
               ? "That email isn't on Oatcake yet. Use \"Get started\" below."

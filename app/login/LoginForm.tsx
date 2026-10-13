@@ -8,10 +8,11 @@ import Wheels from "./Wheels";
 
 type Mode = "password" | "tour" | "new" | "forgot" | "sent";
 
-export default function LoginForm({ initialError }: { initialError: string | null }) {
+// initialEmail comes from an invite link (Team > Share invite link): it opens straight on "Email me a link".
+export default function LoginForm({ initialError, initialEmail = "" }: { initialError: string | null; initialEmail?: string }) {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("password");
-  const [email, setEmail] = useState("");
+  const [mode, setMode] = useState<Mode>(initialEmail ? "forgot" : "password");
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);

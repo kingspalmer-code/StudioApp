@@ -966,3 +966,25 @@ html.in-app .nt-layer { top: 28px; }
 .nt-more { font-size: 12.5px; font-weight: 600; color: var(--accent); margin-top: 2px; }
 .nt-sublist { padding: 0 8px 8px; }
 .nt-sublist .nt-item { background: rgba(243,233,220,.04); }
+
+/* Team and an employee's to-do list. */
+.staff-list { max-width: 640px; }
+.staff-add .row + .row::before { left: 50px; }
+.staff-add-opts { gap: 16px; padding-left: 50px; flex-wrap: wrap; }
+.staff-add-opts .btn { margin-left: auto; }
+.staff-opt { flex: none !important; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--label-2); cursor: pointer; }
+.staff-opt input[type="date"] { width: auto; border: 0; background: var(--fill); border-radius: 6px; padding: 3px 6px; font-size: 13px; color: var(--label); }
+.staff-opt input[type="checkbox"] { width: auto; }
+.staff-task { align-items: flex-start; }
+.staff-task .check { margin-top: 1px; }
+.staff-task .week { display: inline-flex; gap: 3px; align-items: center; }
+.staff-task .week i { width: 7px; height: 7px; border-radius: 50%; background: var(--fill); display: inline-block; }
+.staff-task .week i.on { background: var(--green); }
+.staff-note-text { display: block; margin-top: 4px; padding: 6px 10px; border: 0; border-radius: 8px; background: var(--fill); color: var(--label); font: inherit; font-size: 13px; text-align: left; cursor: pointer; white-space: pre-wrap; overflow-wrap: anywhere; }
+.staff-add-note { font-size: 13px; margin-top: 2px; }
+.staff-note { display: grid; gap: 6px; margin-top: 6px; justify-items: start; }
+.staff-note textarea { width: 100%; border: 0; border-radius: 8px; background: var(--fill); padding: 8px 10px; font: inherit; font-size: 14px; color: var(--label); resize: vertical; }
+.team-pick { margin-bottom: 12px; }
+.team-name { font-size: 20px; margin: 4px 4px 12px; }
+.invite-link { display: inline-flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 4px; font-size: 13px; }
+@media (max-width: 800px) { .cols.team { grid-template-columns: minmax(0, 1fr); } }
