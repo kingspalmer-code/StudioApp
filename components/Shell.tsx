@@ -9,6 +9,7 @@ import AppBar from "./AppBar";
 import Bell from "./Bell";
 import CreateMenu from "./CreateMenu";
 import NavLinks from "./NavLinks";
+import RailGrip from "./RailGrip";
 import RailNav from "./RailNav";
 import Search from "./Search";
 import SearchButton from "./SearchButton";
@@ -107,7 +108,7 @@ export default function Shell({
               <OatcakeMark height={22} />
             </Link>
           )}
-          {rail ? <RailNav links={links} canCreate={canCreate} /> : <NavLinks links={links} />}
+          {rail ? <RailNav links={links} canCreate={canCreate} clients={businesses} /> : <NavLinks links={links} />}
           {canCreate && <SearchButton />}
           {member.role === "designer" && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake hint={askHint} opens={askOpens} since={askSince} />}
           {/* What other people have done on your jobs. Top right of the page, whatever the layout. */}
@@ -118,6 +119,7 @@ export default function Shell({
             {helpUnread && <span className="me-dot" />}
           </Link>
         </div>
+        {rail && <RailGrip />}
       </header>
       {viewing && (
         <form action={stopViewing} className="viewing-bar">
