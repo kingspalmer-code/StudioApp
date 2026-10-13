@@ -184,3 +184,38 @@ export async function tellDraft(supabase: SupabaseClient, ticketId: number, draf
     sendAlert(told.map((who) => who.email), { title: `Draft ${round} of ${j.title}`, body: message ? `${studio.name}: ${message.slice(0, 120)}` : `${studio.name} shared a draft for you to look at.`, url: `/tickets/${j.id}`, tag: `ticket-${j.id}-draft` }),
   ]);
 }
+
+// Who would be emailed about each of these jobs: whoever sent it and anyone picked to keep updated,
+// if they can see it. Names, keyed by job, for the job's progress timeline.
+export async function peopleToTell(supabase: SupabaseClient, ids: number[]): Promise<Map<number, string[]>> {
+  const out = new Map<number, string[]>();
+  if (!ids.length) return out;
+  const { data: jobs } = await supabase
+    .from("tickets")
+    .select("id, created_by, notify, business_id")
+    .in("id", ids)
+    .returns<Pick<Job, "id" | "created_by" | "notify" | "business_id">[]>();
+  const people = await linkedPeople(supabase, (jobs ?? []).flatMap((j) => [j.created_by, j.notify ?? ""]));
+  for (const j of jobs ?? []) {
+    const told = [...new Set([j.created_by, j.notify ?? ""])].map((e) => people.get(e)).filter((p): p is NonNullable<typeof p> => p !== undefined && canSee(p, j.business_id));
+    out.set(j.id, told.map((p) => p.full_name || p.email));
+  }
+  return out;
+}
+
+export type EventKind = "stage" | "review" | "finished" | "draft";
+
+// Adds moves to the jobs' progress timelines, with who'll be told about each.
+export async function logEvents(
+  supabase: SupabaseClient,
+  ids: number[],
+  kind: EventKind,
+  extra: { stage?: string; draft_id?: number; files?: string[]; actor?: string } = {}
+) {
+  if (!ids.length) return;
+  const told = kind === "stage" ? new Map<number, string[]>() : await peopleToTell(supabase, ids);
+  const { error } = await supabase.from("ticket_events").insert(
+    ids.map((ticket_id) => ({ ticket_id, kind, stage: extra.stage ?? "", draft_id: extra.draft_id ?? null, files: extra.files ?? [], told: told.get(ticket_id) ?? [], actor: extra.actor ?? "" }))
+  );
+  if (error) console.error("ticket_events", error.message);
+}

@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { notYetFinished, tellDraft, tellRequesters } from "@/lib/finished";
+import { logEvents, notYetFinished, tellDraft, tellRequesters } from "@/lib/finished";
 import type { Draft, DraftFile } from "@/lib/deliveries";
-import { finalStage } from "@/lib/priority";
+import { finalStage, reviewStage } from "@/lib/priority";
 import { requireEditor } from "@/lib/session";
 
 async function draftOf(ticketId: number, draftId: number) {
@@ -33,6 +33,7 @@ export async function sendDraftAsFinal(ticketId: number, draftId: number): Promi
   await supabase.from("ticket_drafts").update({ final_at: new Date().toISOString() }).eq("id", draftId);
   const finishing = await notYetFinished(supabase, [ticketId], finalStage(ctx));
   await supabase.from("tickets").update({ status: finalStage(ctx) }).eq("id", ticketId);
+  await logEvents(supabase, finishing, "finished", { stage: finalStage(ctx), draft_id: draftId, files: files.map((f) => f.name), actor: member.full_name || member.email });
   // Tell the person who asked for it, by email and on their phone.
   if (finishing.length) after(() => tellRequesters(supabase, finishing, { name: workspace.name, replyTo: member.email, terms }).catch(() => {}));
   revalidatePath("/", "layout");
@@ -56,10 +57,20 @@ export async function removeDraft(ticketId: number, draftId: number): Promise<st
 }
 
 // Tells the client, and anyone picked to keep updated, about a draft that was just shared.
+// Sharing a draft is sending the job for review: it moves to the review stage (unless it's already
+// there or finished) and goes on the job's progress timeline with its files and who was told.
 export async function tellAboutDraft(ticketId: number, draftId: number) {
-  const { supabase, member, workspace, terms, draft } = await draftOf(ticketId, draftId);
+  const { supabase, ctx, member, workspace, terms, draft, files } = await draftOf(ticketId, draftId);
   if (!draft || Date.now() - Date.parse(draft.created_at) > 30 * 60_000) return;
-  await tellDraft(supabase, ticketId, draftId, { name: workspace.name, replyTo: member.email, terms });
+  const { data: logged } = await supabase.from("ticket_events").select("id").eq("draft_id", draftId).eq("kind", "draft").limit(1);
+  if (!logged?.length) {
+    const review = reviewStage(ctx);
+    const { data: t } = await supabase.from("tickets").select("status").eq("id", ticketId).maybeSingle<{ status: string }>();
+    if (review && t && t.status !== review.key && t.status !== finalStage(ctx)) await supabase.from("tickets").update({ status: review.key }).eq("id", ticketId);
+    await logEvents(supabase, [ticketId], "draft", { draft_id: draftId, files: files.map((f) => f.name), actor: member.full_name || member.email });
+    revalidatePath("/", "layout");
+  }
+  after(() => tellDraft(supabase, ticketId, draftId, { name: workspace.name, replyTo: member.email, terms }).catch(() => {}));
 }
 
 // Who the studio keeps updated on a job: one of the business's clients or managers, or nobody.

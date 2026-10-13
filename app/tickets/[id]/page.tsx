@@ -5,7 +5,7 @@ import StatusChip from "@/components/StatusChip";
 import { addNote, saveDetails, setPinned, setStatus } from "@/app/actions";
 import FieldInput from "@/components/FieldInput";
 import { appliesTo, groupFields, hasValue, showValue, valueOf, type JobField } from "@/lib/fields";
-import { dueLabel, finalStage, formatDate, isDone, money, reviewStage, startBy, startLabel } from "@/lib/priority";
+import { dueLabel, finalStage, formatDate, isDone, money, reviewStage, startBy, startLabel, statusLabel } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
 import type { Note, Ticket, TicketFile } from "@/lib/types";
 import DeleteTicket from "./DeleteTicket";
@@ -21,6 +21,11 @@ import Deliveries from "@/components/Deliveries";
 import { signDeliveries, type Delivery, type Draft, type DraftFile } from "@/lib/deliveries";
 
 const IMAGE = /\.(png|jpe?g|gif|webp|svg)$/i;
+
+type TicketEvent = { id: number; kind: "stage" | "review" | "finished" | "draft"; stage: string; draft_id: number | null; files: string[]; told: string[]; actor: string; created_at: string };
+const TIME = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: process.env.NEXT_PUBLIC_TIMEZONE || "Europe/London" });
+const at = (iso: string) => `${formatDate(iso)}, ${TIME.format(new Date(iso))}`;
+const fileList = (names: string[]) => (names.length > 6 ? `${names.slice(0, 6).join(", ")} and ${names.length - 6} more` : names.join(", "));
 
 export default async function TicketPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: rawId } = await params;
@@ -40,11 +45,12 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
       ? supabase.from("documents").select("*").eq("ticket_id", id).order("created_at")
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
   ]);
-  const [{ data: deliveryRows }, { data: draftRows }, { data: links }] = await Promise.all([
+  const [{ data: deliveryRows }, { data: draftRows }, { data: links }, { data: events }] = await Promise.all([
     supabase.from("ticket_deliveries").select("*").eq("ticket_id", id).order("created_at").returns<Delivery[]>(),
     supabase.from("ticket_drafts").select("*").eq("ticket_id", id).order("created_at").returns<Draft[]>(),
     // The job this one follows on from, and any follow-ups sent from it.
     supabase.from("tickets").select("id, title, follows").or(`follows.eq.${id}${t.follows ? `,id.eq.${t.follows}` : ""}`).order("created_at").returns<Pick<Ticket, "id" | "title" | "follows">[]>(),
+    supabase.from("ticket_events").select("*").eq("ticket_id", id).order("created_at").returns<TicketEvent[]>(),
   ]);
   const followsFrom = (links ?? []).find((x) => x.id === t.follows);
   // The business's clients and managers, for the studio to pick who's kept updated on this job.
@@ -214,10 +220,15 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
             {/* The two big moments, as plain buttons. Both tell the person who asked for it. */}
             {!done && (
               <div className="job-actions">
-                {review && t.status !== review.key && (
-                  <form action={setStatus.bind(null, t.id, review.key)}>
-                    <button className="btn plain" type="submit">Send for review</button>
-                  </form>
+                {/* Sending for review is sharing a draft: the button opens the draft form. */}
+                {!trade && !viewing ? (
+                  <a className="btn plain" href="#send-review">Send for review</a>
+                ) : (
+                  review && t.status !== review.key && (
+                    <form action={setStatus.bind(null, t.id, review.key)}>
+                      <button className="btn plain" type="submit">Send for review</button>
+                    </form>
+                  )
                 )}
                 <form action={setStatus.bind(null, t.id, finalStage(ctx))}>
                   <button className="btn" type="submit">Mark finished</button>
@@ -359,6 +370,36 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           {!jobNotes.length && !canNote && <div className="empty">No notes yet.</div>}
           {canNote && noteForm(trade ? "Add a note…" : isDesigner ? "Message the client…" : member.role === "manager" && t.created_by !== member.email ? `Reply to ${owner}…` : `Add more to your request, or reply to ${owner}…`)}
         </div>
+
+        {/* What's happened to the job so far: sent, drafts sent for review with their files, stage
+            changes, finished. The studio also sees who was emailed each time. */}
+        <p className="eyebrow">Progress</p>
+        <ol className="timeline">
+          <li>
+            <b>{trade ? "Added" : isDesigner && t.created_by === member.email ? "Added by you" : `Sent${t.requester_name ? ` by ${t.requester_name}` : ""}`}</b>
+            <span className="when">{at(t.created_at)}</span>
+          </li>
+          {(events ?? []).map((e) => {
+            const round = e.draft_id ? drafts.findIndex((d) => d.id === e.draft_id) + 1 : 0;
+            const title =
+              e.kind === "draft" ? (round ? `Draft ${round} sent for review` : "A draft was sent for review")
+              : e.kind === "review" ? "Sent for review"
+              : e.kind === "finished" ? "Finished"
+              : `Moved to ${statusLabel(ctx, e.stage)}`;
+            const tells = e.kind !== "stage" && isDesigner && !trade;
+            return (
+              <li key={e.id} className={`ev-${e.kind}`}>
+                <b>{title}</b>
+                <span className="when">{at(e.created_at)}{isDesigner && e.actor ? ` · ${e.actor}` : ""}</span>
+                {e.files.length > 0 && <div className="ev-files">{fileList(e.files)}</div>}
+                {e.kind === "review" && !e.files.length && <div className="when">No files went with it. Send a draft to share files for review.</div>}
+                {tells && (e.told.length
+                  ? <div className="when">Emailed {e.told.join(" and ")}</div>
+                  : <div className="when ev-nobody">Nobody was told: no one at {biz?.name ?? `the ${terms.client}`} is set to hear about this {terms.job}. Pick someone under Also tell.</div>)}
+              </li>
+            );
+          })}
+        </ol>
 
         {/* Out of the way at the bottom, so it's never tapped by mistake next to everyday buttons. */}
         {isDesigner && !viewing && <div className="danger-foot"><DeleteTicket id={t.id} noun={terms.job} /></div>}

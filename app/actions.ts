@@ -9,7 +9,7 @@ import { createClient, PREVIEW_COOKIE } from "@/lib/supabase/server";
 import { appliesTo, readFields, type JobField } from "@/lib/fields";
 import { emailInvite } from "@/lib/invite";
 import { alertNewNote } from "@/app/portal/actions";
-import { notYetFinished, tellRequesters } from "@/lib/finished";
+import { logEvents, notYetFinished, tellRequesters } from "@/lib/finished";
 import { finalStage, reviewStage } from "@/lib/priority";
 import type { Role, Status } from "@/lib/types";
 
@@ -24,8 +24,21 @@ export async function setStatus(id: number, status: Status) {
   if (!ctx.stages.some((s) => s.key === status)) return;
   // Finishing a job, or sending it to the client to look over, tells the person who asked for it.
   const moment = status === finalStage(ctx) ? "finished" : status === reviewStage(ctx)?.key ? "review" : null;
-  const moving = moment ? await notYetFinished(supabase, [id], status) : [];
+  const moving = await notYetFinished(supabase, [id], status);
   await supabase.from("tickets").update({ status }).eq("id", id);
+  if (moving.length) {
+    // Onto the job's progress timeline, with the files that go with it: the latest draft for a
+    // review, the finished files when it's done.
+    const { data: latest } = moment === "review"
+      ? await supabase.from("ticket_drafts").select("id").eq("ticket_id", id).is("final_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle<{ id: number }>()
+      : { data: null };
+    const { data: files } = moment === "review" && latest
+      ? await supabase.from("ticket_draft_files").select("name").eq("draft_id", latest.id).order("created_at").returns<{ name: string }[]>()
+      : moment === "finished"
+        ? await supabase.from("ticket_deliveries").select("name").eq("ticket_id", id).order("created_at").returns<{ name: string }[]>()
+        : { data: [] };
+    await logEvents(supabase, moving, moment ?? "stage", { stage: status, draft_id: latest?.id, files: (files ?? []).map((f) => f.name), actor: member.full_name || member.email });
+  }
   if (moment && moving.length) after(() => tellRequesters(supabase, moving, { name: workspace.name, replyTo: member.email, terms }, moment).catch(() => {}));
   revalidatePath("/", "layout");
 }
@@ -73,6 +86,7 @@ export async function deliverTickets(ids: number[]) {
   if (!final || !ids.length) return;
   const finishing = await notYetFinished(supabase, ids, final);
   await supabase.from("tickets").update({ status: final }).in("id", ids);
+  await logEvents(supabase, finishing, "finished", { stage: final, actor: member.full_name || member.email });
   if (finishing.length) after(() => tellRequesters(supabase, finishing, { name: workspace.name, replyTo: member.email, terms }).catch(() => {}));
   revalidatePath("/", "layout");
 }

@@ -351,6 +351,15 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 .stage-form select { width: auto; flex: none; }
 .seg.stage-picker { flex-wrap: wrap; overflow: visible; }
 .job-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.job-actions a.btn { text-decoration: none; }
+.timeline { list-style: none; margin: 0; padding: 4px 0 4px 18px; border-left: 2px solid var(--sep); margin-left: 6px; }
+.timeline li { position: relative; padding: 0 0 16px 8px; display: flex; flex-direction: column; gap: 2px; }
+.timeline li:last-child { padding-bottom: 2px; }
+.timeline li::before { content: ""; position: absolute; left: -25px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface); border: 2px solid var(--label-3); }
+.timeline li.ev-review::before, .timeline li.ev-draft::before { border-color: var(--purple); background: var(--purple); }
+.timeline li.ev-finished::before { border-color: var(--green); background: var(--green); }
+.timeline .ev-files { font-size: 14px; }
+.timeline .ev-nobody { color: var(--orange); }
 
 /* Admin looking inside someone else's workspace */
 .viewing-bar { max-width: 1180px; margin: 12px auto 0; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--fill); border-radius: 12px; font-size: 14px; width: calc(100% - 32px); }
