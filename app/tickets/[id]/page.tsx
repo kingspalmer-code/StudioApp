@@ -46,6 +46,10 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
     supabase.from("tickets").select("id, title, follows").or(`follows.eq.${id}${t.follows ? `,id.eq.${t.follows}` : ""}`).order("created_at").returns<Pick<Ticket, "id" | "title" | "follows">[]>(),
   ]);
   const followsFrom = (links ?? []).find((x) => x.id === t.follows);
+  // Who the studio picked to keep updated on this job, shown to the studio.
+  const { data: told } = t.notify && member.role === "designer"
+    ? await supabase.from("members").select("full_name").eq("email", t.notify).maybeSingle<{ full_name: string }>()
+    : { data: null };
   const followUps = (links ?? []).filter((x) => x.follows === id);
   const drafts = draftRows ?? [];
   const { data: draftFileRows } = drafts.length
@@ -237,6 +241,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           <div className="row"><span className="k">Needed by</span><div className="ctl">{formatDate(t.deadline)} <span className="when">({dueLabel(t.deadline)})</span></div></div>
           {groups[0] && !groups[0].title && groups[0].fields.map(show)}
           <div className="row"><span className="k">{trade ? "Added" : "Submitted"}</span><div className="ctl">{formatDate(t.created_at)}{t.requester_name && !shown.has("requester_name") ? ` by ${t.requester_name}` : ""}</div></div>
+          {told && <div className="row"><span className="k">Kept updated</span><div className="ctl">{told.full_name || t.notify}</div></div>}
           {quote != null && (
             <div className="row"><span className="k">Left to pay</span><div className="ctl">{money(Math.max(0, quote - (paid ?? 0)))}</div></div>
           )}
