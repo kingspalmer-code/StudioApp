@@ -98,11 +98,16 @@ export type StaffTask = {
   id: number;
   assignee: string;
   title: string;
+  // The owner's notes on what to do.
+  details: string;
   due: string | null;
   daily: boolean;
   created_by: string;
   created_at: string;
 };
 
-// One ticking-off of a task: one per day for daily tasks, with a note on how it went.
-export type StaffTick = { task_id: number; day: string; done: boolean; note: string; done_by: string; done_at: string };
+// One ticking-off of a task: one per day for daily tasks. A one-off task is finished once the owner confirms it.
+export type StaffTick = { task_id: number; day: string; done: boolean; done_by: string; done_at: string; confirmed_at: string | null };
+
+// The reply chain on a task: notes, asking for sign-off, signing off, and sending it back.
+export type StaffNote = { id: number; task_id: number; author: string; author_name?: string; kind: "note" | "ask" | "confirm" | "reopen"; body: string; created_at: string };

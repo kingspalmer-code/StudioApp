@@ -1,46 +1,101 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { emailInvite } from "@/lib/invite";
+import { sendAlert } from "@/lib/push";
+import type { createClient } from "@/lib/supabase/server";
 import { todayISO } from "@/lib/priority";
 import { requireEditor } from "@/lib/session";
+
+type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 function refresh() {
   revalidatePath("/tasks");
   revalidatePath("/team");
 }
 
+// Phone alerts for a task go to whoever task_people says should hear: the employee when the owner
+// does something, the owners when the employee does.
+// The lookup happens now, with the signed-in session; the sending happens after the page responds.
+async function alertTask(supabase: Supabase, id: number, title: string, body: string) {
+  const { data } = await supabase.rpc("task_people", { p_task: id });
+  const emails = (data as string[] | null) ?? [];
+  if (emails.length) after(() => sendAlert(emails, { title, body: body.slice(0, 160), url: `/tasks/${id}`, tag: `task-${id}` }).catch(() => 0));
+}
+
+const who = (m: { full_name: string; email: string }) => m.full_name.split(" ")[0] || m.email;
+
 // Adds a to-do. The owner picks whose list it goes on; an employee can only add to their own.
 export async function addStaffTask(formData: FormData) {
   const { supabase, member } = await requireEditor(["designer", "staff"]);
-  const title = String(formData.get("title") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim().slice(0, 300);
   if (!title) return;
   const assignee = member.role === "staff" ? member.email : String(formData.get("assignee") ?? "");
   const daily = formData.get("daily") === "on";
   const due = daily ? null : String(formData.get("due") ?? "") || null;
-  await supabase.from("staff_tasks").insert({ assignee, title: title.slice(0, 300), due, daily });
+  const details = String(formData.get("details") ?? "").trim().slice(0, 2000);
+  const { data } = await supabase.from("staff_tasks").insert({ assignee, title, due, daily, details }).select("id").maybeSingle<{ id: number }>();
+  if (data && member.role === "designer") await alertTask(supabase, data.id, `New task from ${who(member)}`, title);
   refresh();
 }
 
-// Ticks a task off, or unticks it. A daily task is ticked for today only.
-export async function setStaffTaskDone(id: number, daily: boolean, done: boolean) {
-  const { supabase } = await requireEditor(["designer", "staff"]);
+// Ticks a task off, or unticks it. A daily task is ticked for today only. An employee ticking a
+// one-off task asks for sign-off; the owner ticking one signs it off there and then.
+export async function setStaffTaskDone(id: number, daily: boolean, done: boolean, title: string) {
+  const { supabase, member } = await requireEditor(["designer", "staff"]);
   const day = todayISO();
+  const owner = member.role === "designer";
   if (done) {
-    await supabase.from("staff_task_ticks").upsert({ task_id: id, day, done: true, done_at: new Date().toISOString() }, { onConflict: "task_id,day" });
+    const now = new Date().toISOString();
+    await supabase
+      .from("staff_task_ticks")
+      .upsert({ task_id: id, day, done: true, done_at: now, confirmed_at: !daily && owner ? now : null }, { onConflict: "task_id,day" });
+    if (!daily && !owner) {
+      await supabase.from("staff_task_notes").insert({ task_id: id, kind: "ask" });
+      await alertTask(supabase, id, `${who(member)} finished a task`, `${title}. Tap to sign it off.`);
+    }
   } else if (daily) {
     await supabase.from("staff_task_ticks").update({ done: false }).eq("task_id", id).eq("day", day);
   } else {
-    await supabase.from("staff_task_ticks").update({ done: false }).eq("task_id", id);
+    await supabase.from("staff_task_ticks").update({ done: false, confirmed_at: null }).eq("task_id", id);
   }
   refresh();
 }
 
-// A note on how a ticked-off task went, kept with that day's tick.
-export async function saveStaffNote(id: number, day: string, formData: FormData) {
-  const { supabase } = await requireEditor(["designer", "staff"]);
-  const note = String(formData.get("note") ?? "").trim().slice(0, 2000);
-  await supabase.from("staff_task_ticks").update({ note }).eq("task_id", id).eq("day", day);
+// The owner signs off a task the employee says is finished.
+export async function confirmStaffTask(id: number, title: string) {
+  const { supabase, member } = await requireEditor(["designer"]);
+  await supabase.from("staff_task_ticks").update({ confirmed_at: new Date().toISOString() }).eq("task_id", id).eq("done", true).is("confirmed_at", null);
+  await supabase.from("staff_task_notes").insert({ task_id: id, kind: "confirm" });
+  await alertTask(supabase, id, `${who(member)} signed off a task`, title);
+  refresh();
+}
+
+// The owner sends a task back to do again, saying why.
+export async function reopenStaffTask(id: number, title: string, formData: FormData) {
+  const { supabase, member } = await requireEditor(["designer"]);
+  const body = String(formData.get("body") ?? "").trim().slice(0, 2000);
+  await supabase.from("staff_task_ticks").update({ done: false, confirmed_at: null }).eq("task_id", id);
+  await supabase.from("staff_task_notes").insert({ task_id: id, kind: "reopen", body });
+  await alertTask(supabase, id, `${who(member)} sent a task back`, body ? `${title}: ${body}` : title);
+  refresh();
+}
+
+// A note or reply on a task.
+export async function addTaskNote(id: number, title: string, formData: FormData) {
+  const { supabase, member } = await requireEditor(["designer", "staff"]);
+  const body = String(formData.get("body") ?? "").trim().slice(0, 2000);
+  if (!body) return;
+  await supabase.from("staff_task_notes").insert({ task_id: id, kind: "note", body });
+  await alertTask(supabase, id, `${who(member)} on ${title}`, body);
+  refresh();
+}
+
+// The owner's notes on what a task involves.
+export async function saveTaskDetails(id: number, formData: FormData) {
+  const { supabase } = await requireEditor(["designer"]);
+  await supabase.from("staff_tasks").update({ details: String(formData.get("details") ?? "").trim().slice(0, 2000) }).eq("id", id);
   refresh();
 }
 
