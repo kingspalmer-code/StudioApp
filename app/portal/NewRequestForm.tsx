@@ -23,6 +23,7 @@ export default function NewRequestForm({
   ownerName = "the studio",
   helper = false,
   onSent,
+  followUp,
 }: {
   businesses: Business[];
   defaultName: string;
@@ -33,11 +34,13 @@ export default function NewRequestForm({
   ownerName?: string;
   helper?: boolean;
   onSent?: (message: string) => void;
+  // Starting from a finished job: the new request links back to it and starts with its details.
+  followUp?: { id: number; business_id: string; title: string; type: string; brief: string };
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const firstType = types[0]?.name ?? "Other";
-  const [type, setType] = useState<string>(firstType);
+  const [type, setType] = useState<string>(types.some((t) => t.name === followUp?.type) ? followUp!.type : firstType);
   const [deadline, setDeadline] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +65,15 @@ export default function NewRequestForm({
     form?.addEventListener("paste", paste);
     return () => form?.removeEventListener("paste", paste);
   }, [hasFiles]);
+
+  useEffect(() => {
+    if (!followUp) return;
+    const el = (k: string) => formRef.current?.elements.namedItem(k) as HTMLInputElement | null;
+    for (const [k, v] of [["title", followUp.title], ["brief", followUp.brief], ["business_id", followUp.business_id]] as const) {
+      const input = el(k);
+      if (input && input.type !== "hidden") input.value = v;
+    }
+  }, [followUp]);
 
   const typeRow = types.find((t) => t.name === type);
   const lead = typeRow?.lead_days ?? 3;
@@ -118,6 +130,7 @@ export default function NewRequestForm({
         priority: get("priority"),
         ...columns,
         details,
+        ...(followUp ? { follows: followUp.id } : {}),
       })
       .select("id")
       .single();
@@ -148,6 +161,7 @@ export default function NewRequestForm({
           : isDesigner
             ? "Request added to the queue."
             : `Request sent. ${ownerName} can see it now.`;
+    if (followUp && !onSent && !failed.length) return router.push(`/tickets/${ticket.id}`);
     router.refresh();
     if (onSent && !failed.length) return onSent(message);
     formRef.current?.reset();

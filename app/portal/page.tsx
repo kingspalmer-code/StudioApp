@@ -12,8 +12,8 @@ import NewRequestForm from "./NewRequestForm";
 import Walkthrough from "@/components/Walkthrough";
 import { startPreview } from "@/app/actions";
 
-export default async function PortalPage({ searchParams }: { searchParams: Promise<{ tour?: string; business?: string }> }) {
-  const { tour, business } = await searchParams;
+export default async function PortalPage({ searchParams }: { searchParams: Promise<{ tour?: string; business?: string; follow?: string }> }) {
+  const { tour, business, follow } = await searchParams;
   const { supabase, member, businesses, ctx, workspace, shell } = asClient(await requireEditor(["client", "designer", "manager"]));
   const previewing = Boolean(shell.preview);
   const trade = workspace.kind === "trade";
@@ -28,6 +28,20 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
 
   const { data: fields } = await supabase.from("job_fields").select("*").order("position").order("id").returns<JobField[]>();
   const formFields = (fields ?? []).filter((f) => !f.hidden && f.on_form);
+
+  // "Ask for a follow-up" on a finished job: the form starts from that job's details.
+  const { data: from } = follow && !isDesigner
+    ? await supabase.from("tickets").select("id, title, type, business_id, status, delivered_at").eq("id", Number(follow)).maybeSingle<Pick<Ticket, "id" | "title" | "type" | "business_id" | "status" | "delivered_at">>()
+    : { data: null };
+  const followUp = from && myBizes.some((b) => b.id === from.business_id)
+    ? {
+        id: from.id,
+        business_id: from.business_id,
+        title: `Follow-up: ${from.title}`,
+        type: from.type,
+        brief: `Following on from "${from.title}"${from.delivered_at ? `, finished ${formatDate(from.delivered_at)}` : ""}.\n\n`,
+      }
+    : undefined;
 
   // The studio (or a trade) logging a job: just the form.
   if (isDesigner) {
@@ -59,10 +73,10 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
     if (!myBizes.length) redirect("/overview");
     return (
       <Shell {...shell}>
-        <h1 className="large">New request</h1>
-        <p className="sub">Send {owner} a request. It joins the queue, and you can follow it in the overview.</p>
+        <h1 className="large">{followUp ? "Follow-up request" : "New request"}</h1>
+        <p className="sub">{followUp ? `Ask ${owner} for more on "${from!.title}". It joins the queue as a new request, linked to the finished one.` : `Send ${owner} a request. It joins the queue, and you can follow it in the overview.`}</p>
         <div style={{ maxWidth: 640 }}>
-          <NewRequestForm businesses={myBizes} defaultName={member.full_name} isDesigner={false} types={ctx.types} fields={formFields} trade={trade} ownerName={owner} helper={helper} />
+          <NewRequestForm businesses={myBizes} defaultName={member.full_name} isDesigner={false} types={ctx.types} fields={formFields} trade={trade} ownerName={owner} helper={helper} followUp={followUp} />
         </div>
       </Shell>
     );
@@ -99,8 +113,8 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
         )}
 
         <ClientRequests
-          startOpen={all.length === 0 || previewing}
-          form={{ businesses: only ? [only, ...myBizes.filter((b) => b !== only)] : myBizes, defaultName: member.full_name, isDesigner: false, types: ctx.types, fields: formFields, trade, ownerName: owner, helper }}
+          startOpen={all.length === 0 || previewing || Boolean(followUp)}
+          form={{ followUp,  businesses: only ? [only, ...myBizes.filter((b) => b !== only)] : myBizes, defaultName: member.full_name, isDesigner: false, types: ctx.types, fields: formFields, trade, ownerName: owner, helper }}
         />
 
         <p className="eyebrow">In progress</p>

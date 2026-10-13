@@ -34,6 +34,8 @@ export type Ticket = {
   id: number;
   business_id: string;
   created_by: string;
+  // The finished job this one follows on from, if it does.
+  follows: number | null;
   requester_name: string;
   title: string;
   type: string;
