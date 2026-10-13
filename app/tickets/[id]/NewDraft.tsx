@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { DELIVERY_MAX_MB, fileSize } from "@/lib/deliveries";
 import { tellAboutDraft } from "./actions";
@@ -15,6 +15,19 @@ export default function NewDraft({ ticketId, businessId, round, clientName }: { 
   const [busy, setBusy] = useState("");
   const [problem, setProblem] = useState("");
   const [over, setOver] = useState(false);
+
+  // The job's "Send for review" button links here: open the form when it's tapped.
+  useEffect(() => {
+    const openIfAsked = () => location.hash === "#send-review" && setOpen(true);
+    const onClick = (e: MouseEvent) => (e.target as Element | null)?.closest?.('a[href="#send-review"]') && setOpen(true);
+    openIfAsked();
+    window.addEventListener("hashchange", openIfAsked);
+    document.addEventListener("click", onClick);
+    return () => {
+      window.removeEventListener("hashchange", openIfAsked);
+      document.removeEventListener("click", onClick);
+    };
+  }, []);
 
   function pick(list: File[]) {
     const tooBig = list.filter((f) => f.size > DELIVERY_MAX_MB * 1024 * 1024);
@@ -61,7 +74,8 @@ export default function NewDraft({ ticketId, businessId, round, clientName }: { 
       return setProblem("Nothing uploaded, so the draft wasn't shared. Try again.");
     }
     if (failed.length) setProblem(`${failed.join(", ")} didn't upload. The rest of the draft is shared.`);
-    void tellAboutDraft(ticketId, draft.id).catch(() => {});
+    // Moves the job to review and puts it on the timeline before the page refreshes.
+    await tellAboutDraft(ticketId, draft.id).catch(() => {});
     form.reset();
     setFiles([]);
     setOpen(false);
@@ -70,14 +84,15 @@ export default function NewDraft({ ticketId, businessId, round, clientName }: { 
 
   if (!open)
     return (
-      <div className="deliv-add">
-        <button type="button" className="btn plain small" onClick={() => setOpen(true)}>+ Share draft {round}</button>
+      <div className="deliv-add" id="send-review">
+        <button type="button" className="btn plain small" onClick={() => setOpen(true)}>+ Send draft {round} for review</button>
         <span className="when">{clientName} can look and leave notes. It won&apos;t go in their gallery until you send it as final.</span>
       </div>
     );
 
   return (
     <form
+      id="send-review"
       onSubmit={share}
       className={`deliveries${over ? " over" : ""}`}
       onDragOver={(e) => {
@@ -114,7 +129,7 @@ export default function NewDraft({ ticketId, businessId, round, clientName }: { 
       {problem && <p className="error">{problem}</p>}
       <div className="draft-actions">
         <button type="button" className="link" onClick={() => setOpen(false)} disabled={Boolean(busy)}>Cancel</button>
-        <button className="btn small" type="submit" disabled={Boolean(busy)}>{busy || "Share for notes"}</button>
+        <button className="btn small" type="submit" disabled={Boolean(busy)}>{busy || "Send for review"}</button>
       </div>
     </form>
   );
