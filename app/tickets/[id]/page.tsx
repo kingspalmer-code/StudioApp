@@ -7,6 +7,7 @@ import FieldInput from "@/components/FieldInput";
 import { appliesTo, groupFields, hasValue, showValue, valueOf, type JobField } from "@/lib/fields";
 import { dueLabel, finalStage, formatDate, isDone, money, reviewStage, startBy, startLabel, statusLabel } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 import type { Note, Ticket, TicketFile } from "@/lib/types";
 import DeleteTicket from "./DeleteTicket";
 import AddFiles from "./AddFiles";
@@ -19,6 +20,7 @@ import { docName, gbp, STATUS_LABEL } from "@/lib/documents";
 import { asDoc } from "@/lib/docs-server";
 import Deliveries from "@/components/Deliveries";
 import { signDeliveries, type Delivery, type Draft, type DraftFile } from "@/lib/deliveries";
+import Submit from "@/components/Submit";
 
 const IMAGE = /\.(png|jpe?g|gif|webp|svg)$/i;
 
@@ -30,36 +32,41 @@ const fileList = (names: string[]) => (names.length > 6 ? `${names.slice(0, 6).j
 export default async function TicketPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: rawId } = await params;
   const id = Number(rawId);
-  const session = await requireMember();
-  const { data: t } = await session.supabase.from("tickets").select("*").eq("id", id).maybeSingle<Ticket>();
+  // Everything that only needs the job's number loads at once, alongside the session.
+  const db = await createClient();
+  const [session, { data: t }, { data: notes }, { data: files }, { data: fields }, { data: docRows }, { data: deliveryRows }, { data: draftRows }, { data: draftFileRows }, { data: events }] = await Promise.all([
+    requireMember(),
+    db.from("tickets").select("*").eq("id", id).maybeSingle<Ticket>(),
+    db.from("ticket_notes").select("*").eq("ticket_id", id).order("created_at").returns<Note[]>(),
+    db.from("ticket_files").select("*").eq("ticket_id", id).order("created_at").returns<TicketFile[]>(),
+    db.from("job_fields").select("*").order("position").order("id").returns<JobField[]>(),
+    db.from("documents").select("*").eq("ticket_id", id).order("created_at"),
+    db.from("ticket_deliveries").select("*").eq("ticket_id", id).order("created_at").returns<Delivery[]>(),
+    db.from("ticket_drafts").select("*").eq("ticket_id", id).order("created_at").returns<Draft[]>(),
+    db.from("ticket_draft_files").select("*, ticket_drafts!inner(ticket_id)").eq("ticket_drafts.ticket_id", id).order("created_at").returns<DraftFile[]>(),
+    db.from("ticket_events").select("*").eq("ticket_id", id).order("created_at").returns<TicketEvent[]>(),
+  ]);
   if (!t) notFound();
   // While previewing a client, their own jobs show as they see them; anything else shows as usual.
   const { supabase, member, businesses, ctx, terms, workspace, shell, viewing } = asClient(session, t.business_id);
   const trade = workspace.kind === "trade";
 
-  const [{ data: notes }, { data: files }, { data: fields }, { data: docRows }] = await Promise.all([
-    supabase.from("ticket_notes").select("*").eq("ticket_id", id).order("created_at").returns<Note[]>(),
-    supabase.from("ticket_files").select("*").eq("ticket_id", id).order("created_at").returns<TicketFile[]>(),
-    supabase.from("job_fields").select("*").order("position").order("id").returns<JobField[]>(),
-    member.role === "designer"
-      ? supabase.from("documents").select("*").eq("ticket_id", id).order("created_at")
-      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
-  ]);
-  const [{ data: deliveryRows }, { data: draftRows }, { data: links }, { data: events }] = await Promise.all([
-    supabase.from("ticket_deliveries").select("*").eq("ticket_id", id).order("created_at").returns<Delivery[]>(),
-    supabase.from("ticket_drafts").select("*").eq("ticket_id", id).order("created_at").returns<Draft[]>(),
+  // Then what needs the job itself, also all at once.
+  const [{ data: links }, [{ data: members }, { data: memberLinks }], delivered, draftFiles, signed] = await Promise.all([
     // The job this one follows on from, and any follow-ups sent from it.
     supabase.from("tickets").select("id, title, follows").or(`follows.eq.${id}${t.follows ? `,id.eq.${t.follows}` : ""}`).order("created_at").returns<Pick<Ticket, "id" | "title" | "follows">[]>(),
-    supabase.from("ticket_events").select("*").eq("ticket_id", id).order("created_at").returns<TicketEvent[]>(),
+    // The business's clients and managers, for the studio to pick who's kept updated on this job.
+    member.role === "designer" && !viewing && !trade
+      ? Promise.all([
+          supabase.from("members").select("email, full_name, role, business_id").in("role", ["client", "manager"]).returns<{ email: string; full_name: string; role: string; business_id: string | null }[]>(),
+          supabase.from("member_businesses").select("email").eq("business_id", t.business_id).returns<{ email: string }[]>(),
+        ])
+      : [{ data: null }, { data: null }],
+    signDeliveries(supabase, deliveryRows ?? []),
+    signDeliveries(supabase, (draftFileRows ?? []).map(({ ticket_drafts: _, ...f }: DraftFile & { ticket_drafts?: unknown }) => f)),
+    files?.length ? supabase.storage.from("inspiration").createSignedUrls(files.map((f) => f.path), 3600).then((r) => r.data ?? []) : [],
   ]);
   const followsFrom = (links ?? []).find((x) => x.id === t.follows);
-  // The business's clients and managers, for the studio to pick who's kept updated on this job.
-  const [{ data: members }, { data: memberLinks }] = member.role === "designer" && !viewing && !trade
-    ? await Promise.all([
-        supabase.from("members").select("email, full_name, role, business_id").in("role", ["client", "manager"]).returns<{ email: string; full_name: string; role: string; business_id: string | null }[]>(),
-        supabase.from("member_businesses").select("email").eq("business_id", t.business_id).returns<{ email: string }[]>(),
-      ])
-    : [{ data: null }, { data: null }];
   const linkedHere = new Set((memberLinks ?? []).map((l) => l.email));
   const keepable = (members ?? [])
     .filter((m) => m.email !== t.created_by && (m.business_id === t.business_id || linkedHere.has(m.email)))
@@ -67,14 +74,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
     .sort((a, b) => a.name.localeCompare(b.name));
   const followUps = (links ?? []).filter((x) => x.follows === id);
   const drafts = draftRows ?? [];
-  const { data: draftFileRows } = drafts.length
-    ? await supabase.from("ticket_draft_files").select("*").in("draft_id", drafts.map((d) => d.id)).order("created_at").returns<DraftFile[]>()
-    : { data: [] as DraftFile[] };
-  const [delivered, draftFiles] = await Promise.all([signDeliveries(supabase, deliveryRows ?? []), signDeliveries(supabase, draftFileRows ?? [])]);
-  const docs = (docRows ?? []).map(asDoc);
-  const signed = files?.length
-    ? (await supabase.storage.from("inspiration").createSignedUrls(files.map((f) => f.path), 3600)).data ?? []
-    : [];
+  const docs = member.role === "designer" ? (docRows ?? []).map(asDoc) : [];
 
   const biz = businesses.find((b) => b.id === t.business_id);
   const isDesigner = member.role === "designer";
@@ -145,7 +145,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
       <div className="ctl">
         <textarea name="body" required aria-label="Note" placeholder={placeholder} />
       </div>
-      <button className="link" type="submit">Send</button>
+      <Submit className="link" type="submit">Send</Submit>
     </form>
   );
 
@@ -226,12 +226,12 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                 ) : (
                   review && t.status !== review.key && (
                     <form action={setStatus.bind(null, t.id, review.key)}>
-                      <button className="btn plain" type="submit">Send for review</button>
+                      <Submit className="btn plain" type="submit">Send for review</Submit>
                     </form>
                   )
                 )}
                 <form action={setStatus.bind(null, t.id, finalStage(ctx))}>
-                  <button className="btn" type="submit">Mark finished</button>
+                  <Submit className="btn" type="submit">Mark finished</Submit>
                 </form>
               </div>
             )}
@@ -239,13 +239,13 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
             <div className="seg stage-picker" role="group" aria-label="Set stage">
               {ctx.stages.map((s) => (
                 <form key={s.key} action={setStatus.bind(null, t.id, s.key)} style={{ display: "contents" }}>
-                  <button type="submit" aria-pressed={t.status === s.key}>{s.label}</button>
+                  <Submit type="submit" aria-pressed={t.status === s.key}>{s.label}</Submit>
                 </form>
               ))}
             </div>
             <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
               <form action={setPinned.bind(null, t.id, !t.pinned)}>
-                <button className="btn plain small" type="submit">{t.pinned ? "Unpin from top" : "Pin to top"}</button>
+                <Submit className="btn plain small" type="submit">{t.pinned ? "Unpin from top" : "Pin to top"}</Submit>
               </form>
             </div>
           </>
@@ -308,7 +308,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
             {done && !docs.some((d) => d.kind === "invoice") && !viewing && (
               <form action={createDocument.bind(null, t.id, "invoice")} className="notice doc-nudge">
                 <span>This {terms.job}&apos;s finished. Send the invoice?</span>
-                <button className="btn small" type="submit">Create invoice</button>
+                <Submit className="btn small" type="submit">Create invoice</Submit>
               </form>
             )}
             <div className="group">
@@ -323,8 +323,8 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
               ))}
               {!viewing && (
                 <div className="row doc-make">
-                  <form action={createDocument.bind(null, t.id, "quote")}><button className="btn plain small" type="submit">+ New quote</button></form>
-                  <form action={createDocument.bind(null, t.id, "invoice")}><button className="btn plain small" type="submit">+ New invoice</button></form>
+                  <form action={createDocument.bind(null, t.id, "quote")}><Submit className="btn plain small" type="submit">+ New quote</Submit></form>
+                  <form action={createDocument.bind(null, t.id, "invoice")}><Submit className="btn plain small" type="submit">+ New invoice</Submit></form>
                 </div>
               )}
             </div>
@@ -337,7 +337,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
               <div className="group">
                 {editable.map((f) => <FieldInput key={f.key} field={{ ...f, required: false }} value={valueOf(t, f)} idPrefix="edit-" />)}
               </div>
-              <p className="foot"><button className="btn small" type="submit">Save details</button></p>
+              <p className="foot"><Submit className="btn small" type="submit">Save details</Submit></p>
             </form>
           </details>
         )}

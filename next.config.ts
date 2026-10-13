@@ -7,6 +7,9 @@ const pdfFiles = ["./node_modules/pdfkit/js/standard-fonts/**", "./node_modules/
 const nextConfig: NextConfig = {
   // The PDF renderer loads fonts and images at run time, so it stays a plain Node package.
   serverExternalPackages: ["@react-pdf/renderer"],
+  // Going back to a page you were just on shows it straight away instead of loading it again.
+  // Anything you change still clears this, so it only skips pages nothing has changed on.
+  experimental: { staleTimes: { dynamic: 30 } },
   outputFileTracingIncludes: {
     "/documents": pdfFiles,
     "/settings/documents": pdfFiles,

@@ -11,6 +11,7 @@ import ClientRequests from "./ClientRequests";
 import NewRequestForm from "./NewRequestForm";
 import Walkthrough from "@/components/Walkthrough";
 import { startPreview } from "@/app/actions";
+import Submit from "@/components/Submit";
 
 export default async function PortalPage({ searchParams }: { searchParams: Promise<{ tour?: string; business?: string; follow?: string }> }) {
   const { tour, business, follow } = await searchParams;
@@ -75,7 +76,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
             <select name="business" aria-label="Client to preview">
               {businesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
-            <button className="link" type="submit">Preview</button>
+            <Submit className="link" type="submit">Preview</Submit>
           </form>
         )}
         <div style={{ maxWidth: 640 }}>

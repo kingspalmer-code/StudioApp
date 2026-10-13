@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
+import NavProgress from "@/components/NavProgress";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,6 +18,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         {/* Only shown in the Mac app: the strip behind the window buttons, which also moves the window. */}
         <div className="app-drag" data-tauri-drag-region aria-hidden />
+        <NavProgress />
         {children}
       </body>
     </html>

@@ -5,6 +5,7 @@ import type { Workspace } from "@/lib/types";
 import { viewWorkspace } from "../actions";
 import AdminNav from "../AdminNav";
 import CreateWorkspace from "../CreateWorkspace";
+import Submit from "@/components/Submit";
 
 export default async function AdminWorkspaces() {
   const { supabase, shell } = await requireAdmin();
@@ -30,7 +31,7 @@ export default async function AdminWorkspaces() {
                 </div>
                 {w.id !== shell.member.workspace_id && (
                   <form action={viewWorkspace.bind(null, w.id)}>
-                    <button className="btn small" type="submit">View</button>
+                    <Submit className="btn small" type="submit">View</Submit>
                   </form>
                 )}
               </div>

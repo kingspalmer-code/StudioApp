@@ -7,6 +7,7 @@ import SupportThread from "@/components/SupportThread";
 import { pageName, requireAdmin, since } from "@/lib/admin";
 import { attachmentUrls, STATUS_TEXT, ticketTitle, type SupportMessage, type SupportTicket } from "@/lib/support";
 import AdminNav from "../../AdminNav";
+import Submit from "@/components/Submit";
 
 // One help conversation, answered as Oatcake. The person gets an email with each reply.
 export default async function AdminTicket({ params }: { params: Promise<{ id: string }> }) {
@@ -47,9 +48,9 @@ export default async function AdminTicket({ params }: { params: Promise<{ id: st
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
             {t.status !== "solved" ? (
-              <form action={setTicketStatus.bind(null, id, "solved", true)}><button className="btn plain small" type="submit">Mark solved</button></form>
+              <form action={setTicketStatus.bind(null, id, "solved", true)}><Submit className="btn plain small" type="submit">Mark solved</Submit></form>
             ) : (
-              <form action={setTicketStatus.bind(null, id, "open", true)}><button className="btn plain small" type="submit">Reopen</button></form>
+              <form action={setTicketStatus.bind(null, id, "open", true)}><Submit className="btn plain small" type="submit">Reopen</Submit></form>
             )}
           </div>
         </div>

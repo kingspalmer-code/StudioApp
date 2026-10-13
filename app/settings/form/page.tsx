@@ -3,6 +3,7 @@ import Shell from "@/components/Shell";
 import { ADDABLE_KINDS, KIND_LABELS, type JobField } from "@/lib/fields";
 import { requireMember } from "@/lib/session";
 import { addField, deleteField, moveField, saveField, setFieldHidden } from "../actions";
+import Submit from "@/components/Submit";
 
 export default async function JobFormPage() {
   const { supabase, ctx, terms, shell } = await requireMember(["designer"]);
@@ -70,14 +71,14 @@ export default async function JobFormPage() {
           </>
         )}
         <div className="field-actions">
-          <button className="btn small" type="submit">Save</button>
+          <Submit className="btn small" type="submit">Save</Submit>
         </div>
       </form>
       {!f.builtin && (
         <form action={deleteField.bind(null, f.id)} className="field-actions">
-          <button className="link" style={{ color: "var(--red)" }} type="submit">
+          <Submit className="link" style={{ color: "var(--red)" }} type="submit">
             Delete {f.kind === "heading" ? "heading" : "field"}
-          </button>
+          </Submit>
           {f.kind !== "heading" && <span className="when">Answers already saved on {terms.jobs} are kept.</span>}
         </form>
       )}
@@ -100,9 +101,9 @@ export default async function JobFormPage() {
             <div className={`row field-row${f.kind === "heading" ? " is-heading" : ""}`} key={f.id}>
               {editor(f)}
               <span className="stage-tools">
-                <form action={moveField.bind(null, f.id, -1)}><button className="link" disabled={i === 0} aria-label={`Move ${f.label} up`}>↑</button></form>
-                <form action={moveField.bind(null, f.id, 1)}><button className="link" disabled={i === on.length - 1} aria-label={`Move ${f.label} down`}>↓</button></form>
-                <form action={setFieldHidden.bind(null, f.id, true)}><button className="link" aria-label={`Switch off ${f.label}`}>Hide</button></form>
+                <form action={moveField.bind(null, f.id, -1)}><Submit className="link" disabled={i === 0} aria-label={`Move ${f.label} up`}>↑</Submit></form>
+                <form action={moveField.bind(null, f.id, 1)}><Submit className="link" disabled={i === on.length - 1} aria-label={`Move ${f.label} down`}>↓</Submit></form>
+                <form action={setFieldHidden.bind(null, f.id, true)}><Submit className="link" aria-label={`Switch off ${f.label}`}>Hide</Submit></form>
               </span>
             </div>
           ))}
@@ -118,7 +119,7 @@ export default async function JobFormPage() {
                 {ADDABLE_KINDS.map((k) => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
               </select>
             </div>
-            <button className="link" type="submit">Add</button>
+            <Submit className="link" type="submit">Add</Submit>
           </div>
         </form>
         <p className="foot">New fields go at the bottom. Use the arrows to move them, and tap one to add choices for a dropdown or limit it to some {terms.job} types.</p>
@@ -131,7 +132,7 @@ export default async function JobFormPage() {
                 <div className="row field-row" key={f.id}>
                   {editor(f)}
                   <span className="stage-tools">
-                    <form action={setFieldHidden.bind(null, f.id, false)}><button className="link" aria-label={`Switch on ${f.label}`}>Show</button></form>
+                    <form action={setFieldHidden.bind(null, f.id, false)}><Submit className="link" aria-label={`Switch on ${f.label}`}>Show</Submit></form>
                   </span>
                 </div>
               ))}
