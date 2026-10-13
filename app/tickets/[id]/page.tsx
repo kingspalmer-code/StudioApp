@@ -11,6 +11,7 @@ import type { Note, Ticket, TicketFile } from "@/lib/types";
 import DeleteTicket from "./DeleteTicket";
 import AddFiles from "./AddFiles";
 import NewDraft from "./NewDraft";
+import KeptUpdated from "./KeptUpdated";
 import DraftActions from "./DraftActions";
 import Link from "next/link";
 import { createDocument } from "@/app/documents/actions";
@@ -46,6 +47,18 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
     supabase.from("tickets").select("id, title, follows").or(`follows.eq.${id}${t.follows ? `,id.eq.${t.follows}` : ""}`).order("created_at").returns<Pick<Ticket, "id" | "title" | "follows">[]>(),
   ]);
   const followsFrom = (links ?? []).find((x) => x.id === t.follows);
+  // The business's clients and managers, for the studio to pick who's kept updated on this job.
+  const [{ data: members }, { data: memberLinks }] = member.role === "designer" && !viewing && !trade
+    ? await Promise.all([
+        supabase.from("members").select("email, full_name, role, business_id").in("role", ["client", "manager"]).returns<{ email: string; full_name: string; role: string; business_id: string | null }[]>(),
+        supabase.from("member_businesses").select("email").eq("business_id", t.business_id).returns<{ email: string }[]>(),
+      ])
+    : [{ data: null }, { data: null }];
+  const linkedHere = new Set((memberLinks ?? []).map((l) => l.email));
+  const keepable = (members ?? [])
+    .filter((m) => m.email !== t.created_by && (m.business_id === t.business_id || linkedHere.has(m.email)))
+    .map((m) => ({ email: m.email, name: `${m.full_name || m.email}${m.role === "manager" ? " (manager)" : ""}` }))
+    .sort((a, b) => a.name.localeCompare(b.name));
   const followUps = (links ?? []).filter((x) => x.follows === id);
   const drafts = draftRows ?? [];
   const { data: draftFileRows } = drafts.length
@@ -63,7 +76,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   // Clients keep adding notes after sending a request. A manager can on a request they sent, and
   // can reply on a finished job for a business they're linked to.
   const linked = (member.business_ids ?? []).includes(t.business_id);
-  const canNote = member.role !== "manager" || t.created_by === member.email || (done && linked && !viewing);
+  const canNote = member.role !== "manager" || t.created_by === member.email || t.notify === member.email || (done && linked && !viewing);
   // On a finished job, the client (or a linked manager) can ask for a follow-up request from here.
   const canFollowUp = done && !trade && !viewing && member.role !== "designer" && linked;
   // The studio and the client can add files after a job's sent (an invoice, a forgotten photo);
@@ -237,6 +250,9 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           <div className="row"><span className="k">Needed by</span><div className="ctl">{formatDate(t.deadline)} <span className="when">({dueLabel(t.deadline)})</span></div></div>
           {groups[0] && !groups[0].title && groups[0].fields.map(show)}
           <div className="row"><span className="k">{trade ? "Added" : "Submitted"}</span><div className="ctl">{formatDate(t.created_at)}{t.requester_name && !shown.has("requester_name") ? ` by ${t.requester_name}` : ""}</div></div>
+          {members && keepable.length > 0 && (
+            <div className="row"><span className="k">Also tell</span><div className="ctl"><KeptUpdated ticketId={t.id} value={t.notify ?? ""} people={keepable} /></div></div>
+          )}
           {quote != null && (
             <div className="row"><span className="k">Left to pay</span><div className="ctl">{money(Math.max(0, quote - (paid ?? 0)))}</div></div>
           )}

@@ -3,6 +3,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { formatDate } from "@/lib/priority";
+import { tellPicked } from "@/lib/finished";
 import { firstTime, pushReady, pushRpc, sendAlert } from "@/lib/push";
 import { requireEditor } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -84,6 +85,19 @@ export async function saveBrand(businessId: string, logo: string, accent: string
   if (error) return { error: error.message };
   revalidatePath("/", "layout");
   return {};
+}
+
+// The studio just added a job and picked someone at the business to keep updated: tell them by email
+// and on their phone. Only the person who added it can trigger this, only shortly after, and once.
+export async function tellPickedPerson(ticketId: number) {
+  const { supabase, member, workspace, terms } = await requireEditor(["designer"]);
+  const { data: t } = await supabase
+    .from("tickets")
+    .select("created_by, created_at, notify")
+    .eq("id", ticketId)
+    .maybeSingle<{ created_by: string; created_at: string; notify: string | null }>();
+  if (!t?.notify || t.created_by !== member.email || Date.now() - Date.parse(t.created_at) > 15 * 60_000) return;
+  await tellPicked(supabase, ticketId, { name: workspace.name, replyTo: member.email, terms });
 }
 
 // A client just sent a request: alert the people who run the workspace on their phones. Only the

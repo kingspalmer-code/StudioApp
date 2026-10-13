@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { notYetFinished, tellRequesters } from "@/lib/finished";
+import { notYetFinished, tellDraft, tellRequesters } from "@/lib/finished";
 import type { Draft, DraftFile } from "@/lib/deliveries";
 import { finalStage } from "@/lib/priority";
 import { requireEditor } from "@/lib/session";
@@ -53,4 +53,18 @@ export async function removeDraft(ticketId: number, draftId: number): Promise<st
   if (gone.length) await supabase.storage.from("deliveries").remove(gone);
   revalidatePath(`/tickets/${ticketId}`);
   revalidatePath("/portal");
+}
+
+// Tells the client, and anyone picked to keep updated, about a draft that was just shared.
+export async function tellAboutDraft(ticketId: number, draftId: number) {
+  const { supabase, member, workspace, terms, draft } = await draftOf(ticketId, draftId);
+  if (!draft || Date.now() - Date.parse(draft.created_at) > 30 * 60_000) return;
+  await tellDraft(supabase, ticketId, draftId, { name: workspace.name, replyTo: member.email, terms });
+}
+
+// Who the studio keeps updated on a job: one of the business's clients or managers, or nobody.
+export async function setNotify(ticketId: number, email: string) {
+  const { supabase } = await requireEditor(["designer"]);
+  await supabase.from("tickets").update({ notify: email || null }).eq("id", ticketId);
+  revalidatePath(`/tickets/${ticketId}`);
 }

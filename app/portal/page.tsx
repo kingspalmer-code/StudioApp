@@ -45,6 +45,23 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
 
   // The studio (or a trade) logging a job: just the form.
   if (isDesigner) {
+    // Each business's clients and managers, so the studio can pick one to tell about the job.
+    const [{ data: members }, { data: links }] = trade
+      ? [{ data: [] }, { data: [] }]
+      : await Promise.all([
+          supabase.from("members").select("email, full_name, role, business_id").in("role", ["client", "manager"]).returns<{ email: string; full_name: string; role: string; business_id: string | null }[]>(),
+          supabase.from("member_businesses").select("email, business_id").returns<{ email: string; business_id: string }[]>(),
+        ]);
+    const people = (members ?? [])
+      .map((m) => ({
+        email: m.email,
+        name: `${m.full_name || m.email}${m.role === "manager" ? " (manager)" : ""}`,
+        businesses: [m.business_id, ...(links ?? []).filter((l) => l.email === m.email).map((l) => l.business_id)].filter((b) => b !== null),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    // "?business=" starts the form on that business.
+    const start = businesses.find((b) => b.id === business);
+    const ordered = start ? [start, ...businesses.filter((b) => b !== start)] : businesses;
     return (
       <Shell {...shell}>
         <h1 className="large">{trade ? "New job" : "New design request"}</h1>
@@ -62,7 +79,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
           </form>
         )}
         <div style={{ maxWidth: 640 }}>
-          <NewRequestForm businesses={businesses} defaultName={member.full_name} isDesigner types={ctx.types} fields={formFields} trade={trade} ownerName={owner} helper={helper} />
+          <NewRequestForm businesses={ordered} defaultName={member.full_name} isDesigner types={ctx.types} fields={formFields} trade={trade} ownerName={owner} helper={helper} people={people} />
         </div>
       </Shell>
     );
