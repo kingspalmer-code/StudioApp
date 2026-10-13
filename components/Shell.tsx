@@ -5,6 +5,7 @@ import { brandFor, brandThemeCss } from "@/lib/brands";
 import type { Business, Member, Workspace } from "@/lib/types";
 import AskOatcake from "./AskOatcake";
 import BizBadge from "./BizBadge";
+import AppBar from "./AppBar";
 import Bell from "./Bell";
 import CreateMenu from "./CreateMenu";
 import NavLinks from "./NavLinks";
@@ -90,6 +91,7 @@ export default function Shell({
   return (
     <div className={[brand ? "brand-theme" : "", rail ? "has-rail" : ""].filter(Boolean).join(" ") || undefined}>
       {brand && <style>{brandThemeCss(".brand-theme", brand)}</style>}
+      <AppBar links={links} canCreate={canCreate} bell={rail && !viewing && !preview} />
       <header className="bar">
         <div className="bar-in">
           {biz ? (
