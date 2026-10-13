@@ -1113,7 +1113,7 @@ html.embedded main { padding: 16px 20px 48px; }
 /* The widgets above Up next (components/QueueWidgets.tsx). */
 .widgets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 4px 0 22px; }
 @media (max-width: 1000px) { .widgets { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(230px, 1fr); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; } .widget { scroll-snap-align: start; } }
-.widget { background: var(--surface); border-radius: var(--r); padding: 12px 14px 14px; min-height: 152px; display: flex; flex-direction: column; min-width: 0; transition: opacity .15s, transform .15s; }
+.widget { background: var(--surface); border-radius: var(--r); padding: 12px 14px 14px; min-height: 196px; display: flex; flex-direction: column; min-width: 0; transition: opacity .15s, transform .15s; }
 .widget.dragging { opacity: .4; transform: scale(.98); }
 .widget h4 { margin: 0 0 10px; display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--label-2); }
 .widget-grip { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; cursor: grab; color: var(--label-3); touch-action: none; }
@@ -1161,6 +1161,17 @@ html.embedded main { padding: 16px 20px 48px; }
 .lcd-snack { position: absolute; width: 20px; height: 20px; left: calc(50% + 34px); top: calc(50% - 4px); animation: lcd-snack 2.6s steps(1) forwards; }
 .lcd-name { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; text-transform: none; }
 .lcd-name span:last-child { font-size: 9px; text-transform: uppercase; }
+.lcd-name small { font-size: 9px; opacity: .7; margin-left: 4px; }
+.lcd-keys { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 7px; }
+.lcd-keys button { font: inherit; font-size: 9px; text-transform: uppercase; color: #1d201a; background: rgba(29,32,26,.08); border: 0; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(29,32,26,.55); padding: 6px 4px 5px; cursor: pointer; }
+.lcd-keys button:hover:not(:disabled) { background: #1d201a; color: #b4b9a2; }
+.lcd-keys button:disabled { opacity: .4; cursor: default; }
+.lcd-keys b { font-weight: inherit; }
+.lcd-snack.golden { width: 24px; height: 24px; }
+.lcd-snack.golden .lcd-ink { fill: #8a6a12; }
+.lcd.glowing { background-color: #c3bf98; }
+.lcd-sparkle { position: absolute; left: 50%; top: 2px; transform: translateX(-50%); font-size: 12px; color: #1d201a; animation: lcd-blink .4s steps(1) 8; }
+@keyframes lcd-blink { 50% { opacity: 0; } }
 @keyframes lcd-hop { 50% { transform: translateY(-4px); } }
 @keyframes lcd-chomp { 50% { transform: scale(1.05, .95); } }
 @keyframes lcd-snack { 0% { transform: translateY(-36px); } 15% { transform: none; } 45% { transform: translateX(-10px); clip-path: inset(0 0 0 25%); } 70% { transform: translateX(-16px); clip-path: inset(0 0 0 60%); } 85%, 100% { opacity: 0; } }

@@ -5,6 +5,7 @@ import Shell from "@/components/Shell";
 import QueueList from "@/components/QueueList";
 import QueueWidgets, { type WeekDay } from "@/components/QueueWidgets";
 import { coversFor } from "@/lib/deliveries";
+import { visitPet } from "@/lib/pet";
 import Walkthrough from "@/components/Walkthrough";
 import { daysFromToday, finalStage, formatDate, isDone, money, sortQueue, startBy, startLabel, todayISO } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
@@ -85,13 +86,13 @@ export default async function QueuePage({
       .filter((t) => t.delivered_at)
       .sort((a, b) => b.delivered_at!.localeCompare(a.delivered_at!))
       .slice(0, 24);
-    const covers = await coversFor(supabase, recent.map((t) => t.id));
+    const [covers, pet] = await Promise.all([coversFor(supabase, recent.map((t) => t.id)), visitPet(supabase, done.length)]);
     const reel = recent.filter((t) => covers[t.id]?.url).slice(0, 6).map((t) => ({ id: t.id, title: t.title, url: covers[t.id]!.url! }));
     widgets = (
       <QueueWidgets
         week={week}
         reel={reel}
-        pet={{ fedTotal: done.length, fedWeek: deliveredWeek, overdue: late }}
+        pet={pet}
         tally={{ delivered: deliveredWeek, due: open.filter((t) => t.deadline <= sunday).length, late }}
       />
     );
