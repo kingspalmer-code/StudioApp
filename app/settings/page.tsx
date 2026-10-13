@@ -5,10 +5,16 @@ import { STAGE_COLORS, stageColor } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
 import { addStage, addType, deleteStage, deleteType, moveStage, renameWorkspace, saveStage, saveType } from "./actions";
 import Submit from "@/components/Submit";
+import { modeTitle } from "@/lib/workspace";
+import WorkMode from "./WorkMode";
 
 export default async function SettingsPage() {
-  const { supabase, ctx, terms, workspace, shell } = await requireMember(["designer"]);
-  const { data: used } = await supabase.from("tickets").select("status");
+  const { supabase, ctx, terms, workspace, shell, viewing } = await requireMember(["designer"]);
+  const [{ data: used }, { count: loggedIn }] = await Promise.all([
+    supabase.from("tickets").select("status"),
+    // Clients and managers, whose logins pause if the workspace stops taking requests from businesses.
+    supabase.from("members").select("email", { count: "exact", head: true }).in("role", ["client", "manager"]),
+  ]);
   const inUse = new Set((used ?? []).map((t) => t.status as string));
 
   return (
@@ -27,8 +33,20 @@ export default async function SettingsPage() {
             </div>
           </div>
         </form>
+        {workspace.kind !== "solo" && (
+          <p className="foot">
+            {terms.Clients} and their contact details are on the <Link href="/customers">{terms.Clients} page</Link>.
+          </p>
+        )}
+
+        <p className="eyebrow">How you work</p>
+        {viewing ? (
+          <div className="group"><div className="row"><div className="ctl">{modeTitle(workspace.kind)}</div></div></div>
+        ) : (
+          <WorkMode kind={workspace.kind} loggedIn={loggedIn ?? 0} />
+        )}
         <p className="foot">
-          {terms.Clients} and their contact details are on the <Link href="/customers">{terms.Clients} page</Link>.
+          Sets the words Oatcake uses and who can send you {terms.jobs}. Switching never deletes anything.
         </p>
 
         <p className="eyebrow">{terms.Job} form</p>

@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import BizBadge from "@/components/BizBadge";
 import Shell from "@/components/Shell";
 import { removeMember, setOtherBusinesses, startPreview } from "@/app/actions";
@@ -10,7 +11,8 @@ import Submit from "@/components/Submit";
 const ROLE_LABEL = { designer: "Designer", manager: "Manager", client: "Client" };
 
 export default async function PeoplePage() {
-  const { supabase, member, businesses, shell } = await requireMember(["designer"]);
+  const { supabase, member, businesses, workspace, shell } = await requireMember(["designer"]);
+  if (workspace.kind === "solo") redirect("/queue");
   const [{ data }, { data: signedIn }, { data: links }] = await Promise.all([
     supabase.from("members").select("*").order("role").order("email").returns<Member[]>(),
     supabase.rpc("members_signed_in"),

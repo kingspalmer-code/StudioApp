@@ -17,35 +17,29 @@ import { termsFor } from "@/lib/workspace";
 import Submit from "@/components/Submit";
 
 function linksFor(member: Member, workspace: Workspace, viewing: boolean) {
+  const terms = termsFor(workspace.kind);
+  const main = { href: "/queue", label: workspace.kind === "studio" ? "Queue" : terms.Jobs };
   // Managers can look at the queue, every job in it and the gallery of finished work; nothing there lets them change anything.
   // Managers linked to businesses on the People page can also send requests for them.
   if (member.role === "manager")
     return [
-      { href: "/queue", label: workspace.kind === "trade" ? "Jobs" : "Queue" },
+      main,
       { href: "/overview", label: "Overview" },
       { href: "/gallery", label: "Gallery" },
       ...(member.business_ids?.length && !viewing ? [{ href: "/portal", label: "New request" }] : []),
     ];
   if (member.role === "client") return [{ href: "/portal", label: "Requests" }];
-  if (viewing)
-    return [
-      { href: "/queue", label: workspace.kind === "trade" ? "Jobs" : "Queue" },
-      { href: "/overview", label: "Overview" },
-      ...(workspace.kind === "trade" ? [{ href: "/customers", label: "Customers" }] : [{ href: "/people", label: "People" }]),
-    ];
-  if (workspace.kind === "trade")
-    return [
-      { href: "/queue", label: "Jobs" },
-      { href: "/overview", label: "Overview" },
-      { href: "/portal", label: "New job" },
-      { href: "/customers", label: "Customers" },
-      { href: "/personal", label: "Personal" },
-    ];
+  // Who the work is for: businesses (with their staff) on People, customers on Customers, and nobody when working alone.
+  const clients =
+    workspace.kind === "studio" ? [{ href: "/people", label: "People" }]
+    : workspace.kind === "trade" ? [{ href: "/customers", label: "Customers" }]
+    : [{ href: "/gallery", label: "Gallery" }];
+  if (viewing) return [main, { href: "/overview", label: "Overview" }, ...clients];
   return [
-    { href: "/queue", label: "Queue" },
+    main,
     { href: "/overview", label: "Overview" },
-    { href: "/portal", label: "New request" },
-    { href: "/people", label: "People" },
+    { href: "/portal", label: `New ${terms.job}` },
+    ...clients,
     { href: "/personal", label: "Personal" },
   ];
 }
@@ -157,7 +151,7 @@ export default function Shell({
       <TabBar links={links} canCreate={canCreate} />
       {canCreate && (
         <CreateMenu
-          trade={workspace.kind === "trade"}
+          kind={workspace.kind}
           Job={terms.Job}
           Client={terms.Client}
           clientNames={Object.fromEntries(businesses.map((b) => [b.id, b.name]))}
@@ -165,7 +159,7 @@ export default function Shell({
       )}
       {canCreate && (
         <Search
-          trade={workspace.kind === "trade"}
+          kind={workspace.kind}
           Job={terms.Job}
           Client={terms.Client}
           clients={businesses.map((b) => ({ id: b.id, name: b.name, slug: b.slug }))}

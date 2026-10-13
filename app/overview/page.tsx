@@ -23,7 +23,7 @@ export default async function OverviewPage() {
   const unpaid = all.reduce((sum, t) => sum + Math.max(0, (t.quote_amount ?? 0) - (t.paid_amount ?? 0)), 0);
   const stats = [
     { n: open.length, label: `Open ${terms.jobs}` },
-    workspace.kind === "trade"
+    workspace.kind !== "studio"
       ? { n: money(unpaid), label: "Quoted, not yet paid", color: unpaid ? "var(--orange)" : undefined }
       : { n: open.filter((t) => { const d = daysFromToday(t.deadline); return d >= 0 && d <= 7; }).length, label: "Due this week" },
     { n: risk.length, label: "At risk", color: risk.length ? "var(--red)" : undefined },
@@ -33,7 +33,7 @@ export default async function OverviewPage() {
   return (
     <Shell {...shell}>
       <h1 className="large">Overview</h1>
-      <p className="sub">Workload and progress across all your {terms.clients}.</p>
+      <p className="sub">Workload and progress across all your {workspace.kind === "solo" ? terms.jobs : terms.clients}.</p>
       <div className="stats">
         {stats.map((s) => (
           <div className="stat" key={s.label}>
@@ -43,38 +43,43 @@ export default async function OverviewPage() {
         ))}
       </div>
 
-      <p className="eyebrow">By {terms.client}</p>
-      <div className="biz-grid">
-        {businesses.filter((b) => workspace.kind === "studio" || open.some((t) => t.business_id === b.id)).map((b) => {
-          const ts = all.filter((t) => t.business_id === b.id);
-          const counts = ctx.stages.map((st) => ({ st, n: ts.filter((t) => t.status === st.key).length }));
-          const total = ts.length || 1;
-          const next = open.filter((t) => t.business_id === b.id).sort((x, y) => x.deadline.localeCompare(y.deadline))[0];
-          return (
-            <div className="biz" key={b.id}>
-              <h4><BizBadge biz={b} size={26} />{b.name}</h4>
-              <div className="meter" role="img" aria-label={counts.map((c) => `${c.n} ${c.st.label}`).join(", ")}>
-                {counts.map((c) => (
-                  <i key={c.st.key} style={{ width: `${(c.n / total) * 100}%`, background: stageColor(c.st.color) }} />
-                ))}
-              </div>
-              <div className="legend">
-                {counts.filter((c) => c.n).map((c) => (
-                  <span key={c.st.key}>
-                    <span className="dot" style={{ background: stageColor(c.st.color), width: 7, height: 7 }} />
-                    {c.n} {c.st.label}
-                  </span>
-                ))}
-                {!ts.length && <span>No {terms.jobs} yet</span>}
-              </div>
-              <div className="kv">
-                <span>Next due</span>
-                <b>{next ? `${next.title} · ${formatDate(next.deadline)}` : "Nothing open"}</b>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {/* Working alone, there's nobody to break the work down by. */}
+      {workspace.kind !== "solo" && (
+        <>
+          <p className="eyebrow">By {terms.client}</p>
+          <div className="biz-grid">
+            {businesses.filter((b) => workspace.kind === "studio" || open.some((t) => t.business_id === b.id)).map((b) => {
+              const ts = all.filter((t) => t.business_id === b.id);
+              const counts = ctx.stages.map((st) => ({ st, n: ts.filter((t) => t.status === st.key).length }));
+              const total = ts.length || 1;
+              const next = open.filter((t) => t.business_id === b.id).sort((x, y) => x.deadline.localeCompare(y.deadline))[0];
+              return (
+                <div className="biz" key={b.id}>
+                  <h4><BizBadge biz={b} size={26} />{b.name}</h4>
+                  <div className="meter" role="img" aria-label={counts.map((c) => `${c.n} ${c.st.label}`).join(", ")}>
+                    {counts.map((c) => (
+                      <i key={c.st.key} style={{ width: `${(c.n / total) * 100}%`, background: stageColor(c.st.color) }} />
+                    ))}
+                  </div>
+                  <div className="legend">
+                    {counts.filter((c) => c.n).map((c) => (
+                      <span key={c.st.key}>
+                        <span className="dot" style={{ background: stageColor(c.st.color), width: 7, height: 7 }} />
+                        {c.n} {c.st.label}
+                      </span>
+                    ))}
+                    {!ts.length && <span>No {terms.jobs} yet</span>}
+                  </div>
+                  <div className="kv">
+                    <span>Next due</span>
+                    <b>{next ? `${next.title} · ${formatDate(next.deadline)}` : "Nothing open"}</b>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       <div className="cols" style={{ marginTop: 6 }}>
         <div>

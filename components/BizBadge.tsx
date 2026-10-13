@@ -5,7 +5,8 @@ import type { Business } from "@/lib/types";
 // so wordmark logos stay legible. `wide` lets the logo set its own width (headers).
 export default function BizBadge({ biz, size = 28, wide = false }: { biz?: Business; size?: number; wide?: boolean }) {
   const width = wide ? undefined : Math.round(size * 1.5);
-  if (!biz) return <span className="badge" style={{ width, height: size }} />;
+  // No business: a solo project, which belongs to nobody.
+  if (!biz) return null;
   const b = brandFor(biz);
   return (
     <span

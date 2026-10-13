@@ -10,7 +10,7 @@ import type { Ticket } from "@/lib/types";
 // opening one shows its files to view or download, nothing here changes anything.
 export default async function GalleryPage({ searchParams }: { searchParams: Promise<{ year?: string; type?: string; business?: string }> }) {
   const { year, type, business } = await searchParams;
-  const { supabase, businesses, ctx, terms, shell } = await requireMember(["manager", "designer"]);
+  const { supabase, businesses, ctx, terms, workspace, shell } = await requireMember(["manager", "designer"]);
   const byId = Object.fromEntries(businesses.map((b) => [b.id, b]));
   const { data } = await supabase.from("tickets").select("*").returns<Ticket[]>();
   const finished = (data ?? [])
@@ -36,9 +36,9 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
   return (
     <Shell {...shell}>
       <h1 className="large">Gallery</h1>
-      <p className="sub">Everything that&apos;s been finished for your {terms.clients}. Open one to view or download its files.</p>
+      <p className="sub">{workspace.kind === "solo" ? `Every ${terms.job} you've finished.` : <>Everything that&apos;s been finished for your {terms.clients}.</>} Open one to view or download its files.</p>
       <div className="archive-filters">
-        {bizIds.length > 1 && (
+        {bizIds.length > 1 && workspace.kind !== "solo" && (
           <nav className="seg" aria-label={terms.client}>
             <Link href={href(undefined, year, type)} aria-current={!business ? "page" : undefined}>All</Link>
             {bizIds.map((id) => (

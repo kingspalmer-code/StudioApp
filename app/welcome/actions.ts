@@ -3,6 +3,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { normalizeSetup, SETUP_SCHEMA, type Setup } from "@/lib/setup";
 import { createClient } from "@/lib/supabase/server";
+import type { WorkspaceKind } from "@/lib/types";
 
 const SYSTEM = `You set up Oatcake workspaces. Oatcake is a simple job tracker for small UK businesses and freelancers: each job moves through stages on a board, has a job type (which sets how many working days it usually needs, so Oatcake can say when to start it), and is created by filling in a short job form.
 
@@ -28,12 +29,16 @@ Anything else is "use": "custom" with a kind from the list; "select" needs at le
 
 Also give: base, the closest of creative (designers, agencies), photo (photo and video), trades (signwriters, joiners, makers), events (pubs, venues, event planners), content (social media, marketing), personal (anything else); a workspace_name, using their business name if they gave one; and clients_log_in, true only if they say clients or customers send them requests or briefs to work from.
 
+They also say who their work is for. For businesses, the form can ask who at the business asked for it and who signs it off. For members of the public, the customer's name and phone are asked separately, so don't add fields for them. For just themselves, there are no clients: call the work projects, and leave out anything about clients, quotes, payment or sign-off.
+
 Use UK English and plain words. Example for a signwriter: stages Quote sent, Quote paid, Design, Building, Finished; job types Shop fascia 10, Van livery 5, Hand lettering 3, A-board 3, Window vinyl 2, Other 3; fields Size / measurements (formats), Job notes (brief), Site address (site_address), Quote (quote_amount), Photos / drawings (files).`;
 
 export type SuggestResult = { setup?: Setup; error?: string };
 
 // Asks Claude for a workspace setup from a few sentences about someone's work.
-export async function suggestSetup(about: string, name: string): Promise<SuggestResult> {
+const FOR: Record<WorkspaceKind, string> = { studio: "businesses", trade: "members of the public", solo: "just me, no clients" };
+
+export async function suggestSetup(about: string, name: string, mode: WorkspaceKind = "studio"): Promise<SuggestResult> {
   const text = about.trim().slice(0, 1500);
   if (text.length < 10) return { error: "Tell us a little more about what you do." };
   if (!process.env.ANTHROPIC_API_KEY) return { error: "This isn't switched on yet. Start with a blank workspace instead." };
@@ -49,7 +54,7 @@ export async function suggestSetup(about: string, name: string): Promise<Suggest
       max_tokens: 16000,
       system: SYSTEM,
       output_config: { effort: "low", format: { type: "json_schema", schema: SETUP_SCHEMA } },
-      messages: [{ role: "user", content: `My name: ${name.trim().slice(0, 80) || "not given"}\n\nWhat I do:\n${text}` }],
+      messages: [{ role: "user", content: `My name: ${name.trim().slice(0, 80) || "not given"}\n\nWho my work is for: ${FOR[mode] ?? FOR.studio}\n\nWhat I do:\n${text}` }],
     });
     if (response.stop_reason === "refusal") return { error: "That couldn't be set up. Try describing it differently, or start with a blank workspace." };
     const json = response.content.find((b) => b.type === "text")?.text;

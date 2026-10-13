@@ -15,9 +15,10 @@ import Submit from "@/components/Submit";
 
 export default async function PortalPage({ searchParams }: { searchParams: Promise<{ tour?: string; business?: string; follow?: string }> }) {
   const { tour, business, follow } = await searchParams;
-  const { supabase, member, businesses, ctx, workspace, shell } = asClient(await requireEditor(["client", "designer", "manager"]));
+  const { supabase, member, businesses, self, ctx, workspace, shell, terms } = asClient(await requireEditor(["client", "designer", "manager"]));
   const previewing = Boolean(shell.preview);
-  const trade = workspace.kind === "trade";
+  const trade = workspace.kind !== "studio";
+  const solo = workspace.kind === "solo";
   const owner = workspace.owner_name || "the studio";
   const isDesigner = member.role === "designer";
   const myBiz = businesses.find((b) => b.id === member.business_id);
@@ -65,9 +66,11 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
     const ordered = start ? [start, ...businesses.filter((b) => b !== start)] : businesses;
     return (
       <Shell {...shell}>
-        <h1 className="large">{trade ? "New job" : "New design request"}</h1>
+        <h1 className="large">{trade ? `New ${terms.job}` : "New design request"}</h1>
         <p className="sub">
-          {trade ? "Add a job as soon as it comes in. New customers are saved automatically." : "Log a request that came in by WhatsApp or email so it joins the queue."}{" "}
+          {solo
+            ? "Add something you're working on. Oatcake tells you when to start it."
+            : trade ? "Add a job as soon as it comes in. New customers are saved automatically." : "Log a request that came in by WhatsApp or email so it joins the queue."}{" "}
           <Link href="/settings/form">Change what this form asks</Link>
         </p>
         {!trade && businesses.length > 0 && (
@@ -80,7 +83,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
           </form>
         )}
         <div style={{ maxWidth: 640 }}>
-          <NewRequestForm businesses={ordered} defaultName={member.full_name} isDesigner types={ctx.types} fields={formFields} trade={trade} ownerName={owner} helper={helper} people={people} />
+          <NewRequestForm businesses={ordered} defaultName={member.full_name} isDesigner types={ctx.types} fields={formFields} trade={trade} solo={solo} selfId={self?.id} ownerName={owner} helper={helper} people={people} />
         </div>
       </Shell>
     );

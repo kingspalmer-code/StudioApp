@@ -1,4 +1,5 @@
 import Shell from "@/components/Shell";
+import { modeTitle } from "@/lib/workspace";
 import { requireAdmin } from "@/lib/admin";
 import { formatDate } from "@/lib/priority";
 import type { Workspace } from "@/lib/types";
@@ -27,7 +28,7 @@ export default async function AdminWorkspaces() {
               <div className="row" key={w.id}>
                 <div className="ctl">
                   <div style={{ fontWeight: 600 }}>{w.name}</div>
-                  <div className="when">{w.kind === "trade" ? "Trade" : "Design studio"} · {w.owner_name || "No name"} · since {formatDate(w.created_at)}</div>
+                  <div className="when">{modeTitle(w.kind)} · {w.owner_name || "No name"} · since {formatDate(w.created_at)}</div>
                 </div>
                 {w.id !== shell.member.workspace_id && (
                   <form action={viewWorkspace.bind(null, w.id)}>
