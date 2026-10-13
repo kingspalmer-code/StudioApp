@@ -40,11 +40,11 @@ export default function AddMember({ businesses }: { businesses: Business[] }) {
             </div>
           </div>
         )}
-        {role === "client" && businesses.length > 1 && (
+        {((role === "client" && businesses.length > 1) || role === "manager") && (
           <div className="row">
-            <span className="k">Also for</span>
+            <span className="k">{role === "manager" ? "Can request for" : "Also for"}</span>
             <div className="ctl also-for">
-              {businesses.filter((b) => b.id !== main).map((b) => (
+              {businesses.filter((b) => role === "manager" || b.id !== main).map((b) => (
                 <label key={b.id} className="also-opt">
                   <input type="checkbox" name="also" value={b.id} /> {b.name}
                 </label>

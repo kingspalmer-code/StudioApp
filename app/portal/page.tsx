@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import Shell from "@/components/Shell";
 import TicketRow from "@/components/TicketRow";
 import { coversFor } from "@/lib/deliveries";
@@ -13,7 +14,7 @@ import { startPreview } from "@/app/actions";
 
 export default async function PortalPage({ searchParams }: { searchParams: Promise<{ tour?: string; business?: string }> }) {
   const { tour, business } = await searchParams;
-  const { supabase, member, businesses, ctx, workspace, shell } = asClient(await requireEditor(["client", "designer"]));
+  const { supabase, member, businesses, ctx, workspace, shell } = asClient(await requireEditor(["client", "designer", "manager"]));
   const previewing = Boolean(shell.preview);
   const trade = workspace.kind === "trade";
   const owner = workspace.owner_name || "the studio";
@@ -48,6 +49,20 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
         )}
         <div style={{ maxWidth: 640 }}>
           <NewRequestForm businesses={businesses} defaultName={member.full_name} isDesigner types={ctx.types} fields={formFields} trade={trade} ownerName={owner} helper={helper} />
+        </div>
+      </Shell>
+    );
+  }
+
+  // A manager sending a request for one of the businesses they're linked to: just the form.
+  if (member.role === "manager") {
+    if (!myBizes.length) redirect("/overview");
+    return (
+      <Shell {...shell}>
+        <h1 className="large">New request</h1>
+        <p className="sub">Send {owner} a request. It joins the queue, and you can follow it in the overview.</p>
+        <div style={{ maxWidth: 640 }}>
+          <NewRequestForm businesses={myBizes} defaultName={member.full_name} isDesigner={false} types={ctx.types} fields={formFields} trade={trade} ownerName={owner} helper={helper} />
         </div>
       </Shell>
     );

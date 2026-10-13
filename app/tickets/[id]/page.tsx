@@ -47,8 +47,9 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   const biz = businesses.find((b) => b.id === t.business_id);
   const isDesigner = member.role === "designer";
   const canNote = member.role !== "manager";
-  // The studio and the client can add files after a job's sent (an invoice, a forgotten photo).
-  const canAddFiles = canNote && !viewing;
+  // The studio and the client can add files after a job's sent (an invoice, a forgotten photo);
+  // so can a manager, on a request they sent.
+  const canAddFiles = (canNote || t.created_by === member.email) && !viewing;
   const sb = startLabel(startBy(t, ctx));
   const done = isDone(t, ctx);
   const owner = workspace.owner_name || "the studio";
@@ -166,7 +167,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
               </div>
             </div>
             )}
-            {canAddFiles && <AddFiles ticketId={t.id} businessId={t.business_id} isClient={member.role === "client"} />}
+            {canAddFiles && <AddFiles ticketId={t.id} businessId={t.business_id} isClient={member.role !== "designer"} />}
           </>
         )}
 
