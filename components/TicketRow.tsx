@@ -12,7 +12,6 @@ export default function TicketRow({
   showBusiness = true,
   select,
   draft,
-  open,
 }: {
   t: Ticket;
   biz?: Business;
@@ -23,12 +22,10 @@ export default function TicketRow({
   select?: { checked: boolean; onToggle: () => void };
   // A draft is waiting on the client's notes.
   draft?: boolean;
-  // Showing in the panel beside the queue (components/SplitPanel.tsx).
-  open?: boolean;
 }) {
   const done = isDone(t, ctx);
   const sb = startLabel(startBy(t, ctx));
-  const cls = (rank ? "ticket ranked" : "ticket") + (open ? " open" : "");
+  const cls = rank ? "ticket ranked" : "ticket";
   const body = (
     <>
       {rank ? <span className="rank">{rank}</span> : null}
