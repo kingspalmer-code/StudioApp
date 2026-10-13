@@ -1086,8 +1086,14 @@ html.in-app .nt-layer { top: var(--app-bar); }
   .split-full { margin-left: auto; }
   .split-panel:not(.on) { visibility: hidden; pointer-events: none; animation: none; }
   .split-body { flex: 1; position: relative; min-height: 0; }
-  .split-panel iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); opacity: 0; pointer-events: none; }
-  .split-panel iframe.shown { opacity: 1; pointer-events: auto; }
+  /* Frames loading ahead are hidden outright (not just see-through): Safari otherwise sends the
+     scroll wheel to whichever frame is on top, not the one showing. */
+  .split-panel iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); visibility: hidden; pointer-events: none; }
+  .split-panel iframe.shown { visibility: visible; pointer-events: auto; z-index: 1; }
+  .split-grip { position: absolute; top: 0; bottom: 0; left: -4px; width: 8px; cursor: col-resize; z-index: 3; touch-action: none; }
+  .split-grip:hover, html.split-dragging .split-grip { background: linear-gradient(to right, transparent 3px, var(--accent) 3px, var(--accent) 5px, transparent 5px); }
+  html.split-dragging, html.split-dragging * { cursor: col-resize !important; user-select: none !important; }
+  html.split-dragging .split-panel iframe { pointer-events: none; }
   .split-loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--label-2); }
   .split-loading .oc-biscuit { width: 88px; height: 88px; }
   .ticket.open { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
