@@ -7,13 +7,13 @@ import { NavIcon } from "./NavIcons";
 
 // The section links as an iPhone-style tab bar along the bottom. Only shown on phones; bigger
 // screens have the sidebar rail. The middle button opens the create sheet.
-export default function TabBar({ links }: { links: { href: string; label: string }[] }) {
+export default function TabBar({ links, canCreate = true }: { links: { href: string; label: string }[]; canCreate?: boolean }) {
   const path = usePathname();
   if (links.length < 2) return null;
   return (
     <nav className="tabbar" aria-label="Sections">
       {links.map((l) =>
-        l.href === "/portal" ? (
+        l.href === "/portal" && canCreate ? (
           <button key={l.href} type="button" className="add" onClick={openCreate} data-tour="new" aria-haspopup="dialog">
             <NavIcon href={l.href} strokeWidth={2.4} />
             <span>New</span>

@@ -30,7 +30,8 @@ export default function RailNav({ links, canCreate }: { links: { href: string; l
       )}
       <nav className="rail-nav" aria-label="Sections">
         {links
-          .filter((l) => l.href !== "/portal")
+          // The studio reaches the request form through the create button; a manager has it as a section.
+          .filter((l) => !canCreate || l.href !== "/portal")
           .map((l) => (
             <Link key={l.href} href={l.href} aria-current={path.startsWith(l.href) ? "page" : undefined} aria-label={l.label} title={l.label}>
               <NavIcon href={l.href} strokeWidth={1.7} />
