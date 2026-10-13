@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { ADDABLE_KINDS } from "@/lib/fields";
 import { STAGE_COLORS } from "@/lib/priority";
 import { requireEditor } from "@/lib/session";
-import { slugify } from "@/lib/workspace";
+import type { WorkspaceKind } from "@/lib/types";
+import { MODES, slugify } from "@/lib/workspace";
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const done = () => revalidatePath("/", "layout");
@@ -198,4 +199,15 @@ export async function deleteField(id: number) {
   const { supabase } = await requireEditor(["designer"]);
   await supabase.from("job_fields").delete().eq("id", id).eq("builtin", false);
   doneForm();
+}
+
+// Settings > How you work. Only changes the words Oatcake uses and which pages show; nothing is
+// deleted. Leaving Businesses pauses client and manager logins until it's switched back.
+export async function setWorkMode(kind: WorkspaceKind): Promise<{ error?: string }> {
+  if (!MODES.some((m) => m.kind === kind)) return { error: "Pick one of the three." };
+  const { supabase, workspace } = await requireEditor(["designer"]);
+  const { error } = await supabase.from("workspaces").update({ kind }).eq("id", workspace.id);
+  if (error) return { error: error.message };
+  done();
+  return {};
 }

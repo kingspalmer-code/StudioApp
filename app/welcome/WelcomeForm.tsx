@@ -7,9 +7,11 @@ import { KIND_LABELS } from "@/lib/fields";
 import { STAGE_COLORS, stageColor } from "@/lib/priority";
 import type { Setup } from "@/lib/setup";
 import { createClient } from "@/lib/supabase/client";
+import type { WorkspaceKind } from "@/lib/types";
+import { MODES, termsFor } from "@/lib/workspace";
 import { suggestSetup } from "./actions";
 
-type Step = "name" | "profile" | "setup" | "workspace";
+type Step = "name" | "who" | "profile" | "setup" | "workspace";
 
 const BLANK: Setup = {
   base: "personal",
@@ -23,6 +25,12 @@ const BLANK: Setup = {
   ],
 };
 
+const PLACEHOLDER: Record<WorkspaceKind, string> = {
+  studio: "e.g. I'm a designer. Local pubs and venues send me posters, menus and social posts, usually with a week's notice.",
+  trade: "e.g. I run a sign shop. Mostly van livery and shopfronts, and I always do a site visit before I quote.",
+  solo: "e.g. I want to keep track of my own illustration projects, from first sketches to printing.",
+};
+
 export default function WelcomeForm({ email, hasPassword, helper }: { email: string; hasPassword: boolean; helper: boolean }) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("name");
@@ -32,7 +40,7 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
   const [thinking, setThinking] = useState(false);
   const [blankStart, setBlankStart] = useState(false);
   const [workspace, setWorkspace] = useState("");
-  const [clients, setClients] = useState(false);
+  const [mode, setMode] = useState<WorkspaceKind | null>(null);
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,10 +48,9 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
 
   // A plain starting point for anyone who'd rather set things up themselves in Settings.
   function blank() {
-    setSetup(BLANK);
+    setSetup({ ...BLANK, job_types: [{ name: termsFor(mode ?? "studio").Job, lead_days: 3 }] });
     setBlankStart(true);
     setWorkspace(`${first || "My"}'s Workspace`);
-    setClients(false);
     setStep("workspace");
   }
 
@@ -51,13 +58,12 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
     e.preventDefault();
     setThinking(true);
     setError(null);
-    const res = await suggestSetup(about, name);
+    const res = await suggestSetup(about, name, mode ?? "studio");
     setThinking(false);
     if (!res.setup) return setError(res.error ?? "Something went wrong.");
     setSetup(res.setup);
     setBlankStart(false);
     setWorkspace(res.setup.workspace_name || `${first || "My"}'s Workspace`);
-    setClients(res.setup.clients_log_in);
     setStep("setup");
   }
 
@@ -75,7 +81,7 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
         return setError(`Your password wasn't saved: ${pwError.message}`);
       }
     }
-    const { error: wsError } = await supabase.rpc("start_custom_workspace", { ws_name: workspace, owner_name: name.trim(), clients_log_in: clients, setup });
+    const { error: wsError } = await supabase.rpc("start_workspace_as", { ws_name: workspace, owner_name: name.trim(), ws_kind: mode ?? "studio", setup });
     if (wsError) {
       setBusy(false);
       return setError(wsError.message);
@@ -86,7 +92,7 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
 
   if (step === "name")
     return (
-      <form onSubmit={(e) => { e.preventDefault(); if (name.trim()) setStep("profile"); }}>
+      <form onSubmit={(e) => { e.preventDefault(); if (name.trim()) setStep("who"); }}>
         <p className="login-step">Welcome to Oatcake</p>
         <p className="login-sub">Signed in as {email}. Let&apos;s set up your workspace.</p>
         <div className="group">
@@ -104,6 +110,29 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
       </form>
     );
 
+  // Who the work is for decides the words Oatcake uses, who can send work in, and what the
+  // setup helper suggests next. Nothing is picked for them, so they stop and choose.
+  if (step === "who")
+    return (
+      <form onSubmit={(e) => { e.preventDefault(); if (mode) setStep("profile"); }}>
+        <p className="login-step">Who is your work for?</p>
+        <p className="login-sub">This sets the words Oatcake uses and who can send you work. You can change it later in Settings.</p>
+        <div className="mode-pick" role="radiogroup" aria-label="Who is your work for?">
+          {MODES.map((m) => (
+            <button type="button" key={m.kind} role="radio" aria-checked={mode === m.kind} className="mode-card" onClick={() => setMode(m.kind)}>
+              <b>{m.title}</b>
+              <small>{m.blurb}</small>
+              <em>{m.examples}</em>
+            </button>
+          ))}
+        </div>
+        <button className="btn wide" disabled={!mode}>Next</button>
+        <p className="foot" style={{ textAlign: "center", marginTop: 14 }}>
+          <button type="button" className="link" onClick={() => setStep("name")}>Back</button>
+        </p>
+      </form>
+    );
+
   if (step === "profile")
     return (
       <div>
@@ -117,7 +146,7 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
               maxLength={1500}
               rows={4}
               disabled={thinking}
-              placeholder="e.g. I run a sign shop. Mostly van livery and shopfronts, and I always do a site visit before I quote."
+              placeholder={PLACEHOLDER[mode ?? "studio"]}
             />
             {error && <p className="error">{error}</p>}
             <button className="btn wide" disabled={thinking || about.trim().length < 10}>
@@ -135,7 +164,7 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
           </>
         )}
         <p className="foot" style={{ textAlign: "center", marginTop: 14 }}>
-          <button type="button" className="link" onClick={() => setStep("name")}>Back</button>
+          <button type="button" className="link" onClick={() => setStep("who")}>Back</button>
         </p>
       </div>
     );
@@ -158,17 +187,6 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
           </div>
         )}
       </div>
-
-      <p className="login-step" style={{ marginTop: 22 }}>Will your clients log in?</p>
-      <div className="seg wide-seg" role="group" aria-label="Will your clients log in?">
-        <button type="button" aria-pressed={clients} onClick={() => setClients(true)}>Yes, to send requests</button>
-        <button type="button" aria-pressed={!clients} onClick={() => setClients(false)}>No, just me</button>
-      </div>
-      <p className="foot">
-        {clients
-          ? "Clients get their own login to send requests and see progress. You add them on the People page."
-          : "Only you see it. You keep your customers' details yourself and add jobs as they come in."}
-      </p>
 
       {error && <p className="error">{error}</p>}
       <button className="btn wide" disabled={busy} style={{ marginTop: 8 }}>{busy ? "Setting up…" : "Create my workspace"}</button>

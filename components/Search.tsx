@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { docNumber, gbp, type DocKind } from "@/lib/documents";
 import { createClient } from "@/lib/supabase/client";
+import type { WorkspaceKind } from "@/lib/types";
 import { openCreate } from "./CreateMenu";
 
 // Search everything: jobs, quotes, invoices, customers, to-dos and Oatcake's own pages, typed or
@@ -40,14 +41,16 @@ function readQuery(q: string, jobWord: string, clientWord: string) {
   return { kinds, status, terms };
 }
 
-const PAGES = (trade: boolean): Omit<Hit, "kind" | "key">[] => [
-  { title: trade ? "Jobs" : "Queue", href: "/queue", words: "queue jobs requests up next home list", tags: [] },
+const PAGES = (kind: WorkspaceKind, Job: string): Omit<Hit, "kind" | "key">[] => [
+  { title: kind === "studio" ? "Queue" : `${Job}s`, href: "/queue", words: "queue jobs requests projects up next home list", tags: [] },
   { title: "Overview", href: "/overview", words: "overview stats numbers money earnings chart report", tags: [] },
-  { title: trade ? "Customers" : "Businesses", href: "/customers", words: "customers clients businesses contacts", tags: [] },
-  { title: "People", href: "/people", words: "people team members access invite", tags: [] },
+  ...(kind === "solo" ? [{ title: "Gallery", href: "/gallery", words: "gallery finished work portfolio", tags: [] }] : [
+    { title: kind === "trade" ? "Customers" : "Businesses", href: "/customers", words: "customers clients businesses contacts", tags: [] },
+    { title: "People", href: "/people", words: "people team members access invite", tags: [] },
+  ]),
   { title: "Personal", href: "/personal", words: "personal tasks to-dos todo list projects", tags: [] },
   { title: "Quote and invoice settings", href: "/settings/documents", words: "settings quote invoice style logo vat bank payment terms branding pdf", tags: [] },
-  { title: trade ? "Job form" : "Request form", href: "/settings/form", words: "settings form fields questions job request", tags: [] },
+  { title: `${Job} form`, href: "/settings/form", words: "settings form fields questions job request", tags: [] },
   { title: "Settings", href: "/settings", words: "settings stages types workflow preferences", tags: [] },
   { title: "Account", href: "/account", words: "account profile photo password sign out appearance theme dark light", tags: [] },
   { title: "Help", href: "/help", words: "help support contact question problem", tags: [] },
@@ -94,12 +97,12 @@ function useVoice(onText: (text: string, final: boolean) => void) {
 }
 
 export default function Search({
-  trade,
+  kind,
   Job,
   Client,
   clients,
 }: {
-  trade: boolean;
+  kind: WorkspaceKind;
   Job: string;
   Client: string;
   clients: { id: string; name: string; slug: string }[];
@@ -146,7 +149,7 @@ export default function Search({
     if (!open || data) return;
     const name = Object.fromEntries(clients.map((c) => [c.id, c.name]));
     const sb = createClient();
-    const pages: Hit[] = PAGES(trade).map((p, i) => ({ ...p, kind: "page", key: `p${i}` }));
+    const pages: Hit[] = PAGES(kind, Job).map((p, i) => ({ ...p, kind: "page", key: `p${i}` }));
     const actions: Hit[] = [
       { kind: "page", key: "new", title: `New ${Job.toLowerCase()}, quote or invoice`, run: openCreate, words: `new create add make ${Job} quote invoice task customer invite`, tags: [] },
     ];
@@ -185,7 +188,7 @@ export default function Search({
       },
       () => setData([...actions, ...pages, ...clientHits])
     );
-  }, [open, data, clients, trade, Job]);
+  }, [open, data, clients, kind, Job]);
 
   const groups = useMemo(() => {
     if (!data) return [];
@@ -205,7 +208,7 @@ export default function Search({
     // With nothing typed: a few shortcuts and the latest work, rather than everything.
     const empty = !q.trim();
     const order: Kind[] = ["page", "job", "doc", "client", "task"];
-    const label: Record<Kind, string> = { ...GROUP, job: `${Job}s`, client: trade ? "Customers" : "Businesses" };
+    const label: Record<Kind, string> = { ...GROUP, job: `${Job}s`, client: kind === "studio" ? "Businesses" : "Customers" };
     return order
       .map((k) => {
         let items = hits.filter((h) => h.kind === k);
@@ -223,7 +226,7 @@ export default function Search({
         return { kind: k, label: empty && k === "job" ? `Recent ${Job.toLowerCase()}s` : label[k], items: items.slice(0, empty ? 4 : k === "page" ? 3 : 6) };
       })
       .filter((g) => g.items.length);
-  }, [data, q, Job, Client, trade]);
+  }, [data, q, Job, Client, kind]);
   const flat = groups.flatMap((g) => g.items);
 
   useEffect(() => setSel(0), [q]);
@@ -291,7 +294,7 @@ export default function Search({
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={onKey}
-                placeholder={voice.listening ? "Listening…" : `Search ${Job.toLowerCase()}s, invoices, ${trade ? "customers" : "businesses"}…`}
+                placeholder={voice.listening ? "Listening…" : `Search ${Job.toLowerCase()}s, invoices${kind === "solo" ? ", to-dos" : kind === "trade" ? ", customers" : ", businesses"}…`}
                 aria-label="Search"
                 role="combobox"
                 aria-expanded="true"

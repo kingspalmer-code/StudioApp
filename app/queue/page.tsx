@@ -16,7 +16,7 @@ export default async function QueuePage({
   const { supabase, member, businesses, ctx, terms, workspace, shell, viewing } = await requireMember(["designer", "manager"]);
   // Managers see the same queue, read-only: no Select, no delivering or deleting, no tour.
   const canEdit = member.role === "designer" && !viewing;
-  const trade = workspace.kind === "trade";
+  const trade = workspace.kind !== "studio";
   const { data } = await supabase.from("tickets").select("*").returns<Ticket[]>();
   const all = data ?? [];
   const queue = sortQueue(all, ctx);
@@ -35,10 +35,10 @@ export default async function QueuePage({
     waiting ? { n: waiting, text: "waiting on clients", color: "var(--orange)" } : null,
   ].filter((x): x is { n: number; text: string; color?: string } => Boolean(x));
   const final = finalStage(ctx);
-  const showFilter = businesses.length > 1 && businesses.length <= 8;
+  const showFilter = workspace.kind !== "solo" && businesses.length > 1 && businesses.length <= 8;
   const toolbar = (
     <>
-      <p className="eyebrow">Queue</p>
+      <p className="eyebrow">{trade ? terms.Jobs : "Queue"}</p>
       <nav className="seg" aria-label="Layout" data-tour="layout">
         <Link href={href("list", biz)} aria-current={view !== "board" ? "page" : undefined}>Priority list</Link>
         <Link href={href("board", biz)} aria-current={view === "board" ? "page" : undefined}>Board</Link>

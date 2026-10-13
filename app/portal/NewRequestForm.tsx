@@ -9,7 +9,7 @@ import { PRIORITIES, daysFromToday, todayISO } from "@/lib/priority";
 import FieldInput from "@/components/FieldInput";
 import { appliesTo, groupFields, readFields, type JobField } from "@/lib/fields";
 import type { Business, JobType } from "@/lib/types";
-import { slugify } from "@/lib/workspace";
+import { SELF_PREFIX, slugify } from "@/lib/workspace";
 
 const MAX_FILE_MB = 25;
 
@@ -20,6 +20,8 @@ export default function NewRequestForm({
   types,
   fields: allFields,
   trade = false,
+  solo = false,
+  selfId,
   ownerName = "the studio",
   helper = false,
   onSent,
@@ -32,6 +34,10 @@ export default function NewRequestForm({
   types: JobType[];
   fields: JobField[];
   trade?: boolean;
+  // Working alone: no customer to pick. Projects hang off the workspace's hidden business (selfId),
+  // made the first time it's needed.
+  solo?: boolean;
+  selfId?: string;
   ownerName?: string;
   helper?: boolean;
   onSent?: (message: string) => void;
@@ -47,6 +53,7 @@ export default function NewRequestForm({
   const [deadline, setDeadline] = useState("");
   const [biz, setBiz] = useState(businesses[0]?.id ?? "");
   const [notify, setNotify] = useState("");
+  const self = useRef(selfId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -85,7 +92,7 @@ export default function NewRequestForm({
   // Fields can be limited to some job types; headings with nothing under them drop out.
   const fields = allFields.filter((f) => appliesTo(f, typeRow?.id));
   const groups = groupFields(fields);
-  const job = trade ? "Job" : "Request";
+  const job = solo ? "Project" : trade ? "Job" : "Request";
   const tight = deadline && daysFromToday(deadline) < lead;
   const canTell = isDesigner && !trade ? people.filter((p) => p.businesses.includes(biz)) : [];
 
@@ -106,7 +113,22 @@ export default function NewRequestForm({
 
     const supabase = createClient();
     let business_id = get("business_id");
-    if (trade) {
+    if (solo) {
+      if (!self.current) {
+        const { data: created, error: selfError } = await supabase
+          .from("businesses")
+          .insert({ name: "My projects", slug: `${SELF_PREFIX}${Math.random().toString(36).slice(2, 10)}`, color: "#8a7a70" })
+          .select("id")
+          .single();
+        if (selfError || !created) {
+          setBusy(false);
+          setError(`Couldn't save that: ${selfError?.message ?? "unknown error"}.`);
+          return;
+        }
+        self.current = created.id;
+      }
+      business_id = self.current!;
+    } else if (trade) {
       // Customers are picked by name; a new name becomes a new customer.
       const name = get("customer");
       const existing = businesses.find((b) => b.name.toLowerCase() === name.toLowerCase());
@@ -167,7 +189,7 @@ export default function NewRequestForm({
       failed.length
         ? `${job} saved, but these files didn't upload: ${failed.join(", ")}. Add a link to them in a note instead.`
         : trade
-          ? "Job added. It's in your list now."
+          ? `${job} added. It's in your list now.`
           : isDesigner
             ? `Request added to the queue.${told ? ` ${told.name} has been told.` : ""}`
             : `Request sent. ${ownerName} can see it now.`;
@@ -211,9 +233,9 @@ export default function NewRequestForm({
         if (link && links) links.value = links.value ? `${links.value} ${link}` : link;
       }}
     >
-      <p className="eyebrow">{trade ? "The job" : "The project"}</p>
+      <p className="eyebrow">{solo ? "The project" : trade ? "The job" : "The project"}</p>
       <div className="group">
-        {trade && (
+        {trade && !solo && (
           <>
             <div className="row">
               <label htmlFor="customer">Customer</label>
@@ -256,7 +278,7 @@ export default function NewRequestForm({
         )}
         <div className="row">
           <label htmlFor="title">Title</label>
-          <div className="ctl"><input id="title" name="title" required placeholder={trade ? "e.g. Shop front fascia" : "e.g. Halloween weekend poster"} /></div>
+          <div className="ctl"><input id="title" name="title" required placeholder={solo ? "e.g. Portfolio site refresh" : trade ? "e.g. Shop front fascia" : "e.g. Halloween weekend poster"} /></div>
         </div>
         <div className="row">
           <label htmlFor="type">Type</label>
@@ -313,7 +335,7 @@ export default function NewRequestForm({
       )}
       {error && <p className="error">{error}</p>}
       {done && <p className="foot" style={{ color: "var(--green)", fontWeight: 600 }}>{done}</p>}
-      <button className="btn wide" disabled={busy}>{busy ? "Saving…" : trade ? "Add job" : isDesigner ? "Add request" : "Send request"}</button>
+      <button className="btn wide" disabled={busy}>{busy ? "Saving…" : trade ? `Add ${job.toLowerCase()}` : isDesigner ? "Add request" : "Send request"}</button>
     </form>
   );
 }

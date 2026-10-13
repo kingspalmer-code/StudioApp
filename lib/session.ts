@@ -4,7 +4,7 @@ import type { Ctx } from "./priority";
 import { cookies } from "next/headers";
 import { createClient, PREVIEW_COOKIE, VIEW_COOKIE } from "./supabase/server";
 import type { Business, JobType, Member, Role, Stage, Workspace } from "./types";
-import { termsFor } from "./workspace";
+import { clientsLogIn, isSelf, termsFor } from "./workspace";
 
 export const HOME: Record<Role, string> = { designer: "/queue", manager: "/overview", client: "/portal" };
 
@@ -56,6 +56,12 @@ const loadMember = cache(async () => {
   const own = workspace?.find((w) => w.id === member.workspace_id);
   const ws: Workspace = viewed ?? own ?? { id: member.workspace_id, name: "Oatcake", kind: "studio", owner_name: "" };
   const viewing = Boolean(viewed);
+  // Clients and managers only have a way in while the workspace takes work from businesses. If the
+  // owner switched to Customers or Just me, their logins are paused until it switches back.
+  if (member.role !== "designer" && !clientsLogIn(ws.kind)) redirect("/paused");
+  // The hidden business a solo workspace's projects belong to stays out of every list of clients.
+  const self = (businesses ?? []).find(isSelf);
+  const clients = (businesses ?? []).filter((b) => !isSelf(b));
   // The studio previewing one client's request pages; only the client pages act on it (see asClient).
   const rawPreview = jar.get(PREVIEW_COOKIE)?.value ?? "";
   const preview = member.role === "designer" && !viewing ? (businesses ?? []).find((b) => b.id === rawPreview) : undefined;
@@ -76,8 +82,8 @@ const loadMember = cache(async () => {
   const helpUnread = (replies ?? []).some((r) => r.updated_at > r.user_seen_at);
   // Usage stats are on unless you've turned them off in your account.
   const track = !user.user_metadata?.no_tracking;
-  const shell = { member, businesses: businesses ?? [], workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials, askHint, askOpens, askSince, helpUnread, track, preview: undefined as Business | undefined };
-  return { supabase, member, businesses: businesses ?? [], workspace: ws, ctx, terms, shell, viewing, preview };
+  const shell = { member, businesses: clients, workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials, askHint, askOpens, askSince, helpUnread, track, preview: undefined as Business | undefined };
+  return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview };
 });
 
 type Session = Awaited<ReturnType<typeof requireMember>>;

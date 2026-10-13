@@ -57,17 +57,18 @@ export async function notYetFinished(supabase: SupabaseClient, ids: number[], st
 }
 
 // The clients and managers among these emails who can see jobs for the business: managers see every
-// job, clients only their own businesses'. Keyed by email.
+// job, clients only their own businesses'. Keyed by email. Nobody, if the workspace has stopped
+// taking requests from businesses (their logins are paused).
 async function linkedPeople(supabase: SupabaseClient, emails: string[]) {
   const list = [...new Set(emails.filter(Boolean))];
   if (!list.length) return new Map<string, Person & { businesses: Set<string> }>();
   const [{ data: people }, { data: extra }] = await Promise.all([
-    supabase.from("members").select("email, full_name, role, business_id").in("email", list).returns<Person[]>(),
+    supabase.from("members").select("email, full_name, role, business_id, workspaces(kind)").in("email", list).returns<(Person & { workspaces: { kind: string } | null })[]>(),
     supabase.from("member_businesses").select("email, business_id").in("email", list).returns<{ email: string; business_id: string }[]>(),
   ]);
   return new Map(
     (people ?? [])
-      .filter((p) => p.role === "client" || p.role === "manager")
+      .filter((p) => (p.role === "client" || p.role === "manager") && p.workspaces?.kind === "studio")
       .map((p) => [p.email, { ...p, businesses: new Set([p.business_id, ...(extra ?? []).filter((x) => x.email === p.email).map((x) => x.business_id)].filter((b) => b !== null)) }])
   );
 }

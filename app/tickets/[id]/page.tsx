@@ -50,7 +50,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   if (!t) notFound();
   // While previewing a client, their own jobs show as they see them; anything else shows as usual.
   const { supabase, member, businesses, ctx, terms, workspace, shell, viewing } = asClient(session, t.business_id);
-  const trade = workspace.kind === "trade";
+  const trade = workspace.kind !== "studio";
 
   // Then what needs the job itself, also all at once.
   const [{ data: links }, [{ data: members }, { data: memberLinks }], delivered, draftFiles, signed] = await Promise.all([
@@ -196,10 +196,12 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   return (
     <Shell {...shell}>
       <div style={{ maxWidth: 720 }}>
-        <p className="eyebrow" style={{ display: "flex", alignItems: "center", gap: 8, textTransform: "none", letterSpacing: 0 }}>
-          <BizBadge biz={biz} size={22} />
-          {biz?.name}
-        </p>
+        {biz && (
+          <p className="eyebrow" style={{ display: "flex", alignItems: "center", gap: 8, textTransform: "none", letterSpacing: 0 }}>
+            <BizBadge biz={biz} size={22} />
+            {biz.name}
+          </p>
+        )}
         <h1 className="large">{t.title}</h1>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <StatusChip status={t.status} ctx={ctx} />

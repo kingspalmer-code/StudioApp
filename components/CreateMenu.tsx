@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { createDocument } from "@/app/documents/actions";
 import { addTask } from "@/app/personal/actions";
 import { createClient } from "@/lib/supabase/client";
+import type { WorkspaceKind } from "@/lib/types";
 
 // Create new: one grid of everything you can make in Oatcake. A sheet from the bottom on phones,
 // a panel beside the rail's + on bigger screens. "N" opens it on a keyboard, then a letter picks.
@@ -28,12 +29,12 @@ const ICON = {
 };
 
 export default function CreateMenu({
-  trade,
+  kind,
   Job,
   Client,
   clientNames,
 }: {
-  trade: boolean;
+  kind: WorkspaceKind;
   Job: string;
   Client: string;
   clientNames: Record<string, string>;
@@ -47,13 +48,18 @@ export default function CreateMenu({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  const trade = kind !== "studio";
+  const solo = kind === "solo";
   const tiles: Tile[] = [
     { key: Job[0].toLowerCase(), label: Job, icon: trade ? ICON.job : ICON.request, href: "/portal" },
     { key: "q", label: "Quote", icon: ICON.quote, step: "quote" },
     { key: "i", label: "Invoice", icon: ICON.invoice, step: "invoice" },
     { key: "t", label: "Task", icon: ICON.task, step: "task" },
-    { key: Client[0].toLowerCase(), label: Client, icon: ICON.client, href: "/customers#add" },
-    { key: "p", label: "Invite", icon: ICON.invite, href: "/people#add" },
+    // Working alone there are no customers to add and nobody to invite.
+    ...(solo ? [] : [
+      { key: Client[0].toLowerCase(), label: Client, icon: ICON.client, href: "/customers#add" },
+      { key: "p", label: "Invite", icon: ICON.invite, href: "/people#add" },
+    ]),
   ];
 
   const close = () => setOpen(false);

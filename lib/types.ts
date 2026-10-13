@@ -3,7 +3,7 @@ export type Role = "designer" | "manager" | "client";
 export type Status = string;
 export type Priority = "Standard" | "High" | "Urgent";
 
-export type WorkspaceKind = "studio" | "trade";
+export type WorkspaceKind = "studio" | "trade" | "solo";
 export type Workspace = { id: string; name: string; kind: WorkspaceKind; owner_name: string; profile?: string };
 export type Stage = { id: number; key: string; label: string; color: string; position: number };
 export type JobType = { id: number; name: string; lead_days: number; position: number };
