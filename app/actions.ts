@@ -58,6 +58,24 @@ export async function deleteTicket(id: number) {
   redirect("/queue");
 }
 
+// Marks several jobs as at the last stage in one go, from the queue's Select mode.
+export async function deliverTickets(ids: number[]) {
+  const { supabase, ctx } = await requireEditor(["designer"]);
+  const final = ctx.stages[ctx.stages.length - 1]?.key;
+  if (!final || !ids.length) return;
+  await supabase.from("tickets").update({ status: final }).in("id", ids);
+  revalidatePath("/", "layout");
+}
+
+export async function deleteTickets(ids: number[]) {
+  const { supabase } = await requireEditor(["designer"]);
+  if (!ids.length) return;
+  const { data: files } = await supabase.from("ticket_files").select("path").in("ticket_id", ids);
+  if (files?.length) await supabase.storage.from("inspiration").remove(files.map((f) => f.path));
+  await supabase.from("tickets").delete().in("id", ids);
+  revalidatePath("/", "layout");
+}
+
 export async function addNote(id: number, formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return;

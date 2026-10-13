@@ -793,3 +793,11 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 .deliv-add .link { font-size: 14px; color: var(--label-2); }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Queue Select mode: tick several jobs, then mark them delivered or delete them. */
+.ticket.picking { cursor: pointer; user-select: none; }
+.ticket.picked { background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.ticket .tick { width: 20px; height: 20px; margin: 0; flex: none; accent-color: var(--accent); cursor: pointer; }
+.ticket.picking + .ticket.ranked::before { left: 136px; }
+.pickbar { position: sticky; top: 8px; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--surface); box-shadow: var(--shadow); border-radius: var(--r); padding: 10px 12px; margin-bottom: 10px; }
+.pickbar .what { flex: 1; min-width: 140px; font-size: 14px; font-weight: 600; }
