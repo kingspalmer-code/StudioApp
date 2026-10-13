@@ -5,6 +5,7 @@ import { requireMember } from "@/lib/session";
 import type { PersonalProject, PersonalTask } from "@/lib/types";
 import { addProject, addTask, archiveProject } from "./actions";
 import TaskRow from "./TaskRow";
+import Submit from "@/components/Submit";
 
 const COLORS = ["#382a25", "#d9822b", "#3f8f4f", "#3a6ea5", "#94508f", "#c8456b"];
 
@@ -107,7 +108,7 @@ export default async function PersonalPage({ searchParams }: { searchParams: Pro
               <select name="color" aria-label="Colour" className="swatch-select">
                 {COLORS.map((c, i) => <option key={c} value={c}>{["Oat", "Amber", "Green", "Blue", "Plum", "Rose"][i]}</option>)}
               </select>
-              <button className="link" type="submit">Add</button>
+              <Submit className="link" type="submit">Add</Submit>
             </form>
           </div>
         </aside>
@@ -117,7 +118,7 @@ export default async function PersonalPage({ searchParams }: { searchParams: Pro
             <h1 className="large" style={project ? { color: project.color } : undefined}>{title}</h1>
             {project && (
               <form action={archiveProject.bind(null, project.id)}>
-                <button className="btn plain small" type="submit">Archive project</button>
+                <Submit className="btn plain small" type="submit">Archive project</Submit>
               </form>
             )}
           </div>
@@ -134,7 +135,7 @@ export default async function PersonalPage({ searchParams }: { searchParams: Pro
                 <div className="ctl">
                   <input name="title" aria-label="New to-do" placeholder={`Add a to-do${view === "today" ? " for today" : ""}… try "Call printer tomorrow !"`} required autoComplete="off" />
                 </div>
-                <button className="link" type="submit">Add</button>
+                <Submit className="link" type="submit">Add</Submit>
               </div>
             </form>
           )}

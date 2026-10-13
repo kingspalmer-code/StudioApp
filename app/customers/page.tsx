@@ -4,6 +4,7 @@ import { isDone } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
 import type { Business, Ticket } from "@/lib/types";
 import { deleteCustomer, saveCustomer } from "../settings/actions";
+import Submit from "@/components/Submit";
 
 function CustomerFields({ b }: { b?: Business }) {
   return (
@@ -48,9 +49,9 @@ export default async function CustomersPage() {
                   <form action={saveCustomer.bind(null, b.id)} className="cust-edit">
                     <CustomerFields b={b} />
                     <div style={{ display: "flex", gap: 16, margin: "10px 4px 4px" }}>
-                      <button className="link" type="submit">Save</button>
+                      <Submit className="link" type="submit">Save</Submit>
                       {mine.length === 0 && (
-                        <button className="link" style={{ color: "var(--red)" }} formAction={deleteCustomer.bind(null, b.id)}>Delete</button>
+                        <Submit className="link" style={{ color: "var(--red)" }} formAction={deleteCustomer.bind(null, b.id)}>Delete</Submit>
                       )}
                     </div>
                   </form>
@@ -63,7 +64,7 @@ export default async function CustomersPage() {
         <form action={saveCustomer.bind(null, null)} id="add">
           <p className="eyebrow">Add a {terms.client}</p>
           <CustomerFields />
-          <button className="btn wide" style={{ marginTop: 14 }}>Add {terms.client}</button>
+          <Submit className="btn wide" style={{ marginTop: 14 }}>Add {terms.client}</Submit>
         </form>
       </div>
     </Shell>

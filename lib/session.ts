@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { Ctx } from "./priority";
 import { cookies } from "next/headers";
@@ -8,41 +9,48 @@ import { termsFor } from "./workspace";
 export const HOME: Record<Role, string> = { designer: "/queue", manager: "/overview", client: "/portal" };
 
 // Loads the signed-in member and their workspace, or sends them to sign in. Pass roles to restrict a page.
+// Every database call goes out at once: the sign-in is checked from the session token itself, so
+// nothing waits on anything else. Cached so a page and its parts share one load per request.
 export async function requireMember(roles?: Role[]) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const session = await loadMember();
+  if (roles && !roles.includes(session.member.role)) redirect(HOME[session.member.role]);
+  return session;
+}
 
-  const { data: member } = await supabase
-    .from("members")
-    .select("email, full_name, role, business_id, workspace_id")
-    .eq("email", (user.email ?? "").toLowerCase())
-    .maybeSingle<Member & { workspace_id: string }>();
-  // Signed in but no workspace yet: set one up.
-  if (!member) redirect("/welcome");
-  if (roles && !roles.includes(member.role)) redirect(HOME[member.role]);
+const loadMember = cache(async () => {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims.sub;
+  const email = typeof claims?.claims.email === "string" ? claims.claims.email.toLowerCase() : "";
+  if (!userId) redirect("/login");
 
   // An admin viewing someone else's workspace sees it read-only; the database enforces that too.
   const jar = await cookies();
   const rawView = jar.get(VIEW_COOKIE)?.value ?? "";
   const viewId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawView) ? rawView : null;
-  const [{ data: businesses }, { data: workspace }, { data: stages }, { data: types }, { data: isAdmin }, { data: replies }, { data: mine }] = await Promise.all([
-    supabase.from("businesses").select("*").order("name").returns<Business[]>(),
+  const [{ data: { user } }, { data: row }, { data: businesses }, { data: viewedRows }, { data: stages }, { data: types }, { data: isAdmin }, { data: replies }, { data: mine }] = await Promise.all([
+    // For the profile details (photo, hints); the token's copy can be up to an hour old.
+    supabase.auth.getUser(),
     supabase
-      .from("workspaces")
-      .select("id, name, kind, owner_name")
-      .in("id", viewId ? [member.workspace_id, viewId] : [member.workspace_id])
-      .returns<Workspace[]>(),
+      .from("members")
+      .select("email, full_name, role, business_id, workspace_id, workspaces(id, name, kind, owner_name)")
+      .eq("email", email)
+      .maybeSingle<Member & { workspace_id: string; workspaces: Workspace | null }>(),
+    supabase.from("businesses").select("*").order("name").returns<Business[]>(),
+    viewId ? supabase.from("workspaces").select("id, name, kind, owner_name").eq("id", viewId).returns<Workspace[]>() : Promise.resolve({ data: [] as Workspace[] }),
     supabase.from("stages").select("*").order("position").order("id").returns<Stage[]>(),
     supabase.from("job_types").select("*").order("position").order("id").returns<JobType[]>(),
     supabase.rpc("is_platform_admin"),
-    supabase.from("support_tickets").select("updated_at, user_seen_at").eq("user_id", user.id).eq("last_from", "oatcake").neq("status", "solved"),
+    supabase.from("support_tickets").select("updated_at, user_seen_at").eq("user_id", userId).eq("last_from", "oatcake").neq("status", "solved"),
     // Every business a client (or manager) can request work for: a client's main one first, then any others.
-    member.role !== "designer" ? supabase.rpc("my_businesses") : Promise.resolve({ data: [] as string[] }),
+    supabase.rpc("my_businesses"),
   ]);
-  const extra = ((mine as string[] | null) ?? []).filter((id) => id !== member.business_id);
+  if (!user) redirect("/login");
+  // Signed in but no workspace yet: set one up.
+  if (!row) redirect("/welcome");
+  const { workspaces: ownWorkspace, ...member } = row;
+  const workspace = [...(viewedRows ?? []), ...(ownWorkspace ? [ownWorkspace] : [])];
+  const extra = member.role === "designer" ? [] : ((mine as string[] | null) ?? []).filter((id) => id !== member.business_id);
   member.business_ids = member.business_id ? [member.business_id, ...extra] : extra;
   const viewed = isAdmin && viewId && viewId !== member.workspace_id ? workspace?.find((w) => w.id === viewId) : undefined;
   const own = workspace?.find((w) => w.id === member.workspace_id);
@@ -70,7 +78,7 @@ export async function requireMember(roles?: Role[]) {
   const track = !user.user_metadata?.no_tracking;
   const shell = { member, businesses: businesses ?? [], workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials, askHint, askOpens, askSince, helpUnread, track, preview: undefined as Business | undefined };
   return { supabase, member, businesses: businesses ?? [], workspace: ws, ctx, terms, shell, viewing, preview };
-}
+});
 
 type Session = Awaited<ReturnType<typeof requireMember>>;
 

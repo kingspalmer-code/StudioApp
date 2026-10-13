@@ -15,6 +15,7 @@ import TabBar from "./TabBar";
 import Tracker from "./Tracker";
 import { OatcakeMark } from "./OatcakeLogo";
 import { termsFor } from "@/lib/workspace";
+import Submit from "@/components/Submit";
 
 function linksFor(member: Member, workspace: Workspace, viewing: boolean) {
   // Managers can look at the queue, every job in it and the gallery of finished work; nothing there lets them change anything.
@@ -124,7 +125,7 @@ export default function Shell({
           <span>
             Viewing <b>{workspace.name}</b>{workspace.owner_name ? ` (${workspace.owner_name})` : ""}. Read-only.
           </span>
-          <button className="btn small" type="submit">Back to my workspace</button>
+          <Submit className="btn small" type="submit">Back to my workspace</Submit>
         </form>
       )}
       {preview && (
@@ -138,11 +139,11 @@ export default function Shell({
                 <select name="business" defaultValue={preview.id} aria-label="Preview another client">
                   {businesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
-                <button className="link" type="submit">Switch</button>
+                <Submit className="link" type="submit">Switch</Submit>
               </form>
             )}
             <form action={stopPreview}>
-              <button className="btn small" type="submit">Exit preview</button>
+              <Submit className="btn small" type="submit">Exit preview</Submit>
             </form>
           </span>
         </div>
