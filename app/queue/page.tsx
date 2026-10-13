@@ -1,9 +1,12 @@
 import BizBadge from "@/components/BizBadge";
 import Link from "next/link";
+import { brandFor } from "@/lib/brands";
 import Shell from "@/components/Shell";
 import QueueList from "@/components/QueueList";
+import QueueWidgets, { type WeekDay } from "@/components/QueueWidgets";
+import { coversFor } from "@/lib/deliveries";
 import Walkthrough from "@/components/Walkthrough";
-import { daysFromToday, finalStage, formatDate, isDone, money, sortQueue, startBy, startLabel } from "@/lib/priority";
+import { daysFromToday, finalStage, formatDate, isDone, money, sortQueue, startBy, startLabel, todayISO } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
 
@@ -55,8 +58,48 @@ export default async function QueuePage({
   );
   const listed = queue.filter(keep);
 
+  // The widgets above Up next (designers only): the next seven days, the latest finished work,
+  // this week's tally and Pip, who's fed an oatcake for every job delivered.
+  let widgets: React.ReactNode = null;
+  if (canEdit) {
+    const today = todayISO();
+    const dayAt = (n: number) => new Date(Date.parse(today) + n * 86_400_000).toISOString().slice(0, 10);
+    const monday = dayAt(-((new Date(today).getUTCDay() + 6) % 7));
+    const sunday = dayAt(6 - ((new Date(today).getUTCDay() + 6) % 7));
+    const open = all.filter((t) => !isDone(t, ctx));
+    const done = all.filter((t) => isDone(t, ctx));
+    const week: WeekDay[] = Array.from({ length: 7 }, (_, i) => {
+      const date = dayAt(i);
+      return {
+        date,
+        label: i === 0 ? "Today" : new Date(date).toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" }).slice(0, 2),
+        today: i === 0,
+        jobs: open
+          .filter((t) => t.deadline === date || (i === 0 && t.deadline < date))
+          .map((t) => ({ id: t.id, title: t.title, color: t.deadline < date ? "var(--red)" : (byId[t.business_id] ? brandFor(byId[t.business_id]).color : "var(--label-3)") })),
+      };
+    });
+    const deliveredWeek = done.filter((t) => (t.delivered_at ?? "").slice(0, 10) >= monday).length;
+    const late = open.filter((t) => t.deadline < today).length;
+    const recent = done
+      .filter((t) => t.delivered_at)
+      .sort((a, b) => b.delivered_at!.localeCompare(a.delivered_at!))
+      .slice(0, 24);
+    const covers = await coversFor(supabase, recent.map((t) => t.id));
+    const reel = recent.filter((t) => covers[t.id]?.url).slice(0, 6).map((t) => ({ id: t.id, title: t.title, url: covers[t.id]!.url! }));
+    widgets = (
+      <QueueWidgets
+        week={week}
+        reel={reel}
+        pet={{ fedTotal: done.length, fedWeek: deliveredWeek, overdue: late }}
+        tally={{ delivered: deliveredWeek, due: open.filter((t) => t.deadline <= sunday).length, late }}
+      />
+    );
+  }
+
   return (
     <Shell {...shell}>
+      {widgets}
       <h1 className="large">Up next</h1>
       <p className="sub summary" data-tour="summary">
         {summary.length
