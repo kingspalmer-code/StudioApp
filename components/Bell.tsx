@@ -27,6 +27,8 @@ export default function Bell() {
   // Checks for new ones every minute while the page is showing, and straight away on coming back to it.
   useEffect(() => {
     setMounted(true);
+    // Inside a job opened beside the queue the bell is hidden; the page around it does the checking.
+    if (document.documentElement.classList.contains("embedded")) return;
     void recount();
     const tick = () => {
       if (document.visibilityState === "visible") void recount();

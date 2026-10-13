@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, useTransition, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import { deleteTickets, deliverTickets } from "@/app/actions";
 import { finalStage, statusLabel, type Ctx } from "@/lib/priority";
 import type { Business, Ticket } from "@/lib/types";
@@ -34,6 +34,8 @@ export default function QueueList({
   const [confirming, setConfirming] = useState(false);
   const [pending, start] = useTransition();
   const [openId, setOpenId] = useState<number | null>(null);
+  const [hoverId, setHoverId] = useState<number | null>(null);
+  const hoverWait = useRef<ReturnType<typeof setTimeout>>(undefined);
   const done = statusLabel(ctx, finalStage(ctx));
   const ids = items.filter((t) => picked.has(t.id)).map((t) => t.id);
   const n = ids.length;
@@ -64,12 +66,23 @@ export default function QueueList({
   const openBeside = (e: MouseEvent) => {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     if (!window.matchMedia(SPLIT_QUERY).matches) return;
-    const a = (e.target as Element).closest?.("a.ticket");
-    const m = a?.getAttribute("href")?.match(/^\/tickets\/(\d+)$/);
-    if (!m) return;
+    const id = rowId(e);
+    if (!id) return;
     e.preventDefault();
-    setOpenId(Number(m[1]));
+    setOpenId(id);
   };
+
+  // Load ahead what you're likely to open next: the top of the queue, and a job you rest the
+  // pointer on (after a beat, so sweeping across the list doesn't load every one).
+  const rowId = (e: MouseEvent | PointerEvent) =>
+    Number((e.target as Element).closest?.("a.ticket")?.getAttribute("href")?.match(/^\/tickets\/(\d+)$/)?.[1]) || null;
+  const hover = (e: PointerEvent) => {
+    const id = rowId(e);
+    clearTimeout(hoverWait.current);
+    if (id && id !== hoverId) hoverWait.current = setTimeout(() => setHoverId(id), 80);
+  };
+  useEffect(() => () => clearTimeout(hoverWait.current), []);
+  const warm = selecting ? [] : [...items.slice(0, 2).map((t) => t.id), ...(hoverId ? [hoverId] : [])];
 
   return (
     <>
@@ -107,7 +120,7 @@ export default function QueueList({
         </div>
       )}
 
-      <div className="group" data-tour="list" onClickCapture={openBeside}>
+      <div className="group" data-tour="list" onClickCapture={openBeside} onPointerOver={hover}>
         {items.length
           ? items.map((t) => (
               <TicketRow
@@ -123,7 +136,7 @@ export default function QueueList({
           : empty}
       </div>
 
-      {openId !== null && <SplitPanel id={openId} onOpen={setOpenId} onClose={() => setOpenId(null)} />}
+      <SplitPanel openId={openId} warm={warm} onOpen={setOpenId} onClose={() => setOpenId(null)} />
     </>
   );
 }

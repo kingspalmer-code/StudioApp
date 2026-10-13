@@ -1084,7 +1084,12 @@ html.in-app .nt-layer { top: var(--app-bar); }
   .split-btn:hover { background: var(--fill); color: var(--label); }
   .split-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .split-full { margin-left: auto; }
-  .split-panel iframe { flex: 1; width: 100%; border: 0; background: var(--bg); }
+  .split-panel:not(.on) { visibility: hidden; pointer-events: none; animation: none; }
+  .split-body { flex: 1; position: relative; min-height: 0; }
+  .split-panel iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); opacity: 0; pointer-events: none; }
+  .split-panel iframe.shown { opacity: 1; pointer-events: auto; }
+  .split-loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--label-2); }
+  .split-loading .oc-biscuit { width: 88px; height: 88px; }
   .ticket.open { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
   .ticket.open::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
 }
