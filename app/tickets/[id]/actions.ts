@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { notYetFinished, tellRequesters } from "@/lib/finished";
 import type { Draft, DraftFile } from "@/lib/deliveries";
 import { finalStage } from "@/lib/priority";
 import { requireEditor } from "@/lib/session";
@@ -19,7 +21,7 @@ async function draftOf(ticketId: number, draftId: number) {
 // galleries show) and the job moves to the last stage. The draft and its notes stay as a record.
 // Returns a problem to show, if there was one.
 export async function sendDraftAsFinal(ticketId: number, draftId: number): Promise<string | undefined> {
-  const { supabase, ctx, draft, files } = await draftOf(ticketId, draftId);
+  const { supabase, ctx, member, workspace, terms, draft, files } = await draftOf(ticketId, draftId);
   if (!draft) return "That draft has gone. Refresh the page.";
   if (draft.final_at) return;
   if (files.length) {
@@ -29,7 +31,10 @@ export async function sendDraftAsFinal(ticketId: number, draftId: number): Promi
     if (error) return `Couldn't add the files: ${error.message}`;
   }
   await supabase.from("ticket_drafts").update({ final_at: new Date().toISOString() }).eq("id", draftId);
+  const finishing = await notYetFinished(supabase, [ticketId], finalStage(ctx));
   await supabase.from("tickets").update({ status: finalStage(ctx) }).eq("id", ticketId);
+  // Tell the person who asked for it, by email and on their phone.
+  if (finishing.length) after(() => tellRequesters(supabase, finishing, { name: workspace.name, replyTo: member.email, terms }).catch(() => {}));
   revalidatePath("/", "layout");
 }
 

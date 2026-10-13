@@ -9,6 +9,7 @@ import { createClient, PREVIEW_COOKIE } from "@/lib/supabase/server";
 import { appliesTo, readFields, type JobField } from "@/lib/fields";
 import { emailInvite } from "@/lib/invite";
 import { alertNewNote } from "@/app/portal/actions";
+import { notYetFinished, tellRequesters } from "@/lib/finished";
 import type { Role, Status } from "@/lib/types";
 
 export async function signOut() {
@@ -18,9 +19,12 @@ export async function signOut() {
 }
 
 export async function setStatus(id: number, status: Status) {
-  const { supabase, ctx } = await requireEditor(["designer"]);
+  const { supabase, ctx, member, workspace, terms } = await requireEditor(["designer"]);
   if (!ctx.stages.some((s) => s.key === status)) return;
+  const final = ctx.stages[ctx.stages.length - 1]?.key;
+  const finishing = status === final ? await notYetFinished(supabase, [id], final) : [];
   await supabase.from("tickets").update({ status }).eq("id", id);
+  if (finishing.length) after(() => tellRequesters(supabase, finishing, { name: workspace.name, replyTo: member.email, terms }).catch(() => {}));
   revalidatePath("/", "layout");
 }
 
@@ -62,10 +66,12 @@ export async function deleteTicket(id: number) {
 
 // Marks several jobs as at the last stage in one go, from the queue's Select mode.
 export async function deliverTickets(ids: number[]) {
-  const { supabase, ctx } = await requireEditor(["designer"]);
+  const { supabase, ctx, member, workspace, terms } = await requireEditor(["designer"]);
   const final = ctx.stages[ctx.stages.length - 1]?.key;
   if (!final || !ids.length) return;
+  const finishing = await notYetFinished(supabase, ids, final);
   await supabase.from("tickets").update({ status: final }).in("id", ids);
+  if (finishing.length) after(() => tellRequesters(supabase, finishing, { name: workspace.name, replyTo: member.email, terms }).catch(() => {}));
   revalidatePath("/", "layout");
 }
 
