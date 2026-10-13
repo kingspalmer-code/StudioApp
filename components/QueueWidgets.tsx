@@ -175,7 +175,7 @@ function Tally({ delivered, due, late }: WeekStats) {
 // day keeps a streak going. It never dies, it just gets peckish.
 function Pet({ pet: start }: { pet: PetView | null }) {
   const [pet, setPet] = useState(start);
-  const [act, setAct] = useState<"eat" | "golden" | "happy" | null>(null);
+  const [act, setAct] = useState<Act | null>(null);
   const [busy, setBusy] = useState(false);
   const [news, setNews] = useState<string | null>(null);
   useEffect(() => setPet(start), [start]);
@@ -191,15 +191,20 @@ function Pet({ pet: start }: { pet: PetView | null }) {
 
   if (!pet) return <p className="widget-empty">Pickle is hatching…</p>;
 
-  const play = (a: "eat" | "golden" | "happy", ms: number) => {
+  const play = (a: Act, ms: number) => {
     setAct(a);
     setTimeout(() => setAct(null), ms);
   };
+  // An oatcake: a few chomps, then Pickle turns into a pickle for three seconds.
   const feed = async (kind: "oatcake" | "golden") => {
     if (busy) return;
     setBusy(true);
     setNews(null);
-    play(kind === "golden" ? "golden" : "eat", kind === "golden" ? 3200 : 2600);
+    if (kind === "golden") play("golden", 3200);
+    else {
+      setAct("eat");
+      setTimeout(() => play("pickle", 3000), 1200);
+    }
     try {
       const next = await feedPickle(kind);
       if (next) {
@@ -211,40 +216,50 @@ function Pet({ pet: start }: { pet: PetView | null }) {
     }
   };
 
-  const mood: Mood = act === "eat" || act === "golden" ? "eat" : act === "happy" || pet.glowing ? "happy" : pet.mood;
-  const bars: [string, number][] = [["Hunger", pet.hunger], ["Happy", pet.happy], ["Growth", pet.growth]];
+  const canDance = pet.hunger >= DANCE_AT;
+  const mood: Mood = act === "eat" || act === "golden" ? "eat" : act === "happy" || act === "dance" || pet.glowing ? "happy" : pet.mood;
+  const meters: [string, number][] = [["Food", pet.hunger], ["Joy", pet.happy], ["Grow", pet.growth]];
   const says =
-    act === "golden" ? "Golden!!" : act === "eat" ? "Nom nom!" : act === "happy" ? "♥" : news ?? (pet.mood === "sad" ? (pet.tin ? "Feed me?" : "Peckish...") : `Day ${pet.streak} streak`);
+    act === "golden" ? "Golden!!" : act === "eat" ? "Nom nom!" : act === "pickle" ? "I'm a pickle!" : act === "dance" ? "♪ ♫ ♪" : act === "happy" ? "♥" :
+    news ?? (pet.mood === "sad" ? (pet.tin ? "Feed me?" : "Peckish...") : `Day ${pet.streak} streak`);
   return (
     <div className={`lcd ${pixel.className}${pet.glowing ? " glowing" : ""}`}>
-      <div className="lcd-bars">
-        {bars.map(([label, v]) => (
-          <span key={label} className="lcd-bar">
+      <button type="button" className={`lcd-stage ${act ?? mood}`} onClick={() => !act && play("happy", 1600)} aria-label={`Pickle, level ${pet.level}. Click to give Pickle a fuss`}>
+        <span className="lcd-name">Pickle <small>LV {pet.level}</small></span>
+        <span className="lcd-says">{says}</span>
+        <span className="lcd-walk">
+          {act === "pickle" ? <Gherkin /> : <Blob mood={mood} />}
+          {(act === "eat" || act === "golden") && <Snack golden={act === "golden"} />}
+          {act === "golden" && <span className="lcd-sparkle" aria-hidden="true">✦ ✧ ✦</span>}
+          {act === "pickle" && <span className="lcd-poof" aria-hidden="true">* *</span>}
+        </span>
+      </button>
+      <div className="lcd-meters">
+        {meters.map(([label, v]) => (
+          <span key={label} className="lcd-meter" title={`${label} ${Math.round(v * 100)}%`}>
             {label}
-            <i><b style={{ width: `${Math.round(v * 100)}%` }} /></i>
+            <i>{[0, 1, 2, 3].map((n) => <b key={n} className={v > n / 4 + 0.05 ? "on" : undefined} />)}</i>
           </span>
         ))}
       </div>
-      <button type="button" className={`lcd-stage ${mood}`} onClick={() => !act && play("happy", 1600)} aria-label={`Pickle, level ${pet.level}. Click to give Pickle a fuss`}>
-        <Blob mood={mood} />
-        {(act === "eat" || act === "golden") && <Snack golden={act === "golden"} />}
-        {act === "golden" && <span className="lcd-sparkle" aria-hidden="true">✦ ✧ ✦</span>}
-      </button>
-      <div className="lcd-name">
-        <span>Pickle <small>LV {pet.level}</small></span>
-        <span>{says}</span>
-      </div>
       <div className="lcd-keys">
-        <button type="button" onClick={() => feed("oatcake")} disabled={busy || !pet.tin} title={pet.tin ? "Give Pickle an oatcake" : "Deliver a job to earn an oatcake"}>
+        <button type="button" onClick={() => feed("oatcake")} disabled={busy || !!act || !pet.tin} title={pet.tin ? "Give Pickle an oatcake" : "Deliver a job to earn an oatcake"}>
           Feed <b>×{pet.tin}</b>
         </button>
-        <button type="button" onClick={() => feed("golden")} disabled={busy || pet.tin < GOLDEN_COST} title={`Swap ${GOLDEN_COST} oatcakes for a golden one`}>
-          ★ Golden
+        <button type="button" onClick={() => feed("golden")} disabled={busy || !!act || pet.tin < GOLDEN_COST} title={`Swap ${GOLDEN_COST} oatcakes for a golden one`}>
+          ★ Gold
+        </button>
+        <button type="button" onClick={() => play("dance", 3200)} disabled={!!act || !canDance} title={canDance ? "Make Pickle dance" : "Pickle needs feeding before he'll dance"}>
+          Dance
         </button>
       </div>
     </div>
   );
 }
+
+// How full Pickle has to be before he'll dance.
+const DANCE_AT = 0.6;
+type Act = "eat" | "golden" | "happy" | "dance" | "pickle";
 
 type Mood = "idle" | "happy" | "sad" | "eat";
 
@@ -283,6 +298,48 @@ function Blob({ mood }: { mood: Mood }) {
     </svg>
   );
 }
+// Pickle as an actual pickle: a bumpy upright gherkin with the same 0_0 face. # is ink, + is shade.
+const GHERKIN_ART = [
+  "....####....",
+  "...#....#...",
+  "..#..#...+#.",
+  "..#......+#.",
+  ".#.......+#.",
+  ".#.##..##.+#",
+  ".#.##..##.+#",
+  ".#........+#",
+  ".#..####..+#",
+  ".#........+#",
+  ".#..#.....+#",
+  ".#......#.+#",
+  ".#........+#",
+  ".#...#....+#",
+  ".#........+#",
+  "..#.....#+#.",
+  "..#.#...++#.",
+  "..#.....+#..",
+  "...#..++#...",
+  "....####....",
+];
+const GW = 12, GH = GHERKIN_ART.length;
+const GHERKIN = (() => {
+  let ink = "", shade = "";
+  GHERKIN_ART.forEach((row, y) => [...row].forEach((c, x) => {
+    const px = `M${x * PX} ${y * PX}h${PX}v${PX}h-${PX}z`;
+    if (c === "#") ink += px;
+    else if (c === "+") shade += px;
+  }));
+  return { ink, shade };
+})();
+function Gherkin() {
+  return (
+    <svg className="lcd-gherkin" viewBox={`0 0 ${GW * PX} ${GH * PX}`} aria-hidden="true" shapeRendering="crispEdges">
+      <path className="lcd-shade" d={GHERKIN.shade} />
+      <path className="lcd-ink" d={GHERKIN.ink} />
+    </svg>
+  );
+}
+
 const SNACK = [".###.", "#.#.#", "##.##", "#.#.#", ".###."];
 function Snack({ golden = false }: { golden?: boolean }) {
   let d = "";
