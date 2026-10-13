@@ -3,21 +3,22 @@
 import Link from "next/link";
 import { Silkscreen } from "next/font/google";
 import { useEffect, useState, type DragEvent } from "react";
+import { feedPickle } from "@/app/queue/pet";
+import { GOLDEN_COST, type PetView } from "@/lib/pet";
 
 const pixel = Silkscreen({ weight: "400", subsets: ["latin"] });
 
-// The row of widgets above Up next: Pickle the pixel pet (fed an oatcake for every job delivered),
+// The row of widgets above Up next: Pickle the pixel pet (earns an oatcake for every job delivered),
 // the week ahead, the latest finished work and this week's tally. Drag a widget by its handle
 // to reorder them; the order is kept on this computer.
 export type WeekDay = { date: string; label: string; today: boolean; jobs: { id: number; title: string; color: string }[] };
 export type ReelItem = { id: number; title: string; url: string };
-export type PetStats = { fedTotal: number; fedWeek: number; overdue: number };
 export type WeekStats = { delivered: number; due: number; late: number };
 
 type Key = "pet" | "week" | "reel" | "tally";
 const DEFAULT: Key[] = ["pet", "week", "reel", "tally"];
 const ORDER_KEY = "widgets_order";
-const FED_KEY = "pickle_fed";
+const TIN_KEY = "pickle_tin";
 
 function savedOrder(): Key[] {
   try {
@@ -27,7 +28,7 @@ function savedOrder(): Key[] {
   return DEFAULT;
 }
 
-export default function QueueWidgets({ week, reel, pet, tally }: { week: WeekDay[]; reel: ReelItem[]; pet: PetStats; tally: WeekStats }) {
+export default function QueueWidgets({ week, reel, pet, tally }: { week: WeekDay[]; reel: ReelItem[]; pet: PetView | null; tally: WeekStats }) {
   const [order, setOrder] = useState<Key[]>(DEFAULT);
   const [dragging, setDragging] = useState<Key | null>(null);
   const [armed, setArmed] = useState<Key | null>(null);
@@ -43,7 +44,7 @@ export default function QueueWidgets({ week, reel, pet, tally }: { week: WeekDay
   };
 
   const body: Record<Key, { title: string; node: React.ReactNode }> = {
-    pet: { title: "Pickle", node: <Pet {...pet} /> },
+    pet: { title: "Pickle", node: <Pet pet={pet} /> },
     week: { title: "Week ahead", node: <Week days={week} /> },
     reel: { title: "Fresh out the oven", node: <Reel items={reel} /> },
     tally: { title: "This week", node: <Tally {...tally} /> },
@@ -124,31 +125,53 @@ function Tally({ delivered, due, late }: WeekStats) {
   );
 }
 
-// Pickle, a little LCD pet like an old Tamagotchi. Its bars: Hunger fills with this week's
-// deliveries, Happy drops when jobs run late, Growth counts toward the next level (every five
-// oatcakes eaten). When it's been fed since you last looked, it eats the new oatcake in front of you.
-function Pet({ fedTotal, fedWeek, overdue }: PetStats) {
-  const happy = Math.max(1, Math.min(5, 2 + fedWeek - Math.min(2, overdue)));
-  const level = 1 + Math.floor(fedTotal / 5);
-  const growth = fedTotal % 5;
-  const [eating, setEating] = useState(false);
-  const [petted, setPetted] = useState(0);
+// Pickle, a little LCD pet like an old Tamagotchi (rules in lib/pet.ts). Delivered jobs fill its
+// tin with oatcakes; Feed gives it one, and five can be swapped for a golden one. Visiting each
+// day keeps a streak going. It never dies, it just gets peckish.
+function Pet({ pet: start }: { pet: PetView | null }) {
+  const [pet, setPet] = useState(start);
+  const [act, setAct] = useState<"eat" | "golden" | "happy" | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [news, setNews] = useState<string | null>(null);
+  useEffect(() => setPet(start), [start]);
 
+  // Oatcakes earned since you last looked get a mention.
   useEffect(() => {
+    if (!start) return;
     let seen = NaN;
-    try { seen = Number(localStorage.getItem(FED_KEY) ?? "NaN"); } catch {}
-    try { localStorage.setItem(FED_KEY, String(fedTotal)); } catch {}
-    if (Number.isNaN(seen) || fedTotal <= seen) return;
-    setEating(true);
-    const t = setTimeout(() => setEating(false), 2600);
-    return () => clearTimeout(t);
-  }, [fedTotal]);
+    try { seen = Number(localStorage.getItem(TIN_KEY) ?? "NaN"); } catch {}
+    try { localStorage.setItem(TIN_KEY, String(start.tin)); } catch {}
+    if (!Number.isNaN(seen) && start.tin > seen) setNews(`+${start.tin - seen} in the tin!`);
+  }, [start]);
 
-  const mood: Mood = eating ? "eat" : petted ? "happy" : happy <= 2 ? "sad" : "idle";
-  const bars: [string, number][] = [["Hunger", Math.min(1, fedWeek / 4)], ["Happy", happy / 5], ["Growth", growth / 5]];
-  const says = eating ? "Nom nom!" : petted ? "♥" : happy <= 2 ? "Hungry..." : `LV ${level}`;
+  if (!pet) return <p className="widget-empty">Pickle is hatching…</p>;
+
+  const play = (a: "eat" | "golden" | "happy", ms: number) => {
+    setAct(a);
+    setTimeout(() => setAct(null), ms);
+  };
+  const feed = async (kind: "oatcake" | "golden") => {
+    if (busy) return;
+    setBusy(true);
+    setNews(null);
+    play(kind === "golden" ? "golden" : "eat", kind === "golden" ? 3200 : 2600);
+    try {
+      const next = await feedPickle(kind);
+      if (next) {
+        setPet(next);
+        try { localStorage.setItem(TIN_KEY, String(next.tin)); } catch {}
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const mood: Mood = act === "eat" || act === "golden" ? "eat" : act === "happy" || pet.glowing ? "happy" : pet.mood;
+  const bars: [string, number][] = [["Hunger", pet.hunger], ["Happy", pet.happy], ["Growth", pet.growth]];
+  const says =
+    act === "golden" ? "Golden!!" : act === "eat" ? "Nom nom!" : act === "happy" ? "♥" : news ?? (pet.mood === "sad" ? (pet.tin ? "Feed me?" : "Peckish...") : `Day ${pet.streak} streak`);
   return (
-    <div className={`lcd ${pixel.className}`}>
+    <div className={`lcd ${pixel.className}${pet.glowing ? " glowing" : ""}`}>
       <div className="lcd-bars">
         {bars.map(([label, v]) => (
           <span key={label} className="lcd-bar">
@@ -157,19 +180,22 @@ function Pet({ fedTotal, fedWeek, overdue }: PetStats) {
           </span>
         ))}
       </div>
-      <button
-        type="button"
-        className={`lcd-stage ${mood}`}
-        key={petted}
-        onClick={() => { setPetted((n) => n + 1); setTimeout(() => setPetted(0), 1600); }}
-        aria-label={`Pickle, level ${level}. Click to give Pickle a fuss`}
-      >
+      <button type="button" className={`lcd-stage ${mood}`} onClick={() => !act && play("happy", 1600)} aria-label={`Pickle, level ${pet.level}. Click to give Pickle a fuss`}>
         <Blob mood={mood} />
-        {eating && <Snack />}
+        {(act === "eat" || act === "golden") && <Snack golden={act === "golden"} />}
+        {act === "golden" && <span className="lcd-sparkle" aria-hidden="true">✦ ✧ ✦</span>}
       </button>
       <div className="lcd-name">
-        <span>Pickle</span>
+        <span>Pickle <small>LV {pet.level}</small></span>
         <span>{says}</span>
+      </div>
+      <div className="lcd-keys">
+        <button type="button" onClick={() => feed("oatcake")} disabled={busy || !pet.tin} title={pet.tin ? "Give Pickle an oatcake" : "Deliver a job to earn an oatcake"}>
+          Feed <b>×{pet.tin}</b>
+        </button>
+        <button type="button" onClick={() => feed("golden")} disabled={busy || pet.tin < GOLDEN_COST} title={`Swap ${GOLDEN_COST} oatcakes for a golden one`}>
+          ★ Golden
+        </button>
       </div>
     </div>
   );
@@ -213,11 +239,11 @@ function Blob({ mood }: { mood: Mood }) {
   );
 }
 const SNACK = [".###.", "#.#.#", "##.##", "#.#.#", ".###."];
-function Snack() {
+function Snack({ golden = false }: { golden?: boolean }) {
   let d = "";
   SNACK.forEach((row, y) => [...row].forEach((c, x) => { if (c === "#") d += `M${x * PX} ${y * PX}h${PX}v${PX}h-${PX}z`; }));
   return (
-    <svg className="lcd-snack" viewBox={`0 0 ${5 * PX} ${5 * PX}`} aria-hidden="true" shapeRendering="crispEdges">
+    <svg className={golden ? "lcd-snack golden" : "lcd-snack"} viewBox={`0 0 ${5 * PX} ${5 * PX}`} aria-hidden="true" shapeRendering="crispEdges">
       <path className="lcd-ink" d={d} />
     </svg>
   );
