@@ -76,11 +76,13 @@ pub fn run() {
                     true
                 });
             // No grey Mac title bar: the page runs to the top of the window and draws its own
-            // strip behind the window buttons (html.in-app in globals.css, .app-drag to move it).
+            // bar behind the window buttons (html.in-app in globals.css, .app-drag to move it).
             #[cfg(target_os = "macos")]
             let window = window
                 .title_bar_style(tauri::TitleBarStyle::Overlay)
-                .hidden_title(true);
+                .hidden_title(true)
+                // Centred in the site's 40px top bar (--app-bar in globals.css).
+                .traffic_light_position(tauri::LogicalPosition::new(16.0, 20.0));
             window.build()?;
             Ok(())
         })
