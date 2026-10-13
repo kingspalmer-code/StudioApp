@@ -141,7 +141,7 @@ function OneCard({ items, feed, tab, onOpen }: { items: Notification[]; feed: Fe
 function bySame(items: Notification[]) {
   const groups = new Map<string, Notification[]>();
   for (const n of items) {
-    const k = `${n.ticket_id}:${n.actor_name}`;
+    const k = `${n.ticket_id ?? `t${n.staff_task_id}`}:${n.actor_name}`;
     groups.set(k, [...(groups.get(k) ?? []), n]);
   }
   return [...groups.values()];
