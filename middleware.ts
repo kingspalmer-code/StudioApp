@@ -21,9 +21,10 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Checks the session token's signature here instead of asking Supabase on every page, and
+  // refreshes it when it has run out.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims.sub;
 
   const path = request.nextUrl.pathname;
   const isPublic = path.startsWith("/login") || path.startsWith("/auth");

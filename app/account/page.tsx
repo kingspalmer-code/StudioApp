@@ -8,6 +8,7 @@ import PhoneAlerts from "./PhoneAlerts";
 import ProfilePhoto from "./ProfilePhoto";
 import SetPassword from "./SetPassword";
 import UsageStats from "./UsageStats";
+import Submit from "@/components/Submit";
 
 export default async function AccountPage({ searchParams }: { searchParams: Promise<{ setup?: string }> }) {
   const { setup } = await searchParams;
@@ -102,7 +103,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             )}
 
             <form action={signOut} style={{ marginTop: 22 }}>
-              <button className="btn plain wide" type="submit" style={{ marginTop: 0, color: "var(--red)" }}>Sign out</button>
+              <Submit className="btn plain wide" type="submit" style={{ marginTop: 0, color: "var(--red)" }}>Sign out</Submit>
             </form>
           </>
         )}

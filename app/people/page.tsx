@@ -5,6 +5,7 @@ import { requireMember } from "@/lib/session";
 import type { Member } from "@/lib/types";
 import AddMember from "./AddMember";
 import InviteButton from "./InviteButton";
+import Submit from "@/components/Submit";
 
 const ROLE_LABEL = { designer: "Designer", manager: "Manager", client: "Client" };
 
@@ -31,7 +32,7 @@ export default async function PeoplePage() {
           <select name="business" aria-label="Client to preview">
             {businesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
-          <button className="link" type="submit">Preview</button>
+          <Submit className="link" type="submit">Preview</Submit>
         </form>
       )}
       <div className="cols">
@@ -60,7 +61,7 @@ export default async function PeoplePage() {
                               <input type="checkbox" name="also" value={x.id} defaultChecked={also.includes(x.id)} /> {x.name}
                             </label>
                           ))}
-                          <button className="btn" type="submit">Save</button>
+                          <Submit className="btn" type="submit">Save</Submit>
                         </form>
                       </details>
                     )}
@@ -69,7 +70,7 @@ export default async function PeoplePage() {
                     <span className="person-actions">
                       {!hasSignedIn.has(m.email) && <InviteButton email={m.email} />}
                       <form action={removeMember.bind(null, m.email)}>
-                        <button className="link" style={{ color: "var(--red)" }} type="submit">Remove</button>
+                        <Submit className="link" style={{ color: "var(--red)" }} type="submit">Remove</Submit>
                       </form>
                     </span>
                   )}
