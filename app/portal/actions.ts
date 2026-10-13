@@ -163,3 +163,48 @@ export async function alertNewFiles(ticketId: number) {
     "new_requests"
   );
 }
+
+// A client (or a manager, on a request they sent) left a note on a job or one of its drafts: alert
+// the studio on their phones. Only the note's author can trigger this, only just after, and once.
+export async function alertNewNote(noteId: number) {
+  if (!pushReady()) return;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const email = user?.email?.toLowerCase();
+  if (!email) return;
+  const [{ data: me }, { data: note }] = await Promise.all([
+    supabase.from("members").select("role, full_name").eq("email", email).maybeSingle<{ role: string; full_name: string }>(),
+    supabase
+      .from("ticket_notes")
+      .select("id, ticket_id, draft_id, author_email, body, created_at")
+      .eq("id", noteId)
+      .maybeSingle<{ id: number; ticket_id: number; draft_id: number | null; author_email: string; body: string; created_at: string }>(),
+  ]);
+  if ((me?.role !== "client" && me?.role !== "manager") || !note || note.author_email !== email) return;
+  if (Date.now() - Date.parse(note.created_at) > 10 * 60_000) return;
+  const [{ data: ticket }, { data: drafts }] = await Promise.all([
+    supabase.from("tickets").select("id, title").eq("id", note.ticket_id).maybeSingle<{ id: number; title: string }>(),
+    note.draft_id
+      ? supabase.from("ticket_drafts").select("id").eq("ticket_id", note.ticket_id).order("created_at").returns<{ id: number }[]>()
+      : Promise.resolve({ data: [] as { id: number }[] }),
+  ]);
+  if (!ticket || !(await firstTime("new_note", String(note.id)))) return;
+
+  const [info] = (await pushRpc<{ business: string; emails: string[] }[]>("push_request_info", { p_ticket: ticket.id })) ?? [];
+  if (!info?.emails?.length) return;
+  const who = me.full_name || email;
+  const round = (drafts ?? []).findIndex((d) => d.id === note.draft_id) + 1;
+  const body = note.body.length > 140 ? `${note.body.slice(0, 139)}…` : note.body;
+  await sendAlert(
+    info.emails,
+    {
+      title: round ? `${who} left notes on draft ${round} of ${ticket.title}` : `${who} added a note to ${ticket.title}`,
+      body,
+      url: `/tickets/${ticket.id}`,
+      tag: `ticket-${ticket.id}-notes`,
+    },
+    "new_requests"
+  );
+}

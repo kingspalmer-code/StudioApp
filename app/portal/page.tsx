@@ -77,7 +77,14 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   const finished = all
     .filter((t) => isDone(t, ctx))
     .sort((a, b) => (b.delivered_at ?? b.deadline).localeCompare(a.delivered_at ?? a.deadline));
-  const covers = await coversFor(supabase, finished.slice(0, 6).map((t) => t.id));
+  const [covers, { data: draftRows }] = await Promise.all([
+    coversFor(supabase, finished.slice(0, 6).map((t) => t.id)),
+    open.length
+      ? supabase.from("ticket_drafts").select("ticket_id, final_at").in("ticket_id", open.map((t) => t.id)).returns<{ ticket_id: number; final_at: string | null }[]>()
+      : Promise.resolve({ data: [] }),
+  ]);
+  // Jobs with a draft shared for notes and not yet sent as final.
+  const withDraft = new Set((draftRows ?? []).filter((d) => !d.final_at).map((d) => d.ticket_id));
 
   return (
     <Shell {...shell}>
@@ -99,7 +106,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
         <p className="eyebrow">In progress</p>
         <div className="group" data-tour="in-progress">
           {open.length ? (
-            open.map((t) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} showBusiness={several && !only} />)
+            open.map((t) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} showBusiness={several && !only} draft={withDraft.has(t.id)} />)
           ) : (
             <div className="empty">{all.length ? "Nothing in progress right now." : "No requests yet. Your first one will show here."}</div>
           )}

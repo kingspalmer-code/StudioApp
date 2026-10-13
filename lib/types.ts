@@ -64,6 +64,8 @@ export type Note = {
   author_name: string;
   body: string;
   created_at: string;
+  // Set when the note is about one of the job's drafts.
+  draft_id: number | null;
 };
 
 export type TicketFile = { id: number; ticket_id: number; path: string; name: string };

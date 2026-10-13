@@ -3,12 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { DELIVERY_MAX_MB, fileSize, isImage, isVideo, type SignedDelivery } from "@/lib/deliveries";
+import { DELIVERY_MAX_MB, fileSize, isImage, isVideo, type Delivery, type Signed } from "@/lib/deliveries";
 
 const ext = (name: string) => (/\.([a-z0-9]{1,5})$/i.exec(name)?.[1] ?? "file").toUpperCase();
 
 // Finished files on a job. The studio uploads them (or adds a link for anything too big);
-// everyone who can see the job can view and download them.
+// everyone who can see the job can view and download them. Drafts show their files with it too, read-only.
+type Shown = Signed<Pick<Delivery, "id" | "path" | "url" | "name" | "size" | "mime">>;
 export default function Deliveries({
   ticketId,
   businessId,
@@ -18,7 +19,7 @@ export default function Deliveries({
 }: {
   ticketId: number;
   businessId: string;
-  files: SignedDelivery[];
+  files: Shown[];
   canEdit: boolean;
   clientName: string;
 }) {
@@ -72,10 +73,12 @@ export default function Deliveries({
     router.refresh();
   }
 
-  async function remove(f: SignedDelivery) {
+  async function remove(f: Shown) {
     if (!confirm(`Remove ${f.name}? ${clientName} won't see it any more.`)) return;
     const supabase = createClient();
-    if (f.path) await supabase.storage.from("deliveries").remove([f.path]);
+    // A file sent as final from a draft stays on that draft, so only the finished copy goes.
+    const onDraft = f.path ? (await supabase.from("ticket_draft_files").select("id", { count: "exact", head: true }).eq("path", f.path)).count : 0;
+    if (f.path && !onDraft) await supabase.storage.from("deliveries").remove([f.path]);
     await supabase.from("ticket_deliveries").delete().eq("id", f.id);
     router.refresh();
   }

@@ -2,7 +2,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Finished files the studio delivers on a job: stored in Oatcake, or a link to somewhere else.
 export type Delivery = { id: number; ticket_id: number; path: string | null; url: string | null; name: string; size: number; mime: string; created_at: string };
-export type SignedDelivery = Delivery & { view: string | null; download: string | null };
+export type Signed<T> = T & { view: string | null; download: string | null };
+
+// Drafts the studio shares for the client's notes before the finished files. Their files sit in the
+// deliveries bucket under <business_id>/<ticket_id>/drafts/; they never show in galleries.
+export type Draft = { id: number; ticket_id: number; message: string; final_at: string | null; created_at: string };
+export type DraftFile = Pick<Delivery, "id" | "path" | "url" | "name" | "size" | "mime" | "created_at"> & { draft_id: number };
 
 // The free storage plan takes files up to 50MB; bigger ones are shared as a link instead.
 export const DELIVERY_MAX_MB = 50;
@@ -17,7 +22,7 @@ export function fileSize(bytes: number) {
 }
 
 // Short-lived links to view each file, and to download it with its own name.
-export async function signDeliveries(supabase: SupabaseClient, rows: Delivery[]): Promise<SignedDelivery[]> {
+export async function signDeliveries<T extends Pick<Delivery, "path" | "url" | "name">>(supabase: SupabaseClient, rows: T[]): Promise<Signed<T>[]> {
   const stored = rows.filter((d) => d.path);
   const bucket = supabase.storage.from("deliveries");
   const view: Record<string, string> = {};
