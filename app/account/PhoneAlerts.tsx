@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { forgetDevice, saveDevice, sendTestAlert, setAlertKinds } from "./actions";
 
 type Kinds = { new_requests: boolean; morning: boolean };
-type State = "checking" | "unsupported" | "home-screen" | "blocked" | "off" | "on";
+type State = "checking" | "desktop" | "unsupported" | "home-screen" | "blocked" | "off" | "on";
 
 // The push service wants the public key as bytes.
 function keyBytes(base64: string) {
@@ -22,6 +22,8 @@ export default function PhoneAlerts({ ready, publicKey, kinds: initial }: { read
 
   useEffect(() => {
     (async () => {
+      // The Mac app shows new requests itself while it's open (see desktop/), so there's nothing to turn on.
+      if ("__TAURI_INTERNALS__" in window) return setState("desktop");
       const standalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone === true;
       const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
       if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
@@ -91,6 +93,7 @@ export default function PhoneAlerts({ ready, publicKey, kinds: initial }: { read
 
   const explain: Partial<Record<State, string>> = {
     "home-screen": "On iPhone and iPad, add Oatcake to your Home Screen first: tap the Share button, then Add to Home Screen. Open Oatcake from there and turn alerts on here.",
+    desktop: "The Oatcake app on this Mac shows a notification for each new client request while it's open. Nothing to turn on.",
     unsupported: "This browser can't show alerts. Try Chrome, Edge, Firefox or Safari.",
     blocked: "Alerts are blocked for Oatcake in this browser's settings. Allow notifications for oatcake.xyz, then come back here.",
   };

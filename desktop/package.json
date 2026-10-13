@@ -1,0 +1,13 @@
+{
+  "name": "oatcake-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "tauri": "tauri",
+    "icons": "tauri icon app-icon.png -o src-tauri/icons",
+    "build": "tauri build --target universal-apple-darwin --bundles dmg"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4"
+  }
+}
