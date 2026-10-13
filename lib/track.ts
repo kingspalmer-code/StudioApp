@@ -17,7 +17,8 @@ export function setTracking(on: boolean) {
 }
 
 export function push(e: TrackEvent) {
-  if (!enabled) return;
+  // Jobs loaded ahead beside the queue (components/SplitPanel.tsx) aren't visits.
+  if (!enabled || document.documentElement.classList.contains("embedded")) return;
   queue.push(e);
   clearTimeout(timer);
   timer = setTimeout(flush, 4000);
