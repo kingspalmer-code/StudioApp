@@ -9,6 +9,7 @@ import { dueLabel, formatDate, isDone, money, startBy, startLabel } from "@/lib/
 import { asClient, requireMember } from "@/lib/session";
 import type { Note, Ticket, TicketFile } from "@/lib/types";
 import DeleteTicket from "./DeleteTicket";
+import AddFiles from "./AddFiles";
 import Link from "next/link";
 import { createDocument } from "@/app/documents/actions";
 import { docName, gbp, STATUS_LABEL } from "@/lib/documents";
@@ -46,6 +47,8 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   const biz = businesses.find((b) => b.id === t.business_id);
   const isDesigner = member.role === "designer";
   const canNote = member.role !== "manager";
+  // The studio and the client can add files after a job's sent (an invoice, a forgotten photo).
+  const canAddFiles = canNote && !viewing;
   const sb = startLabel(startBy(t, ctx));
   const done = isDone(t, ctx);
   const owner = workspace.owner_name || "the studio";
@@ -144,9 +147,10 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           </div>
         ))}
 
-        {signed.length > 0 && (
+        {(signed.length > 0 || canAddFiles) && (
           <>
             <p className="eyebrow">{filesField?.label ?? "Files"}</p>
+            {signed.length > 0 && (
             <div className="group">
               <div className="row stack">
                 <div className="files">
@@ -161,6 +165,8 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                 </div>
               </div>
             </div>
+            )}
+            {canAddFiles && <AddFiles ticketId={t.id} businessId={t.business_id} isClient={member.role === "client"} />}
           </>
         )}
 
