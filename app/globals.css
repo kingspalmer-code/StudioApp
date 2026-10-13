@@ -1096,8 +1096,11 @@ html.in-app .nt-layer { top: var(--app-bar); }
   html.split-dragging .split-panel iframe { pointer-events: none; }
   .split-loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--label-2); }
   .split-loading .oc-biscuit { width: 88px; height: 88px; }
-  .ticket.open { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
-  .ticket.open::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
+  /* Pages fold down beside the panel: two columns become one. */
+  html.split-open .cols { grid-template-columns: minmax(0, 1fr); }
+  html.split-open .widgets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ticket[data-open] { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+  .ticket[data-open]::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
 }
 @keyframes split-in { from { transform: translateX(24px); opacity: 0; } }
 

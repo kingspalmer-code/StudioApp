@@ -1,5 +1,6 @@
 import BizBadge from "@/components/BizBadge";
 import Shell from "@/components/Shell";
+import SplitHost from "@/components/SplitHost";
 import TicketRow from "@/components/TicketRow";
 import { daysFromToday, formatDate, isAtRisk, isDone, money, sortQueue, stageColor } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
@@ -81,6 +82,7 @@ export default async function OverviewPage() {
         </>
       )}
 
+      <SplitHost warm={risk.slice(0, 2).map((t) => t.id)}>
       <div className="cols" style={{ marginTop: 6 }}>
         <div>
           <p className="eyebrow">At risk</p>
@@ -96,6 +98,7 @@ export default async function OverviewPage() {
           </div>
         </div>
       </div>
+      </SplitHost>
     </Shell>
   );
 }
