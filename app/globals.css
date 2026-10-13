@@ -1098,7 +1098,8 @@ html.in-app .nt-layer { top: var(--app-bar); }
   .split-loading .oc-biscuit { width: 88px; height: 88px; }
   /* Pages fold down beside the panel: two columns become one. */
   html.split-open .cols { grid-template-columns: minmax(0, 1fr); }
-  html.split-open .widgets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html.split-open .widgets { grid-template-columns: minmax(0, 1fr) auto; }
+  html.split-open .widgets .widget + .widget { display: none; }
   .ticket[data-open] { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
   .ticket[data-open]::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
 }
@@ -1111,58 +1112,74 @@ html.embedded .has-rail { padding-left: 0; }
 html.embedded main { padding: 16px 20px 48px; }
 
 /* The widgets above Up next (components/QueueWidgets.tsx). */
-.widgets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 4px 0 22px; }
-@media (max-width: 1000px) { .widgets { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(230px, 1fr); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; } .widget { scroll-snap-align: start; } }
-.widget { background: var(--surface); border-radius: var(--r); padding: 12px 14px 14px; min-height: 196px; display: flex; flex-direction: column; min-width: 0; transition: opacity .15s, transform .15s; }
+.widgets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) auto; gap: 10px; margin: 4px 0 22px; align-items: stretch; }
+.widgets.n1 { grid-template-columns: minmax(0, 1fr) auto; }
+@media (max-width: 760px) { .widgets, .widgets.n1 { grid-template-columns: minmax(0, 1fr) auto; } .widgets .widget + .widget { display: none; } }
+.widget { background: var(--surface); border-radius: var(--r); padding: 9px 12px 10px; height: 104px; display: flex; flex-direction: column; min-width: 0; transition: opacity .15s, transform .15s; }
 .widget.dragging { opacity: .4; transform: scale(.98); }
-.widget h4 { margin: 0 0 10px; display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--label-2); }
-.widget-grip { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; cursor: grab; color: var(--label-3); touch-action: none; }
+.widget h4 { margin: 0 0 6px; display: flex; align-items: center; justify-content: space-between; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--label-2); }
+.widget-grip { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 5px; cursor: grab; color: var(--label-3); touch-action: none; }
 .widget-grip:hover { background: var(--fill); color: var(--label); }
-.widget-grip svg { width: 8px; height: 13px; fill: currentColor; }
+.widget-grip svg { width: 7px; height: 11px; fill: currentColor; }
+.widget-side { position: relative; display: flex; }
+.widget-more { width: 34px; border: 0; border-radius: var(--r); background: var(--surface); color: var(--label-2); cursor: pointer; display: grid; place-items: center; }
+.widget-more:hover, .widget-more[aria-expanded="true"] { background: var(--fill); color: var(--label); }
+.widget-more svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; }
+.widget-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 25; width: 280px; background: var(--surface); border-radius: 14px; box-shadow: var(--shadow), 0 0 0 .5px var(--sep); padding: 6px; animation: split-in .14s ease-out; }
+.widget-menu p { margin: 4px 8px 6px; font-weight: 600; font-size: 13px; display: flex; justify-content: space-between; align-items: baseline; }
+.widget-menu p small { font-weight: 400; color: var(--label-3); font-size: 11.5px; }
+.widget-menu button { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; border: 0; background: none; color: var(--label); font: inherit; padding: 8px; border-radius: 10px; cursor: pointer; }
+.widget-menu button:hover { background: var(--fill); }
+.widget-menu button span { flex: 1; display: grid; gap: 1px; }
+.widget-menu button b { font-size: 14px; font-weight: 600; }
+.widget-menu button small { font-size: 12px; color: var(--label-2); }
+.widget-menu button i { font-style: normal; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--fill); color: var(--label-2); font-size: 12px; }
+.widget-menu button.on i { background: var(--accent); color: var(--accent-ink); }
 .widget-empty { color: var(--label-3); font-size: 13px; margin: auto 0; }
 
 .wk { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
 .wk-day { display: flex; flex-direction: column; gap: 4px; min-width: 0; border-radius: 8px; padding: 3px 2px 2px; }
 .wk-day.today { background: var(--fill); }
-.wk-stack { flex: 1; display: flex; flex-direction: column-reverse; gap: 3px; }
-.wk-job { display: block; height: 10px; border-radius: 3px; box-shadow: inset 0 0 0 .5px color-mix(in srgb, var(--label) 22%, transparent); transition: transform .12s; }
+.wk-stack { flex: 1; display: flex; flex-direction: column-reverse; gap: 2px; overflow: hidden; }
+.wk-job { display: block; height: 7px; border-radius: 3px; box-shadow: inset 0 0 0 .5px color-mix(in srgb, var(--label) 22%, transparent); transition: transform .12s; }
 .wk-job:hover { transform: scaleY(1.4); }
 .wk-more { font-size: 10px; color: var(--label-2); text-align: center; }
 .wk-label { font-size: 10.5px; color: var(--label-3); text-align: center; white-space: nowrap; }
 .wk-day.today .wk-label { color: var(--label); font-weight: 700; }
 
-.reel { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: 6px; }
-.reel a { display: block; border-radius: 8px; overflow: hidden; background: var(--fill); min-height: 40px; }
+.reel { flex: 1; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: 1fr; gap: 6px; min-height: 0; }
+.reel a { display: block; border-radius: 8px; overflow: hidden; background: var(--fill); min-height: 0; }
 .reel img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s; }
 .reel a:hover img { transform: scale(1.06); }
 
-.tally { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-.tally b { font: 700 34px/1 var(--font-title); font-variant-numeric: tabular-nums; }
+.tally { display: flex; flex-direction: column; gap: 4px; flex: 1; justify-content: center; }
+.tally p { margin: 0; display: flex; align-items: baseline; gap: 8px; }
+.tally b { font: 700 26px/1 var(--font-title); font-variant-numeric: tabular-nums; }
 .tally b small { font-size: 18px; color: var(--label-3); }
-.tally > span { font-size: 13px; color: var(--label-2); }
-.tally .meter { margin: 10px 0 6px; }
+.tally span { font-size: 13px; color: var(--label-2); }
+.tally .meter { margin: 2px 0; }
 .tally .tally-late { color: var(--red); font-weight: 600; }
 
 /* Pickle: a little LCD screen, greenish grey with its pixel grid, ink pixels on top. */
-.w-pet { padding-bottom: 12px; }
-.lcd { flex: 1; display: flex; flex-direction: column; border-radius: 10px; padding: 7px 8px 6px; color: #1d201a; background-color: #b4b9a2; background-image: linear-gradient(rgba(29,32,26,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(29,32,26,.07) 1px, transparent 1px); background-size: 4px 4px; box-shadow: inset 0 0 0 1.5px rgba(29,32,26,.35), inset 0 2px 6px rgba(29,32,26,.18); font-size: 8.5px; line-height: 1; text-transform: uppercase; }
-.lcd-bars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.w-pet { padding: 8px; } .w-pet h4 { display: none; }
+.lcd { flex: 1; display: grid; grid-template-columns: 70px minmax(0, 1fr) auto; grid-template-rows: 1fr auto; grid-template-areas: "stage bars keys" "stage name keys"; column-gap: 10px; row-gap: 4px; border-radius: 10px; padding: 7px 8px; color: #1d201a; background-color: #b4b9a2; background-image: linear-gradient(rgba(29,32,26,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(29,32,26,.07) 1px, transparent 1px); background-size: 4px 4px; box-shadow: inset 0 0 0 1.5px rgba(29,32,26,.35), inset 0 2px 6px rgba(29,32,26,.18); font-size: 8.5px; line-height: 1; text-transform: uppercase; }
+.lcd-bars { grid-area: bars; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; align-self: center; }
 .lcd-bar { display: grid; gap: 3px; letter-spacing: .02em; }
 .lcd-bar i { display: block; height: 6px; border-radius: 3px; box-shadow: inset 0 0 0 1px #1d201a; padding: 1.5px; }
 .lcd-bar b { display: block; height: 100%; border-radius: 2px; background: #1d201a; }
-.lcd-stage { position: relative; flex: 1; min-height: 76px; display: grid; place-items: center; border: 0; padding: 0; background: none; cursor: pointer; }
-.lcd-blob { width: 88px; height: 72px; }
+.lcd-stage { grid-area: stage; position: relative; min-height: 0; display: grid; place-items: center; border: 0; padding: 0; background: none; cursor: pointer; }
+.lcd-blob { width: 66px; height: 54px; }
 .lcd-ink { fill: #1d201a; }
 .lcd-shade { fill: rgba(29,32,26,.32); }
 .lcd-stage.idle .lcd-blob { animation: lcd-hop 1.6s steps(1) infinite; }
 .lcd-stage.happy .lcd-blob { animation: lcd-hop .5s steps(1) 3; }
 .lcd-stage.sad .lcd-blob { transform: translateY(4px) scaleY(.94); }
 .lcd-stage.eat .lcd-blob { animation: lcd-chomp .35s steps(1) 7; }
-.lcd-snack { position: absolute; width: 20px; height: 20px; left: calc(50% + 34px); top: calc(50% - 4px); animation: lcd-snack 2.6s steps(1) forwards; }
-.lcd-name { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; text-transform: none; }
+.lcd-snack { position: absolute; width: 14px; height: 14px; left: calc(50% + 24px); top: calc(50% - 4px); animation: lcd-snack 2.6s steps(1) forwards; }
+.lcd-name { grid-area: name; display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; text-transform: none; }
 .lcd-name span:last-child { font-size: 9px; text-transform: uppercase; }
 .lcd-name small { font-size: 9px; opacity: .7; margin-left: 4px; }
-.lcd-keys { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 7px; }
+.lcd-keys { grid-area: keys; display: grid; grid-template-rows: 1fr 1fr; gap: 5px; }
 .lcd-keys button { font: inherit; font-size: 9px; text-transform: uppercase; color: #1d201a; background: rgba(29,32,26,.08); border: 0; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(29,32,26,.55); padding: 6px 4px 5px; cursor: pointer; }
 .lcd-keys button:hover:not(:disabled) { background: #1d201a; color: #b4b9a2; }
 .lcd-keys button:disabled { opacity: .4; cursor: default; }

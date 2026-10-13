@@ -9,50 +9,77 @@ import { GOLDEN_COST, type PetView } from "@/lib/pet";
 const pixel = Silkscreen({ weight: "400", subsets: ["latin"] });
 
 // The row of widgets above Up next: Pickle the pixel pet (earns an oatcake for every job delivered),
-// the week ahead, the latest finished work and this week's tally. Drag a widget by its handle
-// to reorder them; the order is kept on this computer.
+// the week ahead, the latest finished work and this week's tally. Two show at a time; the button
+// on the right picks which, and dragging a handle swaps them round. Kept on this computer.
 export type WeekDay = { date: string; label: string; today: boolean; jobs: { id: number; title: string; color: string }[] };
 export type ReelItem = { id: number; title: string; url: string };
 export type WeekStats = { delivered: number; due: number; late: number };
 
 type Key = "pet" | "week" | "reel" | "tally";
-const DEFAULT: Key[] = ["pet", "week", "reel", "tally"];
-const ORDER_KEY = "widgets_order";
+const ALL: { key: Key; title: string; blurb: string }[] = [
+  { key: "pet", title: "Pickle", blurb: "Your pixel pet, fed with oatcakes" },
+  { key: "week", title: "Week ahead", blurb: "What's due over the next seven days" },
+  { key: "reel", title: "Fresh out the oven", blurb: "Your latest finished work" },
+  { key: "tally", title: "This week", blurb: "Delivered so far and what's late" },
+];
+const SHOWN = 2;
+const DEFAULT: Key[] = ["pet", "week"];
+const SHOWN_KEY = "widgets_shown";
 const TIN_KEY = "pickle_tin";
 
-function savedOrder(): Key[] {
+function savedShown(): Key[] {
   try {
-    const v = JSON.parse(localStorage.getItem(ORDER_KEY) ?? "null");
-    if (Array.isArray(v) && v.length === DEFAULT.length && DEFAULT.every((k) => v.includes(k))) return v;
+    const v = JSON.parse(localStorage.getItem(SHOWN_KEY) ?? "null");
+    if (Array.isArray(v) && v.length >= 1 && v.length <= SHOWN && v.every((k) => ALL.some((w) => w.key === k))) return v;
   } catch {}
   return DEFAULT;
 }
 
 export default function QueueWidgets({ week, reel, pet, tally }: { week: WeekDay[]; reel: ReelItem[]; pet: PetView | null; tally: WeekStats }) {
-  const [order, setOrder] = useState<Key[]>(DEFAULT);
+  const [shown, setShown] = useState<Key[]>(DEFAULT);
+  const [menu, setMenu] = useState(false);
   const [dragging, setDragging] = useState<Key | null>(null);
   const [armed, setArmed] = useState<Key | null>(null);
-  useEffect(() => setOrder(savedOrder()), []);
+  useEffect(() => setShown(savedShown()), []);
 
+  // Close the menu on a click elsewhere or Escape.
+  useEffect(() => {
+    if (!menu) return;
+    const away = (e: Event) => !(e.target as Element).closest?.(".widget-menu, .widget-more") && setMenu(false);
+    const key = (e: KeyboardEvent) => e.key === "Escape" && setMenu(false);
+    document.addEventListener("pointerdown", away);
+    document.addEventListener("keydown", key);
+    return () => { document.removeEventListener("pointerdown", away); document.removeEventListener("keydown", key); };
+  }, [menu]);
+
+  const save = (next: Key[]) => {
+    setShown(next);
+    try { localStorage.setItem(SHOWN_KEY, JSON.stringify(next)); } catch {}
+  };
+  // Two show at a time: picking another swaps out the right-hand one; picking a showing one hides
+  // it (as long as one stays).
+  const pick = (k: Key) => {
+    if (shown.includes(k)) return shown.length > 1 && save(shown.filter((x) => x !== k));
+    save(shown.length < SHOWN ? [...shown, k] : [...shown.slice(0, SHOWN - 1), k]);
+  };
   const drop = (target: Key) => (e: DragEvent) => {
     e.preventDefault();
     if (!dragging || dragging === target) return;
-    const next = order.filter((k) => k !== dragging);
-    next.splice(next.indexOf(target) + (order.indexOf(dragging) < order.indexOf(target) ? 1 : 0), 0, dragging);
-    setOrder(next);
-    try { localStorage.setItem(ORDER_KEY, JSON.stringify(next)); } catch {}
+    const next = shown.filter((k) => k !== dragging);
+    next.splice(next.indexOf(target) + (shown.indexOf(dragging) < shown.indexOf(target) ? 1 : 0), 0, dragging);
+    save(next);
   };
 
-  const body: Record<Key, { title: string; node: React.ReactNode }> = {
-    pet: { title: "Pickle", node: <Pet pet={pet} /> },
-    week: { title: "Week ahead", node: <Week days={week} /> },
-    reel: { title: "Fresh out the oven", node: <Reel items={reel} /> },
-    tally: { title: "This week", node: <Tally {...tally} /> },
+  const body: Record<Key, React.ReactNode> = {
+    pet: <Pet pet={pet} />,
+    week: <Week days={week} />,
+    reel: <Reel items={reel} />,
+    tally: <Tally {...tally} />,
   };
 
   return (
-    <section className="widgets" aria-label="At a glance">
-      {order.map((k) => (
+    <section className={`widgets n${shown.length}`} aria-label="At a glance">
+      {shown.map((k) => (
         <div
           key={k}
           className={`widget w-${k}${dragging === k ? " dragging" : ""}`}
@@ -63,20 +90,39 @@ export default function QueueWidgets({ week, reel, pet, tally }: { week: WeekDay
           onDrop={drop(k)}
         >
           <h4>
-            {body[k].title}
+            {ALL.find((w) => w.key === k)!.title}
             <span
               className="widget-grip"
               aria-hidden="true"
-              title="Drag to move"
+              title="Drag to swap sides"
               onPointerDown={() => setArmed(k)}
               onPointerUp={() => !dragging && setArmed(null)}
             >
               <svg viewBox="0 0 10 16"><circle cx="2.5" cy="3" r="1.3" /><circle cx="7.5" cy="3" r="1.3" /><circle cx="2.5" cy="8" r="1.3" /><circle cx="7.5" cy="8" r="1.3" /><circle cx="2.5" cy="13" r="1.3" /><circle cx="7.5" cy="13" r="1.3" /></svg>
             </span>
           </h4>
-          {body[k].node}
+          {body[k]}
         </div>
       ))}
+      <div className="widget-side">
+        <button type="button" className="widget-more" onClick={() => setMenu((m) => !m)} aria-expanded={menu} aria-label="Choose widgets" title="Choose widgets">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="5" height="5" rx="1.2" /><rect x="9.5" y="1.5" width="5" height="5" rx="1.2" /><rect x="1.5" y="9.5" width="5" height="5" rx="1.2" /><path d="M12 9.5v5M9.5 12h5" /></svg>
+        </button>
+        {menu && (
+          <div className="widget-menu" role="menu" aria-label="Widgets">
+            <p>Widgets <small>Two show at a time</small></p>
+            {ALL.map((w) => {
+              const on = shown.includes(w.key);
+              return (
+                <button key={w.key} type="button" role="menuitemcheckbox" aria-checked={on} className={on ? "on" : undefined} onClick={() => pick(w.key)}>
+                  <span><b>{w.title}</b><small>{w.blurb}</small></span>
+                  <i aria-hidden="true">{on ? "✓" : "+"}</i>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </section>
   );
 }
@@ -117,10 +163,9 @@ function Tally({ delivered, due, late }: WeekStats) {
   const total = delivered + due;
   return (
     <div className="tally">
-      <b>{delivered}<small> / {total}</small></b>
-      <span>delivered this week</span>
+      <p><b>{delivered}<small> / {total}</small></b> <span>delivered this week</span></p>
       <div className="meter"><i style={{ width: `${total ? (delivered / total) * 100 : 0}%`, background: "var(--green)" }} /></div>
-      {late > 0 && <span className="tally-late">{late} running late</span>}
+      <span className={late > 0 ? "tally-late" : undefined}>{late > 0 ? `${late} running late` : "Nothing late"}</span>
     </div>
   );
 }
