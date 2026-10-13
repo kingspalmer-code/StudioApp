@@ -33,7 +33,7 @@ const loadMember = cache(async () => {
     supabase.auth.getUser(),
     supabase
       .from("members")
-      .select("email, full_name, role, business_id, workspace_id, workspaces(id, name, kind, owner_name)")
+      .select("email, full_name, role, business_id, workspace_id, workspaces(id, name, kind, owner_name, request_slug, requests_open)")
       .eq("email", email)
       .maybeSingle<Member & { workspace_id: string; workspaces: Workspace | null }>(),
     supabase.from("businesses").select("*").order("name").returns<Business[]>(),

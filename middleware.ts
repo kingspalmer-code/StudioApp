@@ -27,7 +27,8 @@ export async function middleware(request: NextRequest) {
   const user = data?.claims.sub;
 
   const path = request.nextUrl.pathname;
-  const isPublic = path.startsWith("/login") || path.startsWith("/auth");
+  // Request links (/r) and customers' own pages (/c) are for people without an Oatcake login.
+  const isPublic = path.startsWith("/login") || path.startsWith("/auth") || path.startsWith("/r/") || path.startsWith("/c/");
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";

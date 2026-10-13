@@ -7,9 +7,13 @@ import { addStage, addType, deleteStage, deleteType, moveStage, renameWorkspace,
 import Submit from "@/components/Submit";
 import { modeTitle } from "@/lib/workspace";
 import WorkMode from "./WorkMode";
+import RequestLink from "./RequestLink";
+import { headers } from "next/headers";
 
 export default async function SettingsPage() {
   const { supabase, ctx, terms, workspace, shell, viewing } = await requireMember(["designer"]);
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host") ?? "oatcake.xyz"}`;
   const [{ data: used }, { count: loggedIn }] = await Promise.all([
     supabase.from("tickets").select("status"),
     // Clients and managers, whose logins pause if the workspace stops taking requests from businesses.
@@ -48,6 +52,17 @@ export default async function SettingsPage() {
         <p className="foot">
           Sets the words Oatcake uses and who can send you {terms.jobs}. Switching never deletes anything.
         </p>
+
+        {workspace.kind === "trade" && (
+          <>
+            <p className="eyebrow">Request link</p>
+            <RequestLink open={Boolean(workspace.requests_open)} url={workspace.request_slug ? `${origin}/r/${workspace.request_slug}` : null} />
+            <p className="foot">
+              Put this link on your website, Instagram or email signature. Anyone can use it to ask you for a job without signing up,
+              and they get an email with a link to follow it. You can still add customers and jobs yourself.
+            </p>
+          </>
+        )}
 
         <p className="eyebrow">{terms.Job} form</p>
         <div className="group">

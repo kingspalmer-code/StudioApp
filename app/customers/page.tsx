@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import SendCustomerLink from "@/components/SendCustomerLink";
 import BizBadge from "@/components/BizBadge";
 import Shell from "@/components/Shell";
 import { isDone } from "@/lib/priority";
@@ -58,6 +59,7 @@ export default async function CustomersPage() {
                       )}
                     </div>
                   </form>
+                  {workspace.kind === "trade" && b.email && <div className="group" style={{ marginTop: 8 }}><SendCustomerLink id={b.id} name={b.name} /></div>}
                 </details>
               );
             })}
