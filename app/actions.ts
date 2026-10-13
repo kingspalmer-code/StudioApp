@@ -118,6 +118,21 @@ export async function addNote(id: number, formData: FormData) {
   revalidatePath(`/tickets/${id}`);
 }
 
+// The client (or a manager on a job they're part of) approves a draft: a note saying so, which the
+// studio hears about in their notifications and on their phones. Once per draft.
+export async function approveDraft(ticketId: number, draftId: number) {
+  const { supabase, member } = await requireEditor(["client", "manager"]);
+  const { data: done } = await supabase.from("ticket_notes").select("id").eq("draft_id", draftId).eq("kind", "approval").limit(1);
+  if (done?.length) return;
+  const { data } = await supabase
+    .from("ticket_notes")
+    .insert({ ticket_id: ticketId, draft_id: draftId, kind: "approval", body: "Approved this draft.", author_name: member.full_name || member.email })
+    .select("id")
+    .maybeSingle<{ id: number }>();
+  if (data) after(() => alertNewNote(data.id).catch(() => {}));
+  revalidatePath(`/tickets/${ticketId}`);
+}
+
 export type AddState = { error?: string; ok?: string } | null;
 
 export async function addMember(_prev: AddState, formData: FormData): Promise<AddState> {

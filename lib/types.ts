@@ -70,6 +70,8 @@ export type Note = {
   created_at: string;
   // Set when the note is about one of the job's drafts.
   draft_id: number | null;
+  // "approval" when it's the client approving a draft.
+  kind: "note" | "approval";
 };
 
 export type TicketFile = { id: number; ticket_id: number; path: string; name: string };

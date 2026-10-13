@@ -839,6 +839,59 @@ html.in-app .bar { top: 28px; }
 html.in-app .ct-layer, html.in-app .sr-layer, html.in-app .sheet-wrap { top: 28px; }
 .confirm-inline { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 
+/* Notifications: a bell top right (in the top bar on phones and for clients, floating in the corner
+   beside the rail on bigger screens) opening a panel of what other people have done on your jobs. */
+.bell-btn { flex: none; position: relative; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 0; cursor: pointer; background: var(--fill); color: var(--label); padding: 0; }
+.bell-btn svg { width: 18px; height: 18px; }
+.bell-btn[aria-expanded="true"] { background: var(--accent); color: var(--accent-ink); }
+.bell-count { position: absolute; top: -4px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--blue); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px var(--bg); }
+@media (min-width: 701px) {
+  .has-rail > .bar .bell-btn { position: fixed; top: 14px; right: 18px; width: 38px; height: 38px; background: var(--surface); box-shadow: 0 0 0 .5px var(--sep), 0 2px 10px rgba(56,42,37,.10); }
+  .has-rail > .bar .bell-btn[aria-expanded="true"] { background: var(--accent); }
+  html.in-app .has-rail > .bar .bell-btn { top: 42px; }
+}
+.nt-layer { position: fixed; inset: 0; z-index: 60; }
+html.in-app .nt-layer { top: 28px; }
+.nt-scrim { position: absolute; inset: 0; }
+.nt-panel { position: absolute; top: calc(58px + env(safe-area-inset-top, 0px)); right: 12px; width: min(420px, calc(100vw - 24px)); max-height: calc(100dvh - 76px - env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; background: var(--surface); border-radius: 18px; box-shadow: 0 0 0 .5px var(--sep), 0 24px 60px rgba(23,17,15,.28); overflow: hidden; transform-origin: top right; }
+@media (max-width: 700px) { .nt-panel { left: 8px; right: 8px; width: auto; top: calc(52px + env(safe-area-inset-top, 0px)); max-height: calc(100dvh - 60px - 84px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); } }
+.nt-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 18px 12px; }
+.nt-head h2 { margin: 0; font: 700 22px/1.1 var(--font-display); letter-spacing: -.02em; }
+.nt-head .nt-close { position: static; transform: none; }
+.nt-tabs { display: flex; margin: 0 18px 6px; }
+.nt-tabs button { flex: 1; padding: 7px 10px; }
+.nt-scroll { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; padding: 0 12px 8px; overscroll-behavior: contain; }
+.nt-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 18px; border-top: .5px solid var(--sep); }
+.nt-all-read { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; color: var(--label); }
+.nt-all-read svg { width: 18px; height: 18px; }
+.nt-empty { text-align: center; color: var(--label-2); margin: 36px 0; }
+.nt-day { display: flex; align-items: center; gap: 8px; margin: 14px 6px 8px; font-size: 14px; color: var(--label-2); }
+.nt-count { display: inline-grid; place-items: center; min-width: 24px; height: 22px; padding: 0 7px; border-radius: 7px; background: var(--fill); color: var(--label); font-size: 12px; font-weight: 600; }
+.nt-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.nt-item { position: relative; border-radius: 14px; background: var(--surface-2); box-shadow: 0 0 0 .5px var(--sep); }
+.nt-item:hover { background: color-mix(in srgb, var(--surface-2) 70%, var(--fill)); }
+.nt-open { display: flex; gap: 12px; padding: 12px 40px 12px 12px; color: var(--label); }
+.nt-avatar { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; overflow: hidden; background: var(--fill); color: var(--label); font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+.nt-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.nt-text { min-width: 0; display: grid; gap: 2px; }
+.nt-line { color: var(--label-2); font-size: 14.5px; line-height: 1.35; }
+.nt-line b { color: var(--label); font-weight: 600; }
+.nt-when { font-size: 12.5px; color: var(--label-3); }
+.nt-body { margin-top: 6px; background: var(--fill); border-radius: 10px; padding: 8px 11px; font-size: 14px; line-height: 1.4; color: var(--label); white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.nt-files { font-size: 13px; color: var(--label-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nt-dot { position: absolute; top: 16px; right: 14px; width: 9px; height: 9px; border-radius: 50%; background: var(--blue); }
+.nt-act { position: absolute; bottom: 8px; right: 8px; display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 8px; background: none; color: var(--label-3); cursor: pointer; padding: 0; }
+.nt-act:hover { background: var(--fill); color: var(--label); }
+.nt-act svg { width: 17px; height: 17px; }
+.nt-restore { width: auto; padding: 0 8px; font-size: 12.5px; font-weight: 600; color: var(--accent); }
+@media (hover: hover) { .nt-act:not(.nt-restore) { opacity: 0; transition: opacity .15s; } .nt-item:hover .nt-act, .nt-act:focus-visible { opacity: 1; } }
+.nt-page-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.nt-page .nt-tabs { margin: 0; min-width: 280px; }
+.nt-page .nt-item { background: var(--surface); }
+.note-approval .copy { color: var(--green); font-weight: 600; }
+.draft-approved { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); }
+.approve-btn { align-self: start; }
+
 /* Instant feedback: a form button while its change saves, and the bar along the top while a page loads. */
 [data-pending] { cursor: progress; animation: pending-pulse 0.9s ease-in-out infinite; }
 .btn[data-pending]:disabled { opacity: 1; }
