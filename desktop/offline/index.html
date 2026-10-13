@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Oatcake</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f3e9dc; --ink: #382a25; --soft: #7a6a62; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #382a25; --ink: #f3e9dc; --soft: #bfae9f; } }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 15px -apple-system, BlinkMacSystemFont, sans-serif;
+         display: flex; align-items: center; justify-content: center; text-align: center; -webkit-user-select: none; }
+  .ring { width: 72px; height: 72px; border-radius: 50%; border: 14px solid currentColor; box-sizing: border-box; margin: 0 auto 20px; }
+  .wait .ring { animation: breathe 1.4s ease-in-out infinite; }
+  @keyframes breathe { 50% { opacity: .35; transform: scale(.92); } }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  p { color: var(--soft); margin: 0 0 18px; }
+  button { font: inherit; font-weight: 600; padding: 8px 20px; border-radius: 999px; border: 0; background: var(--ink); color: var(--bg); cursor: pointer; }
+  .wait h1, .wait p, .wait button { display: none; }
+</style>
+</head>
+<body class="wait">
+<!-- The app opens here first, then goes straight to oatcake.xyz. If the Mac is offline it says so
+     and tries again as soon as the connection is back. -->
+<main>
+  <div class="ring"></div>
+  <h1>You're offline</h1>
+  <p>Oatcake will open as soon as you're back online.</p>
+  <button onclick="go()">Try again</button>
+</main>
+<script>
+  var SITE = "https://oatcake.xyz/";
+  function go() {
+    document.body.className = "wait";
+    if (!navigator.onLine) return (document.body.className = "");
+    fetch(SITE, { mode: "no-cors", cache: "no-store" })
+      .then(function () { location.replace(SITE); })
+      .catch(function () { document.body.className = ""; });
+  }
+  window.addEventListener("online", go);
+  go();
+</script>
+</body>
+</html>

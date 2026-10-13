@@ -1,0 +1,34 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Oatcake",
+  "version": "1.0.0",
+  "identifier": "xyz.oatcake.desktop",
+  "build": {
+    "frontendDist": "../offline"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": null
+    },
+    "macOSPrivateApi": false
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["dmg", "app"],
+    "category": "Productivity",
+    "shortDescription": "Oatcake",
+    "copyright": "Oatcake",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "signingIdentity": "-"
+    }
+  }
+}
