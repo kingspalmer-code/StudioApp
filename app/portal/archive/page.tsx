@@ -7,11 +7,14 @@ import { asClient, requireMember } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
 
 // Every finished project for this business as a gallery, newest first, to look back on or download again.
-export default async function ArchivePage({ searchParams }: { searchParams: Promise<{ year?: string; type?: string }> }) {
-  const { year, type } = await searchParams;
+export default async function ArchivePage({ searchParams }: { searchParams: Promise<{ year?: string; type?: string; business?: string }> }) {
+  const { year, type, business } = await searchParams;
   const { supabase, member, ctx, shell } = asClient(await requireMember());
   if (member.role !== "client") redirect("/");
-  const { data } = await supabase.from("tickets").select("*").eq("business_id", member.business_id).returns<Ticket[]>();
+  // A client with several businesses sees them all, or just the one they picked on the portal.
+  const mine = member.business_ids ?? [];
+  const ids = business && mine.includes(business) ? [business] : mine;
+  const { data } = await supabase.from("tickets").select("*").in("business_id", ids).returns<Ticket[]>();
   const finished = (data ?? [])
     .filter((t) => isDone(t, ctx))
     .map((t) => ({ ...t, when: t.delivered_at ?? t.deadline }))
@@ -24,6 +27,7 @@ export default async function ArchivePage({ searchParams }: { searchParams: Prom
     const q = new URLSearchParams();
     if (y) q.set("year", y);
     if (ty) q.set("type", ty);
+    if (ids.length === 1 && mine.length > 1) q.set("business", ids[0]);
     return `/portal/archive${q.size ? `?${q}` : ""}`;
   };
 

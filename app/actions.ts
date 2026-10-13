@@ -79,6 +79,11 @@ export async function addMember(_prev: AddState, formData: FormData): Promise<Ad
   if (role === "client" && !business_id) return { error: "Choose which business they work for." };
   const { error } = await supabase.from("members").upsert({ email, full_name, role, business_id });
   if (error) return { error: `Couldn't save: ${error.message}` };
+  if (role === "client") {
+    const also = formData.getAll("also").map(String).filter((id) => id && id !== business_id);
+    const saved = await saveOtherBusinesses(supabase, email, also);
+    if (saved) return { error: `Added, but couldn't save their other businesses: ${saved}` };
+  }
   revalidatePath("/people");
   const failed = await emailInvite(email, member.full_name || workspace.owner_name || workspace.name, workspace.name);
   return failed
@@ -100,6 +105,23 @@ export async function removeMember(email: string) {
   if (email === member.email) return;
   await supabase.from("members").delete().eq("email", email);
   revalidatePath("/people");
+}
+
+// The other businesses a client can request work for, besides their main one.
+export async function setOtherBusinesses(email: string, formData: FormData) {
+  const { supabase } = await requireEditor(["designer"]);
+  const { data: found } = await supabase.from("members").select("business_id").eq("email", email).maybeSingle<{ business_id: string | null }>();
+  if (!found) return;
+  await saveOtherBusinesses(supabase, email, formData.getAll("also").map(String).filter((id) => id && id !== found.business_id));
+  revalidatePath("/people");
+}
+
+async function saveOtherBusinesses(supabase: Awaited<ReturnType<typeof createClient>>, email: string, ids: string[]) {
+  const { error } = await supabase.from("member_businesses").delete().eq("email", email);
+  if (error) return error.message;
+  if (!ids.length) return null;
+  const { error: addError } = await supabase.from("member_businesses").insert([...new Set(ids)].map((business_id) => ({ email, business_id })));
+  return addError?.message ?? null;
 }
 
 // See the request pages exactly as one client sees them, read-only, until "Exit preview".

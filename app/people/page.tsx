@@ -1,6 +1,6 @@
 import BizBadge from "@/components/BizBadge";
 import Shell from "@/components/Shell";
-import { removeMember, startPreview } from "@/app/actions";
+import { removeMember, setOtherBusinesses, startPreview } from "@/app/actions";
 import { requireMember } from "@/lib/session";
 import type { Member } from "@/lib/types";
 import AddMember from "./AddMember";
@@ -10,17 +10,21 @@ const ROLE_LABEL = { designer: "Designer", manager: "Manager", client: "Client" 
 
 export default async function PeoplePage() {
   const { supabase, member, businesses, shell } = await requireMember(["designer"]);
-  const [{ data }, { data: signedIn }] = await Promise.all([
+  const [{ data }, { data: signedIn }, { data: links }] = await Promise.all([
     supabase.from("members").select("*").order("role").order("email").returns<Member[]>(),
     supabase.rpc("members_signed_in"),
+    supabase.from("member_businesses").select("email, business_id").returns<{ email: string; business_id: string }[]>(),
   ]);
+  // Clients who can also request work for other businesses.
+  const others: Record<string, string[]> = {};
+  for (const l of links ?? []) (others[l.email] ??= []).push(l.business_id);
   const hasSignedIn = new Set((signedIn as string[] | null) ?? []);
   const byId = Object.fromEntries(businesses.map((b) => [b.id, b]));
 
   return (
     <Shell {...shell}>
       <h1 className="large">People</h1>
-      <p className="sub">Only people listed here can get in. Clients see their own business's requests; managers see the overview. Anyone who hasn't signed in yet can be sent an invite.</p>
+      <p className="sub">Only people listed here can get in. Clients see their own business's requests (or several, if you give them more than one); managers see the overview. Anyone who hasn't signed in yet can be sent an invite.</p>
       {businesses.length > 0 && (
         <form action={startPreview} className="preview-switch preview-start">
           <span className="when">See the request pages as a client sees them:</span>
@@ -36,6 +40,7 @@ export default async function PeoplePage() {
           <div className="group">
             {(data ?? []).map((m) => {
               const b = m.business_id ? byId[m.business_id] : undefined;
+              const also = m.role === "client" ? (others[m.email] ?? []).filter((id) => id !== m.business_id && byId[id]) : [];
               return (
                 <div className="row person-row" key={m.email}>
                   {b ? <BizBadge biz={b} /> : <span className="badge" style={{ width: 28, height: 28, background: "var(--fill)" }} />}
@@ -43,8 +48,22 @@ export default async function PeoplePage() {
                     <div style={{ fontWeight: 600 }}>{m.full_name || m.email}</div>
                     <div className="when">
                       {m.email} · {ROLE_LABEL[m.role]}{b ? ` · ${b.name}` : ""}
+                      {also.length > 0 && ` + ${also.map((id) => byId[id].name).join(", ")}`}
                       {!hasSignedIn.has(m.email) && " · Not signed in yet"}
                     </div>
+                    {m.role === "client" && businesses.length > 1 && (
+                      <details className="also-for">
+                        <summary className="link">Can also request for…</summary>
+                        <form action={setOtherBusinesses.bind(null, m.email)}>
+                          {businesses.filter((x) => x.id !== m.business_id).map((x) => (
+                            <label key={x.id} className="also-opt">
+                              <input type="checkbox" name="also" value={x.id} defaultChecked={also.includes(x.id)} /> {x.name}
+                            </label>
+                          ))}
+                          <button className="btn" type="submit">Save</button>
+                        </form>
+                      </details>
+                    )}
                   </div>
                   {m.email !== member.email && (
                     <span className="person-actions">

@@ -26,6 +26,8 @@ export type Member = {
   full_name: string;
   role: Role;
   business_id: string | null;
+  // A client's businesses (main one first); only filled in for the signed-in member.
+  business_ids?: string[];
 };
 
 export type Ticket = {
