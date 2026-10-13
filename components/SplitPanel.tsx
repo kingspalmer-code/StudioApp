@@ -13,6 +13,52 @@ const KEEP = 5; // frames kept loaded at most
 const STALE = 2 * 60_000; // a hidden frame older than this is dropped, so it's loaded fresh next time
 
 // src stays what the frame was first given; id follows the job it shows now (links inside can move it on).
+const MIN_W = 380; // narrowest the panel drags to
+const QUEUE_MIN = 460; // room always left for the queue beside it
+
+// How wide you last dragged the panel, kept on this computer; double-click the edge to reset.
+function setWidth(w: number | null) {
+  const root = document.documentElement;
+  if (w === null) return root.style.removeProperty("--split-w");
+  const rail = parseInt(getComputedStyle(root).getPropertyValue("--rail-w")) || 68;
+  root.style.setProperty("--split-w", `${Math.round(Math.max(MIN_W, Math.min(window.innerWidth - rail - QUEUE_MIN, w)))}px`);
+}
+function savedWidth() {
+  try { return Number(localStorage.getItem("split_w")) || null; } catch { return null; }
+}
+function saveWidth(w: number | null) {
+  try { if (w === null) localStorage.removeItem("split_w"); else localStorage.setItem("split_w", String(w)); } catch {}
+}
+
+function SplitGrip() {
+  const start = useRef<{ x: number; w: number } | null>(null);
+  const panelW = () => document.querySelector(".split-panel")?.getBoundingClientRect().width ?? 560;
+  return (
+    <div
+      className="split-grip"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Drag to resize the panel"
+      title="Drag to resize, or double-click to reset"
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        start.current = { x: e.clientX, w: panelW() };
+        document.documentElement.classList.add("split-dragging");
+      }}
+      onPointerMove={(e) => start.current && setWidth(start.current.w - (e.clientX - start.current.x))}
+      onPointerUp={() => {
+        if (!start.current) return;
+        start.current = null;
+        document.documentElement.classList.remove("split-dragging");
+        saveWidth(Math.round(panelW()));
+      }}
+      onPointerCancel={() => { start.current = null; document.documentElement.classList.remove("split-dragging"); }}
+      onDoubleClick={() => { setWidth(null); saveWidth(null); }}
+    />
+  );
+}
+
 type Frame = { slot: number; id: number; src: string; loaded: boolean; at: number };
 let slots = 0;
 
@@ -38,6 +84,8 @@ export default function SplitPanel({
     const mq = window.matchMedia(SPLIT_QUERY);
     const fit = () => setWide(mq.matches);
     fit();
+    const w = savedWidth();
+    if (w) setWidth(w);
     mq.addEventListener("change", fit);
     return () => mq.removeEventListener("change", fit);
   }, []);
@@ -111,6 +159,7 @@ export default function SplitPanel({
 
   return (
     <aside className={openId === null ? "split-panel" : "split-panel on"} aria-label="Job" aria-hidden={openId === null}>
+      {openId !== null && <SplitGrip />}
       {openId !== null && (
         <div className="split-head">
           <button type="button" className="split-btn" onClick={close} aria-label="Close" title="Close (Esc)">
