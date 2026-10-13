@@ -39,10 +39,14 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
       ? supabase.from("documents").select("*").eq("ticket_id", id).order("created_at")
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
   ]);
-  const [{ data: deliveryRows }, { data: draftRows }] = await Promise.all([
+  const [{ data: deliveryRows }, { data: draftRows }, { data: links }] = await Promise.all([
     supabase.from("ticket_deliveries").select("*").eq("ticket_id", id).order("created_at").returns<Delivery[]>(),
     supabase.from("ticket_drafts").select("*").eq("ticket_id", id).order("created_at").returns<Draft[]>(),
+    // The job this one follows on from, and any follow-ups sent from it.
+    supabase.from("tickets").select("id, title, follows").or(`follows.eq.${id}${t.follows ? `,id.eq.${t.follows}` : ""}`).order("created_at").returns<Pick<Ticket, "id" | "title" | "follows">[]>(),
   ]);
+  const followsFrom = (links ?? []).find((x) => x.id === t.follows);
+  const followUps = (links ?? []).filter((x) => x.follows === id);
   const drafts = draftRows ?? [];
   const { data: draftFileRows } = drafts.length
     ? await supabase.from("ticket_draft_files").select("*").in("draft_id", drafts.map((d) => d.id)).order("created_at").returns<DraftFile[]>()
@@ -55,13 +59,17 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
 
   const biz = businesses.find((b) => b.id === t.business_id);
   const isDesigner = member.role === "designer";
-  // Clients keep adding notes after sending a request; so can a manager, on a request they sent.
-  const canNote = member.role !== "manager" || t.created_by === member.email;
+  const done = isDone(t, ctx);
+  // Clients keep adding notes after sending a request. A manager can on a request they sent, and
+  // can reply on a finished job for a business they're linked to.
+  const linked = (member.business_ids ?? []).includes(t.business_id);
+  const canNote = member.role !== "manager" || t.created_by === member.email || (done && linked && !viewing);
+  // On a finished job, the client (or a linked manager) can ask for a follow-up request from here.
+  const canFollowUp = done && !trade && !viewing && member.role !== "designer" && linked;
   // The studio and the client can add files after a job's sent (an invoice, a forgotten photo);
   // so can a manager, on a request they sent.
-  const canAddFiles = canNote && !viewing;
+  const canAddFiles = (member.role !== "manager" || t.created_by === member.email) && !viewing;
   const sb = startLabel(startBy(t, ctx));
-  const done = isDone(t, ctx);
   const review = reviewStage(ctx);
   const owner = workspace.owner_name || "the studio";
   // Show every field that has something in it, even ones since hidden from the form, so nothing saved is lost.
@@ -174,6 +182,19 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           {!done && member.role !== "client" && <span className={`when ${sb.tone}`}>{sb.text}</span>}
           {t.pinned && <span className="when">📌 Pinned</span>}
         </div>
+        {followsFrom && (
+          <p className="when follow-link">Follows on from <Link href={`/tickets/${followsFrom.id}`}>{followsFrom.title}</Link></p>
+        )}
+
+        {canFollowUp && (
+          <div className="notice follow-up">
+            <span>Need changes or something more?</span>
+            <span className="follow-up-actions">
+              <a className="btn plain small" href="#notes">Reply with a note</a>
+              <Link className="btn small" href={`/portal?follow=${t.id}`}>Ask for a follow-up</Link>
+            </span>
+          </div>
+        )}
 
         {isDesigner && (
           <>
@@ -305,11 +326,22 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           </>
         )}
 
-        <p className="eyebrow">Notes</p>
+        {followUps.length > 0 && (
+          <>
+            <p className="eyebrow">Follow-ups</p>
+            <div className="group">
+              {followUps.map((f) => (
+                <Link key={f.id} href={`/tickets/${f.id}`} className="row nav-row"><div className="ctl">{f.title}</div></Link>
+              ))}
+            </div>
+          </>
+        )}
+
+        <p className="eyebrow" id="notes">Notes</p>
         <div className="group">
           {jobNotes.map(noteRow)}
           {!jobNotes.length && !canNote && <div className="empty">No notes yet.</div>}
-          {canNote && noteForm(trade ? "Add a note…" : isDesigner ? "Message the client…" : `Add more to your request, or reply to ${owner}…`)}
+          {canNote && noteForm(trade ? "Add a note…" : isDesigner ? "Message the client…" : member.role === "manager" && t.created_by !== member.email ? `Reply to ${owner}…` : `Add more to your request, or reply to ${owner}…`)}
         </div>
 
         {/* Out of the way at the bottom, so it's never tapped by mistake next to everyday buttons. */}

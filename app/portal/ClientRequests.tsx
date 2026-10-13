@@ -45,13 +45,14 @@ export default function ClientRequests({ startOpen, form }: { startOpen: boolean
             style={{ overflow: "hidden" }}
           >
             <div className="request-drawer-head" data-tour="new-request">
-              <b>New request</b>
+              <b>{form.followUp && !round ? "Follow-up request" : "New request"}</b>
               {!startOpen || round > 0 ? (
                 <button type="button" className="link" onClick={() => setOpen(false)}>Cancel</button>
               ) : null}
             </div>
             <NewRequestForm
               {...form}
+              followUp={round ? undefined : form.followUp}
               onSent={(message) => {
                 setSent(message);
                 setOpen(false);

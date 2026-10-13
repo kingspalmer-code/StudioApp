@@ -770,6 +770,9 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 .note-form { align-items: flex-end; }
 .note-form textarea { min-height: 44px; }
 .draft-flag { color: var(--accent); font-weight: 600; }
+.follow-link { margin: 10px 0 0; }
+.follow-up { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; }
+.follow-up-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
 /* Brief helper on requests */
 .brief-help { margin: 14px 0 4px; }
