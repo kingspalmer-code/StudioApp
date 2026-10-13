@@ -755,6 +755,18 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 .deliv-add { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
 .deliv-link { margin-top: 12px; }
 .group + .deliveries { margin-top: 12px; }
+.drafts { display: grid; gap: 22px; }
+.draft { display: grid; gap: 12px; padding-top: 18px; border-top: .5px solid var(--sep); }
+.drafts > :first-child.draft { padding-top: 0; border-top: 0; }
+.draft-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.draft-head b { font-size: 16px; }
+.draft-final { background: var(--fill); color: var(--accent); }
+.draft .deliv-grid { margin-bottom: 0; }
+.draft-actions { display: flex; align-items: center; justify-content: flex-end; gap: 16px; margin-top: 12px; }
+.draft .draft-actions { margin-top: 0; }
+.note-form { align-items: flex-end; }
+.note-form textarea { min-height: 44px; }
+.draft-flag { color: var(--accent); font-weight: 600; }
 
 /* Brief helper on requests */
 .brief-help { margin: 14px 0 4px; }

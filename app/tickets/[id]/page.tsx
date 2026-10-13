@@ -10,12 +10,14 @@ import { asClient, requireMember } from "@/lib/session";
 import type { Note, Ticket, TicketFile } from "@/lib/types";
 import DeleteTicket from "./DeleteTicket";
 import AddFiles from "./AddFiles";
+import NewDraft from "./NewDraft";
+import DraftActions from "./DraftActions";
 import Link from "next/link";
 import { createDocument } from "@/app/documents/actions";
 import { docName, gbp, STATUS_LABEL } from "@/lib/documents";
 import { asDoc } from "@/lib/docs-server";
 import Deliveries from "@/components/Deliveries";
-import { signDeliveries, type Delivery } from "@/lib/deliveries";
+import { signDeliveries, type Delivery, type Draft, type DraftFile } from "@/lib/deliveries";
 
 const IMAGE = /\.(png|jpe?g|gif|webp|svg)$/i;
 
@@ -37,8 +39,15 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
       ? supabase.from("documents").select("*").eq("ticket_id", id).order("created_at")
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
   ]);
-  const { data: deliveryRows } = await supabase.from("ticket_deliveries").select("*").eq("ticket_id", id).order("created_at").returns<Delivery[]>();
-  const delivered = await signDeliveries(supabase, deliveryRows ?? []);
+  const [{ data: deliveryRows }, { data: draftRows }] = await Promise.all([
+    supabase.from("ticket_deliveries").select("*").eq("ticket_id", id).order("created_at").returns<Delivery[]>(),
+    supabase.from("ticket_drafts").select("*").eq("ticket_id", id).order("created_at").returns<Draft[]>(),
+  ]);
+  const drafts = draftRows ?? [];
+  const { data: draftFileRows } = drafts.length
+    ? await supabase.from("ticket_draft_files").select("*").in("draft_id", drafts.map((d) => d.id)).order("created_at").returns<DraftFile[]>()
+    : { data: [] as DraftFile[] };
+  const [delivered, draftFiles] = await Promise.all([signDeliveries(supabase, deliveryRows ?? []), signDeliveries(supabase, draftFileRows ?? [])]);
   const docs = (docRows ?? []).map(asDoc);
   const signed = files?.length
     ? (await supabase.storage.from("inspiration").createSignedUrls(files.map((f) => f.path), 3600)).data ?? []
@@ -46,10 +55,11 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
 
   const biz = businesses.find((b) => b.id === t.business_id);
   const isDesigner = member.role === "designer";
-  const canNote = member.role !== "manager";
+  // Clients keep adding notes after sending a request; so can a manager, on a request they sent.
+  const canNote = member.role !== "manager" || t.created_by === member.email;
   // The studio and the client can add files after a job's sent (an invoice, a forgotten photo);
   // so can a manager, on a request they sent.
-  const canAddFiles = (canNote || t.created_by === member.email) && !viewing;
+  const canAddFiles = canNote && !viewing;
   const sb = startLabel(startBy(t, ctx));
   const done = isDone(t, ctx);
   const owner = workspace.owner_name || "the studio";
@@ -94,6 +104,61 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
     </>
   );
 
+  const jobNotes = (notes ?? []).filter((n) => !n.draft_id);
+  const noteRow = (n: Note) => (
+    <div className="row stack" key={n.id}>
+      <span className="k">{n.author_name || n.author_email} · {formatDate(n.created_at)}</span>
+      <div className="copy">{n.body}</div>
+    </div>
+  );
+  const noteForm = (placeholder: string, draftId?: number) => (
+    <form action={addNote.bind(null, t.id)} className="row note-form">
+      {draftId && <input type="hidden" name="draft" value={draftId} />}
+      <div className="ctl">
+        <textarea name="body" required aria-label="Note" placeholder={placeholder} />
+      </div>
+      <button className="link" type="submit">Send</button>
+    </form>
+  );
+
+  // Drafts the studio shares for notes before the final files. They sit near the top while one's
+  // waiting on notes, and below the files once the job's done. Newest first.
+  const final = ctx.stages[ctx.stages.length - 1];
+  const draftsUp = !done && drafts.some((d) => !d.final_at);
+  const draftSection = (drafts.length > 0 || (isDesigner && !viewing && !trade)) && (
+    <>
+      <p className="eyebrow">Drafts</p>
+      <div className="drafts">
+        {isDesigner && !viewing && (
+          <NewDraft ticketId={t.id} businessId={t.business_id} round={drafts.length + 1} clientName={biz?.name ?? `the ${terms.client}`} />
+        )}
+        {drafts.map((d, i) => ({ d, round: i + 1 })).reverse().map(({ d, round }) => {
+          const said = (notes ?? []).filter((n) => n.draft_id === d.id);
+          return (
+            <section className="draft" key={d.id} aria-label={`Draft ${round}`}>
+              <div className="draft-head">
+                <b>Draft {round}</b>
+                <span className="when">{formatDate(d.created_at)}</span>
+                {d.final_at && <span className="chip draft-final">Sent as final</span>}
+              </div>
+              {d.message && <div className="copy">{d.message}</div>}
+              <Deliveries ticketId={t.id} businessId={t.business_id} files={draftFiles.filter((f) => f.draft_id === d.id)} canEdit={false} clientName="" />
+              {(said.length > 0 || canNote) && (
+                <div className="group">
+                  {said.map(noteRow)}
+                  {canNote && noteForm(isDesigner ? "Reply about this draft…" : "Leave notes on this draft…", d.id)}
+                </div>
+              )}
+              {isDesigner && !viewing && (
+                <DraftActions ticketId={t.id} draftId={d.id} round={round} finalLabel={d.final_at ? "" : final?.label ?? "Done"} noun={terms.job} />
+              )}
+            </section>
+          );
+        })}
+      </div>
+    </>
+  );
+
   return (
     <Shell {...shell}>
       <div style={{ maxWidth: 720 }}>
@@ -128,6 +193,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
         )}
 
         {deliveriesUp && deliveries}
+        {draftsUp && draftSection}
 
         <p className="eyebrow">Details</p>
         <div className="group">
@@ -171,6 +237,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           </>
         )}
 
+        {!draftsUp && draftSection}
         {!deliveriesUp && deliveries}
 
         {isDesigner && (
@@ -226,21 +293,9 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
 
         <p className="eyebrow">Notes</p>
         <div className="group">
-          {(notes ?? []).map((n) => (
-            <div className="row stack" key={n.id}>
-              <span className="k">{n.author_name || n.author_email} · {formatDate(n.created_at)}</span>
-              <div className="copy">{n.body}</div>
-            </div>
-          ))}
-          {!notes?.length && !canNote && <div className="empty">No notes yet.</div>}
-          {canNote && (
-            <form action={addNote.bind(null, t.id)} className="row">
-              <div className="ctl">
-                <input name="body" required aria-label="Note" placeholder={trade ? "Add a note…" : isDesigner ? "Message the client…" : `Reply to ${owner}…`} />
-              </div>
-              <button className="link" type="submit">Send</button>
-            </form>
-          )}
+          {jobNotes.map(noteRow)}
+          {!jobNotes.length && !canNote && <div className="empty">No notes yet.</div>}
+          {canNote && noteForm(trade ? "Add a note…" : isDesigner ? "Message the client…" : `Add more to your request, or reply to ${owner}…`)}
         </div>
 
         {/* Out of the way at the bottom, so it's never tapped by mistake next to everyday buttons. */}

@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { requireEditor } from "@/lib/session";
 import { createClient, PREVIEW_COOKIE } from "@/lib/supabase/server";
 import { appliesTo, readFields, type JobField } from "@/lib/fields";
 import { emailInvite } from "@/lib/invite";
+import { alertNewNote } from "@/app/portal/actions";
 import type { Role, Status } from "@/lib/types";
 
 export async function signOut() {
@@ -76,11 +78,19 @@ export async function deleteTickets(ids: number[]) {
   revalidatePath("/", "layout");
 }
 
+// A note on a job, or on one of its drafts (the form's "draft" field). Clients, and managers on the
+// requests they sent, can keep adding notes after sending; the studio gets a phone alert for those.
 export async function addNote(id: number, formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return;
-  const { supabase, member } = await requireEditor(["designer", "client"]);
-  await supabase.from("ticket_notes").insert({ ticket_id: id, body, author_name: member.full_name || member.email });
+  const draft_id = Number(formData.get("draft")) || null;
+  const { supabase, member } = await requireEditor(["designer", "client", "manager"]);
+  const { data } = await supabase
+    .from("ticket_notes")
+    .insert({ ticket_id: id, body, author_name: member.full_name || member.email, draft_id })
+    .select("id")
+    .maybeSingle<{ id: number }>();
+  if (data && member.role !== "designer") after(() => alertNewNote(data.id).catch(() => {}));
   revalidatePath(`/tickets/${id}`);
 }
 

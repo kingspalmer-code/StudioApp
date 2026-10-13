@@ -11,6 +11,7 @@ export default function TicketRow({
   rank,
   showBusiness = true,
   select,
+  draft,
 }: {
   t: Ticket;
   biz?: Business;
@@ -19,6 +20,8 @@ export default function TicketRow({
   showBusiness?: boolean;
   // In Select mode the row ticks a box instead of opening the job.
   select?: { checked: boolean; onToggle: () => void };
+  // A draft is waiting on the client's notes.
+  draft?: boolean;
 }) {
   const done = isDone(t, ctx);
   const sb = startLabel(startBy(t, ctx));
@@ -33,6 +36,7 @@ export default function TicketRow({
           {showBusiness && biz ? `${biz.name} · ` : ""}
           {t.type} · {done ? `Due ${formatDate(t.deadline)}` : dueLabel(t.deadline)}
           {t.priority !== "Standard" && <span className={`pri-${t.priority}`}> · {t.priority}</span>}
+          {draft && <span className="draft-flag"> · Draft to look at</span>}
         </span>
       </span>
       <span className="side">
