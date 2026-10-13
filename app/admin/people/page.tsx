@@ -3,7 +3,7 @@ import Shell from "@/components/Shell";
 import { duration, list, nextStep, requireAdmin, since, STEPS, type Person } from "@/lib/admin";
 import AdminNav from "../AdminNav";
 
-const ROLE: Record<string, string> = { designer: "Owner", manager: "Manager", client: "Client" };
+const ROLE: Record<string, string> = { designer: "Owner", manager: "Manager", client: "Client", staff: "Employee" };
 
 // Everyone who has signed up, newest first, with how far they've got and how much they use Oatcake.
 export default async function AdminPeople() {

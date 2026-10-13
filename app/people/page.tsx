@@ -8,7 +8,7 @@ import AddMember from "./AddMember";
 import InviteButton from "./InviteButton";
 import Submit from "@/components/Submit";
 
-const ROLE_LABEL = { designer: "Designer", manager: "Manager", client: "Client" };
+const ROLE_LABEL = { designer: "Designer", manager: "Manager", client: "Client", staff: "Employee" };
 
 export default async function PeoplePage() {
   const { supabase, member, businesses, workspace, shell } = await requireMember(["designer"]);
