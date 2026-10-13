@@ -39,8 +39,8 @@ export async function requireMember(roles?: Role[]) {
     supabase.from("job_types").select("*").order("position").order("id").returns<JobType[]>(),
     supabase.rpc("is_platform_admin"),
     supabase.from("support_tickets").select("updated_at, user_seen_at").eq("user_id", user.id).eq("last_from", "oatcake").neq("status", "solved"),
-    // Every business a client can request work for: their main one first, then any others.
-    member.role === "client" ? supabase.rpc("my_businesses") : Promise.resolve({ data: [] as string[] }),
+    // Every business a client (or manager) can request work for: a client's main one first, then any others.
+    member.role !== "designer" ? supabase.rpc("my_businesses") : Promise.resolve({ data: [] as string[] }),
   ]);
   const extra = ((mine as string[] | null) ?? []).filter((id) => id !== member.business_id);
   member.business_ids = member.business_id ? [member.business_id, ...extra] : extra;

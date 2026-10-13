@@ -24,7 +24,7 @@ export default async function PeoplePage() {
   return (
     <Shell {...shell}>
       <h1 className="large">People</h1>
-      <p className="sub">Only people listed here can get in. Clients see their own business's requests (or several, if you give them more than one); managers see the overview. Anyone who hasn't signed in yet can be sent an invite.</p>
+      <p className="sub">Only people listed here can get in. Clients see their own business's requests (or several, if you give them more than one); managers see the overview, and can send requests for any businesses you tick. Anyone who hasn't signed in yet can be sent an invite.</p>
       {businesses.length > 0 && (
         <form action={startPreview} className="preview-switch preview-start">
           <span className="when">See the request pages as a client sees them:</span>
@@ -40,7 +40,7 @@ export default async function PeoplePage() {
           <div className="group">
             {(data ?? []).map((m) => {
               const b = m.business_id ? byId[m.business_id] : undefined;
-              const also = m.role === "client" ? (others[m.email] ?? []).filter((id) => id !== m.business_id && byId[id]) : [];
+              const also = m.role !== "designer" ? (others[m.email] ?? []).filter((id) => id !== m.business_id && byId[id]) : [];
               return (
                 <div className="row person-row" key={m.email}>
                   {b ? <BizBadge biz={b} /> : <span className="badge" style={{ width: 28, height: 28, background: "var(--fill)" }} />}
@@ -51,9 +51,9 @@ export default async function PeoplePage() {
                       {also.length > 0 && ` + ${also.map((id) => byId[id].name).join(", ")}`}
                       {!hasSignedIn.has(m.email) && " · Not signed in yet"}
                     </div>
-                    {m.role === "client" && businesses.length > 1 && (
+                    {(m.role === "manager" || (m.role === "client" && businesses.length > 1)) && (
                       <details className="also-for">
-                        <summary className="link">Can also request for…</summary>
+                        <summary className="link">{m.role === "manager" ? "Can send requests for…" : "Can also request for…"}</summary>
                         <form action={setOtherBusinesses.bind(null, m.email)}>
                           {businesses.filter((x) => x.id !== m.business_id).map((x) => (
                             <label key={x.id} className="also-opt">

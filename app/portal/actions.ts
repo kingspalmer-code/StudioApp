@@ -48,7 +48,7 @@ export async function helpWithBrief(idea: string, type: string): Promise<{ help?
   const text = idea.trim().slice(0, 1500);
   if (text.length < 4) return { error: "Say a few words about what you need first." };
   if (!process.env.ANTHROPIC_API_KEY) return { error: "Brief help isn't switched on yet." };
-  const { supabase, workspace } = await requireEditor(["client", "designer"]);
+  const { supabase, workspace } = await requireEditor(["client", "designer", "manager"]);
   const { error: limit } = await supabase.rpc("note_brief_help");
   if (limit) return { error: limit.message };
 
@@ -104,7 +104,7 @@ export async function alertNewRequest(ticketId: number) {
       .eq("id", ticketId)
       .maybeSingle<{ id: number; title: string; type: string; deadline: string; created_by: string; created_at: string; requester_name: string }>(),
   ]);
-  if (me?.role !== "client" || !ticket || ticket.created_by !== email) return;
+  if ((me?.role !== "client" && me?.role !== "manager") || !ticket || ticket.created_by !== email) return;
   if (Date.now() - Date.parse(ticket.created_at) > 15 * 60_000) return;
   if (!(await firstTime("new_request", String(ticket.id)))) return;
 
@@ -145,7 +145,7 @@ export async function alertNewFiles(ticketId: number) {
       .order("id", { ascending: false })
       .returns<{ id: number; name: string }[]>(),
   ]);
-  if (me?.role !== "client" || !ticket || !files?.length) return;
+  if ((me?.role !== "client" && me?.role !== "manager") || !ticket || !files?.length) return;
   if (!(await firstTime("new_files", `${ticket.id}:${files[0].id}`))) return;
 
   const [info] = (await pushRpc<{ business: string; emails: string[] }[]>("push_request_info", { p_ticket: ticket.id })) ?? [];

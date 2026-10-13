@@ -97,7 +97,7 @@ export async function addMember(_prev: AddState, formData: FormData): Promise<Ad
   if (role === "client" && !business_id) return { error: "Choose which business they work for." };
   const { error } = await supabase.from("members").upsert({ email, full_name, role, business_id });
   if (error) return { error: `Couldn't save: ${error.message}` };
-  if (role === "client") {
+  if (role === "client" || role === "manager") {
     const also = formData.getAll("also").map(String).filter((id) => id && id !== business_id);
     const saved = await saveOtherBusinesses(supabase, email, also);
     if (saved) return { error: `Added, but couldn't save their other businesses: ${saved}` };
