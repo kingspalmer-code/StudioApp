@@ -41,7 +41,7 @@ export async function setStatus(id: number, status: Status) {
         : { data: [] };
     await logEvents(supabase, moving, moment ?? "stage", { stage: status, draft_id: latest?.id, files: (files ?? []).map((f) => f.name), actor: member.full_name || member.email });
   }
-  if (moment && moving.length) after(() => tellRequesters(supabase, moving, { name: workspace.name, replyTo: member.email, terms }, moment).catch(() => {}));
+  if (moment && moving.length) after(() => tellRequesters(supabase, moving, { name: workspace.name, replyTo: member.email, terms, kind: workspace.kind }, moment).catch(() => {}));
   revalidatePath("/", "layout");
 }
 
@@ -89,7 +89,7 @@ export async function deliverTickets(ids: number[]) {
   const finishing = await notYetFinished(supabase, ids, final);
   await supabase.from("tickets").update({ status: final }).in("id", ids);
   await logEvents(supabase, finishing, "finished", { stage: final, actor: member.full_name || member.email });
-  if (finishing.length) after(() => tellRequesters(supabase, finishing, { name: workspace.name, replyTo: member.email, terms }).catch(() => {}));
+  if (finishing.length) after(() => tellRequesters(supabase, finishing, { name: workspace.name, replyTo: member.email, terms, kind: workspace.kind }).catch(() => {}));
   revalidatePath("/", "layout");
 }
 

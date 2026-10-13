@@ -2,27 +2,29 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { headers } from "next/headers";
 import { formatDate } from "@/lib/priority";
 import { firstTime, pushReady, sendAlert } from "@/lib/push";
+import type { WorkspaceKind } from "@/lib/types";
 import type { Terms } from "@/lib/workspace";
+import { tellCustomers } from "@/lib/customers";
 
 // A job reached the last stage, or was sent to the client for review: email the client or manager
 // who sent it, and alert their phone if they've turned alerts on. Only jobs someone sent from their
 // portal count, or ones the studio picked someone to keep updated on (tickets.notify), so other jobs
 // the studio added itself (including imported past work) never email anyone. Each move is sent once.
 
-type Studio = { name: string; replyTo: string; terms: Terms };
+type Studio = { name: string; replyTo: string; terms: Terms; kind?: WorkspaceKind };
 type Job = { id: number; title: string; created_by: string; notify: string | null; delivered_at: string | null; updated_at: string; business_id: string };
 type Person = { email: string; full_name: string; role: string; business_id: string | null };
 export type Moment = "finished" | "review";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-async function origin() {
+export async function origin() {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "oatcake.xyz";
   return `${h.get("x-forwarded-proto") ?? "https"}://${host}`;
 }
 
-async function email(to: string, subject: string, lines: string[], link: string, label: string, from: string, replyTo: string, extra = "") {
+export async function email(to: string, subject: string, lines: string[], link: string, label: string, from: string, replyTo: string, extra = "") {
   const key = process.env.RESEND_API_KEY;
   if (!key) return;
   const html = `<div style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#2a201c;max-width:520px">
@@ -76,6 +78,8 @@ const canSee = (p: Person & { businesses: Set<string> }, businessId: string) => 
 
 export async function tellRequesters(supabase: SupabaseClient, ids: number[], studio: Studio, moment: Moment = "finished") {
   if (!ids.length) return;
+  // Customers don't log in: they hear by email, with a link to their own page.
+  if (studio.kind === "trade") return tellCustomers(supabase, ids, studio, moment);
   const { data: jobs } = await supabase
     .from("tickets")
     .select("id, title, created_by, notify, delivered_at, updated_at, business_id")

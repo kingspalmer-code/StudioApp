@@ -1,3 +1,4 @@
+import SendCustomerLink from "@/components/SendCustomerLink";
 import BizBadge from "@/components/BizBadge";
 import { notFound } from "next/navigation";
 import Shell from "@/components/Shell";
@@ -268,7 +269,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           <div className="row"><span className="k">Type</span><div className="ctl">{t.type}</div></div>
           <div className="row"><span className="k">Needed by</span><div className="ctl">{formatDate(t.deadline)} <span className="when">({dueLabel(t.deadline)})</span></div></div>
           {groups[0] && !groups[0].title && groups[0].fields.map(show)}
-          <div className="row"><span className="k">{trade ? "Added" : "Submitted"}</span><div className="ctl">{formatDate(t.created_at)}{t.requester_name && !shown.has("requester_name") ? ` by ${t.requester_name}` : ""}</div></div>
+          <div className="row"><span className="k">{trade && !t.details?.via_link ? "Added" : "Submitted"}</span><div className="ctl">{formatDate(t.created_at)}{t.requester_name && !shown.has("requester_name") ? ` by ${t.requester_name}` : ""}{t.details?.via_link ? " through your request link" : ""}</div></div>
           {members && keepable.length > 0 && (
             <div className="row"><span className="k">Also tell</span><div className="ctl"><KeptUpdated ticketId={t.id} value={t.notify ?? ""} people={keepable} /></div></div>
           )}
@@ -357,6 +358,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
               {biz.phone && <div className="row"><span className="k">Phone</span><div className="ctl"><a href={`tel:${biz.phone}`}>{biz.phone}</a></div></div>}
               {biz.email && <div className="row"><span className="k">Email</span><div className="ctl"><a href={`mailto:${biz.email}`}>{biz.email}</a></div></div>}
               {biz.address && <div className="row"><span className="k">Address</span><div className="ctl">{biz.address}</div></div>}
+              {workspace.kind === "trade" && biz.email && isDesigner && !viewing && <SendCustomerLink id={biz.id} name={biz.name} />}
             </div>
           </>
         )}

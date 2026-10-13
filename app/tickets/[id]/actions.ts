@@ -35,7 +35,7 @@ export async function sendDraftAsFinal(ticketId: number, draftId: number): Promi
   await supabase.from("tickets").update({ status: finalStage(ctx) }).eq("id", ticketId);
   await logEvents(supabase, finishing, "finished", { stage: finalStage(ctx), draft_id: draftId, files: files.map((f) => f.name), actor: member.full_name || member.email });
   // Tell the person who asked for it, by email and on their phone.
-  if (finishing.length) after(() => tellRequesters(supabase, finishing, { name: workspace.name, replyTo: member.email, terms }).catch(() => {}));
+  if (finishing.length) after(() => tellRequesters(supabase, finishing, { name: workspace.name, replyTo: member.email, terms, kind: workspace.kind }).catch(() => {}));
   revalidatePath("/", "layout");
 }
 
@@ -70,7 +70,7 @@ export async function tellAboutDraft(ticketId: number, draftId: number) {
     await logEvents(supabase, [ticketId], "draft", { draft_id: draftId, files: files.map((f) => f.name), actor: member.full_name || member.email });
     revalidatePath("/", "layout");
   }
-  after(() => tellDraft(supabase, ticketId, draftId, { name: workspace.name, replyTo: member.email, terms }).catch(() => {}));
+  after(() => tellDraft(supabase, ticketId, draftId, { name: workspace.name, replyTo: member.email, terms, kind: workspace.kind }).catch(() => {}));
 }
 
 // Who the studio keeps updated on a job: one of the business's clients or managers, or nobody.

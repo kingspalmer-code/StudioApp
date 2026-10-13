@@ -6,6 +6,7 @@ import { STAGE_COLORS } from "@/lib/priority";
 import { requireEditor } from "@/lib/session";
 import type { WorkspaceKind } from "@/lib/types";
 import { MODES, slugify } from "@/lib/workspace";
+import { sendCustomerLink } from "@/lib/customers";
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const done = () => revalidatePath("/", "layout");
@@ -210,4 +211,35 @@ export async function setWorkMode(kind: WorkspaceKind): Promise<{ error?: string
   if (error) return { error: error.message };
   done();
   return {};
+}
+
+// Customers workspaces: turn the public request link on or off. The link's address comes from the
+// workspace name the first time it's turned on, and stays the same after that.
+export async function setRequestsOpen(open: boolean): Promise<{ error?: string }> {
+  const { supabase, workspace } = await requireEditor(["designer"]);
+  if (workspace.kind !== "trade") return { error: "Request links are for Customers workspaces." };
+  let slug = workspace.request_slug;
+  if (!slug && open) {
+    const base = workspace.name.toLowerCase().replace(/^the\s+/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30) || "jobs";
+    for (const candidate of [base, ...Array.from({ length: 4 }, () => `${base}-${Math.random().toString(36).slice(2, 5)}`)]) {
+      const { error } = await supabase.from("workspaces").update({ request_slug: candidate, requests_open: true }).eq("id", workspace.id);
+      if (!error) { slug = candidate; break; }
+      if (error.code !== "23505") return { error: error.message };
+    }
+    if (!slug) return { error: "Couldn't make a link just now. Try again." };
+  } else {
+    const { error } = await supabase.from("workspaces").update({ requests_open: open }).eq("id", workspace.id);
+    if (error) return { error: error.message };
+  }
+  done();
+  return {};
+}
+
+// Emails a customer the link to their own page, where they can follow all their jobs.
+export async function emailCustomerLink(id: string): Promise<{ error?: string; sent?: string }> {
+  const { supabase, workspace, member, terms } = await requireEditor(["designer"]);
+  const { data: c } = await supabase.from("businesses").select("id, name, email, access_token").eq("id", id).maybeSingle<{ id: string; name: string; email: string; access_token: string }>();
+  if (!c) return { error: "Couldn't find them." };
+  const problem = await sendCustomerLink(c, { name: workspace.name, replyTo: member.email, terms });
+  return problem ? { error: problem } : { sent: c.email };
 }
