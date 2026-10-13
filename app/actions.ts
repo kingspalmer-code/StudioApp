@@ -9,6 +9,8 @@ import { createClient, PREVIEW_COOKIE } from "@/lib/supabase/server";
 import { appliesTo, readFields, type JobField } from "@/lib/fields";
 import { emailInvite } from "@/lib/invite";
 import { alertNewNote } from "@/app/portal/actions";
+import { notYetFinished, tellRequesters } from "@/lib/finished";
+import { finalStage, reviewStage } from "@/lib/priority";
 import type { Role, Status } from "@/lib/types";
 
 export async function signOut() {
@@ -18,9 +20,13 @@ export async function signOut() {
 }
 
 export async function setStatus(id: number, status: Status) {
-  const { supabase, ctx } = await requireEditor(["designer"]);
+  const { supabase, ctx, member, workspace, terms } = await requireEditor(["designer"]);
   if (!ctx.stages.some((s) => s.key === status)) return;
+  // Finishing a job, or sending it to the client to look over, tells the person who asked for it.
+  const moment = status === finalStage(ctx) ? "finished" : status === reviewStage(ctx)?.key ? "review" : null;
+  const moving = moment ? await notYetFinished(supabase, [id], status) : [];
   await supabase.from("tickets").update({ status }).eq("id", id);
+  if (moment && moving.length) after(() => tellRequesters(supabase, moving, { name: workspace.name, replyTo: member.email, terms }, moment).catch(() => {}));
   revalidatePath("/", "layout");
 }
 
@@ -62,10 +68,12 @@ export async function deleteTicket(id: number) {
 
 // Marks several jobs as at the last stage in one go, from the queue's Select mode.
 export async function deliverTickets(ids: number[]) {
-  const { supabase, ctx } = await requireEditor(["designer"]);
+  const { supabase, ctx, member, workspace, terms } = await requireEditor(["designer"]);
   const final = ctx.stages[ctx.stages.length - 1]?.key;
   if (!final || !ids.length) return;
+  const finishing = await notYetFinished(supabase, ids, final);
   await supabase.from("tickets").update({ status: final }).in("id", ids);
+  if (finishing.length) after(() => tellRequesters(supabase, finishing, { name: workspace.name, replyTo: member.email, terms }).catch(() => {}));
   revalidatePath("/", "layout");
 }
 

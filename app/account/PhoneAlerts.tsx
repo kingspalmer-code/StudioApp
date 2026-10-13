@@ -12,9 +12,10 @@ function keyBytes(base64: string) {
   return Uint8Array.from(raw, (c) => c.charCodeAt(0));
 }
 
-// Alerts on this phone or computer: new client requests straight away, and a morning nudge
-// about anything due. iPhones only allow this once Oatcake is on the Home Screen.
-export default function PhoneAlerts({ ready, publicKey, kinds: initial }: { ready: boolean; publicKey: string; kinds: Kinds }) {
+// Alerts on this phone or computer. For the studio: new client requests straight away, and a
+// morning nudge about anything due. For clients and managers: when work they asked for is finished.
+// iPhones only allow this once Oatcake is on the Home Screen.
+export default function PhoneAlerts({ ready, publicKey, kinds: initial, studio }: { ready: boolean; publicKey: string; kinds: Kinds; studio: boolean }) {
   const [state, setState] = useState<State>("checking");
   const [kinds, setKinds] = useState(initial);
   const [busy, setBusy] = useState(false);
@@ -93,7 +94,9 @@ export default function PhoneAlerts({ ready, publicKey, kinds: initial }: { read
 
   const explain: Partial<Record<State, string>> = {
     "home-screen": "On iPhone and iPad, add Oatcake to your Home Screen first: tap the Share button, then Add to Home Screen. Open Oatcake from there and turn alerts on here.",
-    desktop: "The Oatcake app on this Mac shows a notification for each new client request while it's open. Nothing to turn on.",
+    desktop: studio
+      ? "The Oatcake app on this Mac shows a notification for each new client request while it's open. Nothing to turn on."
+      : "Turn alerts on from Oatcake on your phone, or in a web browser.",
     unsupported: "This browser can't show alerts. Try Chrome, Edge, Firefox or Safari.",
     blocked: "Alerts are blocked for Oatcake in this browser's settings. Allow notifications for oatcake.xyz, then come back here.",
   };
@@ -106,7 +109,10 @@ export default function PhoneAlerts({ ready, publicKey, kinds: initial }: { read
           <div className="when">
             {!ready
               ? "Alerts aren't switched on for Oatcake yet."
-              : (explain[state] ?? "A pop-up when a client sends a new request, and a morning nudge about anything due or overdue.")}
+              : (explain[state] ??
+                (studio
+                  ? "A pop-up when a client sends a new request, and a morning nudge about anything due or overdue."
+                  : "A pop-up when work you asked for is finished. You'll get an email too."))}
           </div>
           {note && <div className="when" style={{ marginTop: 4, color: "var(--label)" }}>{note}</div>}
         </div>
@@ -124,20 +130,24 @@ export default function PhoneAlerts({ ready, publicKey, kinds: initial }: { read
       </div>
       {ready && state === "on" && (
         <>
-          <div className="row">
-            <div className="ctl">
-              <div style={{ fontWeight: 600 }}>New client requests</div>
-              <div className="when">As soon as a client sends one from their portal.</div>
-            </div>
-            <input type="checkbox" role="switch" className="switch" checked={kinds.new_requests} onChange={(e) => change({ ...kinds, new_requests: e.target.checked })} aria-label="New client requests" />
-          </div>
-          <div className="row">
-            <div className="ctl">
-              <div style={{ fontWeight: 600 }}>Morning nudge</div>
-              <div className="when">First thing each morning, if any to-dos or jobs are due today or overdue.</div>
-            </div>
-            <input type="checkbox" role="switch" className="switch" checked={kinds.morning} onChange={(e) => change({ ...kinds, morning: e.target.checked })} aria-label="Morning nudge" />
-          </div>
+          {studio && (
+            <>
+              <div className="row">
+                <div className="ctl">
+                  <div style={{ fontWeight: 600 }}>New client requests</div>
+                  <div className="when">As soon as a client sends one from their portal.</div>
+                </div>
+                <input type="checkbox" role="switch" className="switch" checked={kinds.new_requests} onChange={(e) => change({ ...kinds, new_requests: e.target.checked })} aria-label="New client requests" />
+              </div>
+              <div className="row">
+                <div className="ctl">
+                  <div style={{ fontWeight: 600 }}>Morning nudge</div>
+                  <div className="when">First thing each morning, if any to-dos or jobs are due today or overdue.</div>
+                </div>
+                <input type="checkbox" role="switch" className="switch" checked={kinds.morning} onChange={(e) => change({ ...kinds, morning: e.target.checked })} aria-label="Morning nudge" />
+              </div>
+            </>
+          )}
           <button type="button" className="row nav-row" onClick={test} disabled={busy} style={{ width: "100%", textAlign: "left", background: "none", border: 0, font: "inherit", color: "inherit", cursor: "pointer" }}>
             <div className="ctl" style={{ fontWeight: 600 }}>Send a test alert</div>
             <span className="when">›</span>

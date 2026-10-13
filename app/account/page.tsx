@@ -16,10 +16,11 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
     data: { user },
   } = await supabase.auth.getUser();
   const hasPassword = Boolean(user?.user_metadata?.has_password);
-  // Alerts are for whoever runs the workspace; which kinds you get is shared by all your devices.
-  const alerts = member.role === "designer";
+  // Whoever runs the workspace hears about new requests and what's due; clients and managers hear
+  // when work they asked for is finished. Which kinds you get is shared by all your devices.
+  const studio = member.role === "designer";
   const ready = pushReady();
-  const kinds = alerts && ready ? (await pushRpc<{ new_requests: boolean; morning: boolean }[]>("push_kinds", { p_email: member.email }))?.[0] : null;
+  const kinds = studio && ready ? (await pushRpc<{ new_requests: boolean; morning: boolean }[]>("push_kinds", { p_email: member.email }))?.[0] : null;
 
   return (
     <Shell {...shell}>
@@ -51,14 +52,10 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
               </div>
             </div>
 
-            {alerts && (
-              <>
-                <p className="eyebrow">Alerts</p>
-                <div className="group">
-                  <PhoneAlerts ready={ready} publicKey={VAPID_PUBLIC} kinds={kinds ?? { new_requests: true, morning: true }} />
-                </div>
-              </>
-            )}
+            <p className="eyebrow">Alerts</p>
+            <div className="group">
+              <PhoneAlerts ready={ready} publicKey={VAPID_PUBLIC} kinds={kinds ?? { new_requests: true, morning: true }} studio={studio} />
+            </div>
 
             <div className="group" style={{ marginTop: 22 }}>
               <Link href="/help" className="row nav-row">
