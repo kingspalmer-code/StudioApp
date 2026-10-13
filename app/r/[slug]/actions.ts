@@ -9,14 +9,14 @@ import { createClient } from "@/lib/supabase/server";
 export type LinkForm = { name: string; owner_name: string; types: { id: number; name: string; lead_days: number }[]; fields: JobField[] };
 
 // Someone without a login asking for a job through a workspace's request link.
-export async function sendLinkRequest(slug: string, formData: FormData): Promise<{ error?: string }> {
+export async function sendLinkRequest(slug: string, formData: FormData): Promise<{ error?: string; ticketId?: number }> {
   const supabase = await createClient();
   const { data: form } = await supabase.rpc("request_form", { slug });
   const f = form as LinkForm | null;
   if (!f) return { error: "This link isn't taking requests right now." };
   const get = (k: string) => String(formData.get(k) ?? "").trim();
   const type = f.types.find((t) => t.name === get("type"));
-  const fields = f.fields.filter((x) => !x.type_ids?.length || (type && x.type_ids.includes(type.id)));
+  const fields = f.fields.filter((x) => x.kind !== "files" && (!x.type_ids?.length || (type && x.type_ids.includes(type.id))));
   const { columns, details } = readFields(fields, get, (k) => formData.get(k) != null);
   const { data: ticketId, error } = await supabase.rpc("send_customer_request", {
     slug,
@@ -49,5 +49,5 @@ export async function sendLinkRequest(slug: string, formData: FormData): Promise
       ]);
     }
   }
-  return {};
+  return { ticketId: ticketId as number };
 }
