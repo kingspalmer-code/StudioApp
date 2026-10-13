@@ -28,7 +28,7 @@ export async function requireMember(roles?: Role[]) {
   const jar = await cookies();
   const rawView = jar.get(VIEW_COOKIE)?.value ?? "";
   const viewId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawView) ? rawView : null;
-  const [{ data: businesses }, { data: workspace }, { data: stages }, { data: types }, { data: isAdmin }, { data: replies }] = await Promise.all([
+  const [{ data: businesses }, { data: workspace }, { data: stages }, { data: types }, { data: isAdmin }, { data: replies }, { data: mine }] = await Promise.all([
     supabase.from("businesses").select("*").order("name").returns<Business[]>(),
     supabase
       .from("workspaces")
@@ -39,7 +39,11 @@ export async function requireMember(roles?: Role[]) {
     supabase.from("job_types").select("*").order("position").order("id").returns<JobType[]>(),
     supabase.rpc("is_platform_admin"),
     supabase.from("support_tickets").select("updated_at, user_seen_at").eq("user_id", user.id).eq("last_from", "oatcake").neq("status", "solved"),
+    // Every business a client can request work for: their main one first, then any others.
+    member.role === "client" ? supabase.rpc("my_businesses") : Promise.resolve({ data: [] as string[] }),
   ]);
+  const extra = ((mine as string[] | null) ?? []).filter((id) => id !== member.business_id);
+  member.business_ids = member.business_id ? [member.business_id, ...extra] : extra;
   const viewed = isAdmin && viewId && viewId !== member.workspace_id ? workspace?.find((w) => w.id === viewId) : undefined;
   const own = workspace?.find((w) => w.id === member.workspace_id);
   const ws: Workspace = viewed ?? own ?? { id: member.workspace_id, name: "Oatcake", kind: "studio", owner_name: "" };
@@ -75,7 +79,7 @@ type Session = Awaited<ReturnType<typeof requireMember>>;
 export function asClient<S extends Session>(session: S, businessId?: string): S {
   const { preview } = session;
   if (!preview || (businessId && businessId !== preview.id)) return session;
-  const member = { ...session.member, role: "client" as Role, business_id: preview.id };
+  const member = { ...session.member, role: "client" as Role, business_id: preview.id, business_ids: [preview.id] };
   return { ...session, member, shell: { ...session.shell, member, preview } };
 }
 

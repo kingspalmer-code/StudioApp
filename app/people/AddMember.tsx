@@ -7,6 +7,7 @@ import type { Business } from "@/lib/types";
 export default function AddMember({ businesses }: { businesses: Business[] }) {
   const [state, action, pending] = useActionState(addMember, null);
   const [role, setRole] = useState("client");
+  const [main, setMain] = useState(businesses[0]?.id ?? "");
   return (
     <form action={action} id="add">
       <p className="eyebrow">Add someone</p>
@@ -23,7 +24,7 @@ export default function AddMember({ businesses }: { businesses: Business[] }) {
           <label htmlFor="m-role">Role</label>
           <div className="ctl">
             <select id="m-role" name="role" value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="client">Client (one business)</option>
+              <option value="client">Client (their business)</option>
               <option value="manager">Manager (overview)</option>
               <option value="designer">Designer (everything)</option>
             </select>
@@ -33,9 +34,21 @@ export default function AddMember({ businesses }: { businesses: Business[] }) {
           <div className="row">
             <label htmlFor="m-biz">Business</label>
             <div className="ctl">
-              <select id="m-biz" name="business_id" required>
+              <select id="m-biz" name="business_id" required value={main} onChange={(e) => setMain(e.target.value)}>
                 {businesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
+            </div>
+          </div>
+        )}
+        {role === "client" && businesses.length > 1 && (
+          <div className="row">
+            <span className="k">Also for</span>
+            <div className="ctl also-for">
+              {businesses.filter((b) => b.id !== main).map((b) => (
+                <label key={b.id} className="also-opt">
+                  <input type="checkbox" name="also" value={b.id} /> {b.name}
+                </label>
+              ))}
             </div>
           </div>
         )}

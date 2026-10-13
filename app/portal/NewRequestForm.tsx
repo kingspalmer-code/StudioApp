@@ -204,9 +204,9 @@ export default function NewRequestForm({
             </div>
           </>
         )}
-        {isDesigner && !trade && (
+        {(isDesigner || businesses.length > 1) && !trade && (
           <div className="row">
-            <label htmlFor="business_id">Business</label>
+            <label htmlFor="business_id">{isDesigner ? "Business" : "For"}</label>
             <div className="ctl">
               <select id="business_id" name="business_id" required>
                 {businesses.map((b) => (
@@ -216,7 +216,7 @@ export default function NewRequestForm({
             </div>
           </div>
         )}
-        {!isDesigner && <input type="hidden" name="business_id" value={businesses[0]?.id ?? ""} />}
+        {!isDesigner && businesses.length <= 1 && <input type="hidden" name="business_id" value={businesses[0]?.id ?? ""} />}
         <div className="row">
           <label htmlFor="title">Title</label>
           <div className="ctl"><input id="title" name="title" required placeholder={trade ? "e.g. Shop front fascia" : "e.g. Halloween weekend poster"} /></div>
