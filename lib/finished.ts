@@ -3,12 +3,14 @@ import { headers } from "next/headers";
 import { firstTime, pushReady, sendAlert } from "@/lib/push";
 import type { Terms } from "@/lib/workspace";
 
-// A job reached the last stage: email the client or manager who sent it, and alert their phone if
-// they've turned alerts on. Only jobs someone sent from their portal count, so jobs the studio
-// added itself (including imported past work) never email anyone. Each finish is sent once.
+// A job reached the last stage, or was sent to the client for review: email the client or manager
+// who sent it, and alert their phone if they've turned alerts on. Only jobs someone sent from their
+// portal count, so jobs the studio added itself (including imported past work) never email anyone.
+// Each finish or review is sent once.
 
 type Studio = { name: string; replyTo: string; terms: Terms };
-type Job = { id: number; title: string; created_by: string; delivered_at: string | null; business_id: string };
+type Job = { id: number; title: string; created_by: string; delivered_at: string | null; updated_at: string; business_id: string };
+export type Moment = "finished" | "review";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
@@ -44,21 +46,21 @@ ${lines.map((l) => `<p style="margin:0 0 14px">${esc(l)}</p>`).join("\n")}
   }
 }
 
-// The jobs among ids that aren't at the last stage yet, so callers only tell people about real finishes.
-export async function notYetFinished(supabase: SupabaseClient, ids: number[], final: string): Promise<number[]> {
+// The jobs among ids that aren't at this stage yet, so callers only tell people about real moves.
+export async function notYetFinished(supabase: SupabaseClient, ids: number[], stage: string): Promise<number[]> {
   if (!ids.length) return [];
   const { data } = await supabase.from("tickets").select("id, status").in("id", ids).returns<{ id: number; status: string }[]>();
-  return (data ?? []).filter((t) => t.status !== final).map((t) => t.id);
+  return (data ?? []).filter((t) => t.status !== stage).map((t) => t.id);
 }
 
-export async function tellRequesters(supabase: SupabaseClient, ids: number[], studio: Studio) {
+export async function tellRequesters(supabase: SupabaseClient, ids: number[], studio: Studio, moment: Moment = "finished") {
   if (!ids.length) return;
   const { data: jobs } = await supabase
     .from("tickets")
-    .select("id, title, created_by, delivered_at, business_id")
+    .select("id, title, created_by, delivered_at, updated_at, business_id")
     .in("id", ids)
     .returns<Job[]>();
-  const finished = (jobs ?? []).filter((j) => j.delivered_at);
+  const finished = (jobs ?? []).filter((j) => moment === "review" || j.delivered_at);
   if (!finished.length) return;
   const [{ data: people }, { data: businesses }, { data: files }] = await Promise.all([
     supabase
@@ -77,24 +79,30 @@ export async function tellRequesters(supabase: SupabaseClient, ids: number[], st
   for (const j of finished) {
     const who = requester.get(j.created_by);
     if (!who) continue;
-    // Sent once per finish; finishing it again after reopening it tells them again.
-    if (pushReady() && !(await firstTime("finished", `${j.id}:${j.delivered_at}`))) continue;
+    // Sent once per move; finishing it again after reopening it tells them again.
+    if (pushReady() && !(await firstTime(moment, `${j.id}:${moment === "finished" ? j.delivered_at : j.updated_at}`))) continue;
     const count = (files ?? []).filter((f) => f.ticket_id === j.id).length;
-    const ready = count ? `The finished ${count === 1 ? "file is" : `${count} files are`} ready to download.` : "Have a look whenever you're ready.";
     const link = `${site}/tickets/${j.id}`;
     const biz = bizName.get(j.business_id);
     const hello = who.full_name ? `Hi ${who.full_name.split(" ")[0]},` : "Hi,";
+    const forBiz = biz ? ` for ${biz}` : "";
+    const msg =
+      moment === "finished"
+        ? {
+            subject: `Finished: ${j.title}`,
+            line: `${studio.name} has finished your ${job} "${j.title}"${forBiz}.`,
+            next: count ? `The finished ${count === 1 ? "file is" : `${count} files are`} ready to download.` : "Have a look whenever you're ready.",
+            title: `${j.title} is finished`,
+          }
+        : {
+            subject: `Ready for your review: ${j.title}`,
+            line: `${studio.name} has sent your ${job} "${j.title}"${forBiz} over for you to look at.`,
+            next: "Have a look and leave any notes on it in Oatcake.",
+            title: `${j.title} is ready for your review`,
+          };
     await Promise.all([
-      email(
-        who.email,
-        `Finished: ${j.title}`,
-        [hello, `${studio.name} has finished your ${job} "${j.title}"${biz ? ` for ${biz}` : ""}. ${ready}`],
-        link,
-        `Open in Oatcake`,
-        studio.name,
-        studio.replyTo
-      ),
-      sendAlert([who.email], { title: `${j.title} is finished`, body: `${studio.name}: ${ready}`, url: `/tickets/${j.id}`, tag: `ticket-${j.id}-finished` }),
+      email(who.email, msg.subject, [hello, `${msg.line} ${msg.next}`], link, "Open in Oatcake", studio.name, studio.replyTo),
+      sendAlert([who.email], { title: msg.title, body: `${studio.name}: ${msg.next}`, url: `/tickets/${j.id}`, tag: `ticket-${j.id}-${moment}` }),
     ]);
   }
 }

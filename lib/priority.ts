@@ -11,6 +11,12 @@ export const STAGE_COLORS = ["blue", "indigo", "purple", "teal", "orange", "pink
 export const stageColor = (c: string) => `var(--${(STAGE_COLORS as readonly string[]).includes(c) ? c : "blue"})`;
 
 export const finalStage = (ctx: Ctx): Status => ctx.stages[ctx.stages.length - 1]?.key ?? "done";
+// The stage that means "with the client to look over", if the workspace has one: the default
+// "review" stage, or one whose name says so. Never the first or last stage.
+export const reviewStage = (ctx: Ctx): Stage | undefined => {
+  const middle = ctx.stages.slice(1, -1);
+  return middle.find((s) => s.key === "review") ?? middle.find((s) => /review|approv|with (the )?client|with (the )?customer/i.test(s.label));
+};
 export const firstStage = (ctx: Ctx): Status => ctx.stages[0]?.key ?? "new";
 export const isDone = (t: Pick<Ticket, "status">, ctx: Ctx) => t.status === finalStage(ctx);
 export const stageOf = (ctx: Ctx, key: Status) => ctx.stages.find((s) => s.key === key);

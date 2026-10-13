@@ -10,6 +10,7 @@ import { appliesTo, readFields, type JobField } from "@/lib/fields";
 import { emailInvite } from "@/lib/invite";
 import { alertNewNote } from "@/app/portal/actions";
 import { notYetFinished, tellRequesters } from "@/lib/finished";
+import { finalStage, reviewStage } from "@/lib/priority";
 import type { Role, Status } from "@/lib/types";
 
 export async function signOut() {
@@ -21,10 +22,11 @@ export async function signOut() {
 export async function setStatus(id: number, status: Status) {
   const { supabase, ctx, member, workspace, terms } = await requireEditor(["designer"]);
   if (!ctx.stages.some((s) => s.key === status)) return;
-  const final = ctx.stages[ctx.stages.length - 1]?.key;
-  const finishing = status === final ? await notYetFinished(supabase, [id], final) : [];
+  // Finishing a job, or sending it to the client to look over, tells the person who asked for it.
+  const moment = status === finalStage(ctx) ? "finished" : status === reviewStage(ctx)?.key ? "review" : null;
+  const moving = moment ? await notYetFinished(supabase, [id], status) : [];
   await supabase.from("tickets").update({ status }).eq("id", id);
-  if (finishing.length) after(() => tellRequesters(supabase, finishing, { name: workspace.name, replyTo: member.email, terms }).catch(() => {}));
+  if (moment && moving.length) after(() => tellRequesters(supabase, moving, { name: workspace.name, replyTo: member.email, terms }, moment).catch(() => {}));
   revalidatePath("/", "layout");
 }
 

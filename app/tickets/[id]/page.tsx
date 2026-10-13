@@ -5,7 +5,7 @@ import StatusChip from "@/components/StatusChip";
 import { addNote, saveDetails, setPinned, setStatus } from "@/app/actions";
 import FieldInput from "@/components/FieldInput";
 import { appliesTo, groupFields, hasValue, showValue, valueOf, type JobField } from "@/lib/fields";
-import { dueLabel, formatDate, isDone, money, startBy, startLabel } from "@/lib/priority";
+import { dueLabel, finalStage, formatDate, isDone, money, reviewStage, startBy, startLabel } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
 import type { Note, Ticket, TicketFile } from "@/lib/types";
 import DeleteTicket from "./DeleteTicket";
@@ -62,6 +62,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   const canAddFiles = canNote && !viewing;
   const sb = startLabel(startBy(t, ctx));
   const done = isDone(t, ctx);
+  const review = reviewStage(ctx);
   const owner = workspace.owner_name || "the studio";
   // Show every field that has something in it, even ones since hidden from the form, so nothing saved is lost.
   const typeId = ctx.types.find((x) => x.name === t.type)?.id;
@@ -176,6 +177,19 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
 
         {isDesigner && (
           <>
+            {/* The two big moments, as plain buttons. Both tell the person who asked for it. */}
+            {!done && (
+              <div className="job-actions">
+                {review && t.status !== review.key && (
+                  <form action={setStatus.bind(null, t.id, review.key)}>
+                    <button className="btn plain" type="submit">Send for review</button>
+                  </form>
+                )}
+                <form action={setStatus.bind(null, t.id, finalStage(ctx))}>
+                  <button className="btn" type="submit">Mark finished</button>
+                </form>
+              </div>
+            )}
             <p className="eyebrow">Stage</p>
             <div className="seg stage-picker" role="group" aria-label="Set stage">
               {ctx.stages.map((s) => (
