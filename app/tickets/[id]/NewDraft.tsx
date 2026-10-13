@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { DELIVERY_MAX_MB, fileSize } from "@/lib/deliveries";
+import { tellAboutDraft } from "./actions";
 
 // The studio sharing a draft for the client's notes: a short message, and files or a link.
 // Drafts stay off the galleries until one is sent as final.
@@ -60,6 +61,7 @@ export default function NewDraft({ ticketId, businessId, round, clientName }: { 
       return setProblem("Nothing uploaded, so the draft wasn't shared. Try again.");
     }
     if (failed.length) setProblem(`${failed.join(", ")} didn't upload. The rest of the draft is shared.`);
+    void tellAboutDraft(ticketId, draft.id).catch(() => {});
     form.reset();
     setFiles([]);
     setOpen(false);

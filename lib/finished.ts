@@ -22,11 +22,12 @@ async function origin() {
   return `${h.get("x-forwarded-proto") ?? "https"}://${host}`;
 }
 
-async function email(to: string, subject: string, lines: string[], link: string, label: string, from: string, replyTo: string) {
+async function email(to: string, subject: string, lines: string[], link: string, label: string, from: string, replyTo: string, extra = "") {
   const key = process.env.RESEND_API_KEY;
   if (!key) return;
   const html = `<div style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#2a201c;max-width:520px">
 ${lines.map((l) => `<p style="margin:0 0 14px">${esc(l)}</p>`).join("\n")}
+${extra}
 <a href="${link}" style="display:inline-block;margin-top:8px;background:#382A25;color:#f3e9dc;text-decoration:none;font-weight:600;padding:10px 18px;border-radius:10px">${esc(label)}</a>
 </div>`;
   try {
@@ -140,9 +141,46 @@ export async function tellPicked(supabase: SupabaseClient, id: number, studio: S
   const forBiz = biz?.name ? ` for ${biz.name}` : "";
   const due = formatDate(j.deadline);
   const line = `${studio.name} has added a new ${job}${forBiz}: "${j.title}" (${j.type}), due ${due}.`;
-  const next = "You can follow it in Oatcake, and you'll hear when it's ready for your review or finished.";
+  const next = "You can follow it in Oatcake, and you'll hear when there's a draft to look at and when it's finished.";
   await Promise.all([
     email(who.email, `New ${job}: ${j.title}`, [hello(who), line, next], `${await origin()}/tickets/${j.id}`, "Open in Oatcake", studio.name, studio.replyTo),
     sendAlert([who.email], { title: `New ${job}: ${j.title}`, body: `${studio.name} added it${forBiz}, due ${due}.`, url: `/tickets/${j.id}`, tag: `ticket-${j.id}-new` }),
+  ]);
+}
+
+// The studio shared a draft: email the person who asked for the job and anyone picked to keep
+// updated, with the draft's message, its images and links, and alert their phones. Sent once per draft.
+export async function tellDraft(supabase: SupabaseClient, ticketId: number, draftId: number, studio: Studio) {
+  const [{ data: j }, { data: drafts }, { data: files }] = await Promise.all([
+    supabase.from("tickets").select("id, title, created_by, notify, business_id").eq("id", ticketId).maybeSingle<Pick<Job, "id" | "title" | "created_by" | "notify" | "business_id">>(),
+    supabase.from("ticket_drafts").select("id, message").eq("ticket_id", ticketId).order("created_at").returns<{ id: number; message: string }[]>(),
+    supabase.from("ticket_draft_files").select("path, url, name, mime").eq("draft_id", draftId).order("created_at").returns<{ path: string | null; url: string | null; name: string; mime: string }[]>(),
+  ]);
+  const round = (drafts ?? []).findIndex((d) => d.id === draftId) + 1;
+  if (!j || !round) return;
+  const people = await linkedPeople(supabase, [j.created_by, j.notify ?? ""]);
+  const told = [...people.values()].filter((p) => canSee(p, j.business_id));
+  if (!told.length) return;
+  if (pushReady() && !(await firstTime("draft", String(draftId)))) return;
+
+  // Images show in the email (their links last a week); links and other files are listed.
+  const list = files ?? [];
+  const images = list.filter((f) => f.path && f.mime.startsWith("image/")).slice(0, 3);
+  const { data: signed } = images.length
+    ? await supabase.storage.from("deliveries").createSignedUrls(images.map((f) => f.path!), 7 * 24 * 3600)
+    : { data: [] };
+  const pics = (signed ?? []).filter((x) => x.signedUrl).map((x) => `<img src="${x.signedUrl}" alt="" style="display:block;max-width:100%;border-radius:10px;margin:0 0 12px">`);
+  const others = list.filter((f) => !images.includes(f)).map((f) => (f.url ? `<li><a href="${esc(f.url)}">${esc(f.name)}</a></li>` : `<li>${esc(f.name)}</li>`));
+  const extra = pics.join("\n") + (others.length ? `<ul style="margin:0 0 14px;padding-left:18px">${others.join("")}</ul>` : "");
+
+  const message = (drafts ?? [])[round - 1].message.trim();
+  const { data: biz } = await supabase.from("businesses").select("name").eq("id", j.business_id).maybeSingle<{ name: string }>();
+  const forBiz = biz?.name ? ` for ${biz.name}` : "";
+  const line = `${studio.name} has shared draft ${round} of "${j.title}"${forBiz}. Have a look and leave any notes on it in Oatcake.`;
+  const subject = `Draft ${round} to look at: ${j.title}`;
+  const link = `${await origin()}/tickets/${j.id}`;
+  await Promise.all([
+    ...told.map((who) => email(who.email, subject, [hello(who), line, ...(message ? [`"${message}"`] : [])], link, "See the draft", studio.name, studio.replyTo, extra)),
+    sendAlert(told.map((who) => who.email), { title: `Draft ${round} of ${j.title}`, body: message ? `${studio.name}: ${message.slice(0, 120)}` : `${studio.name} shared a draft for you to look at.`, url: `/tickets/${j.id}`, tag: `ticket-${j.id}-draft` }),
   ]);
 }

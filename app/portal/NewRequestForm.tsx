@@ -280,7 +280,7 @@ export default function NewRequestForm({
         </div>
       </div>
       <p className="foot">
-        {notify && `${canTell.find((p) => p.email === notify)?.name ?? "They"} will get an email and a phone alert now, and again when it's ready for review or finished. `}
+        {notify && `${canTell.find((p) => p.email === notify)?.name ?? "They"} will get an email and a phone alert now, and again with each draft you share and when it's ready for review or finished. `}
         {type} jobs need about {lead} working days.
         {tight ? (isDesigner ? " That deadline is tight." : ` That deadline is tight, so ${ownerName} may come back to you about timing.`) : ""}
       </p>
