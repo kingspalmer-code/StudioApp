@@ -19,12 +19,14 @@
     "pdfjs-dist": "6.3.289",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "three": "0.183.2",
     "web-push": "3.6.7"
   },
   "devDependencies": {
     "@types/node": "22.15.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.3",
+    "@types/three": "0.183.1",
     "typescript": "5.9.3"
   }
 }
