@@ -33,11 +33,11 @@ const loadMember = cache(async () => {
     supabase.auth.getUser(),
     supabase
       .from("members")
-      .select("email, full_name, role, business_id, workspace_id, workspaces(id, name, kind, owner_name, request_slug, requests_open)")
+      .select("email, full_name, role, business_id, workspace_id, workspaces(id, name, kind, owner_name, request_slug, requests_open, core_fields)")
       .eq("email", email)
       .maybeSingle<Member & { workspace_id: string; workspaces: Workspace | null }>(),
     supabase.from("businesses").select("*").order("name").returns<Business[]>(),
-    viewId ? supabase.from("workspaces").select("id, name, kind, owner_name").eq("id", viewId).returns<Workspace[]>() : Promise.resolve({ data: [] as Workspace[] }),
+    viewId ? supabase.from("workspaces").select("id, name, kind, owner_name, core_fields").eq("id", viewId).returns<Workspace[]>() : Promise.resolve({ data: [] as Workspace[] }),
     supabase.from("stages").select("*").order("position").order("id").returns<Stage[]>(),
     supabase.from("job_types").select("*").order("position").order("id").returns<JobType[]>(),
     supabase.rpc("is_platform_admin"),
