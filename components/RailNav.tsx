@@ -17,7 +17,9 @@ export function SearchIcon() {
 // On iPad and desktop the top bar becomes a slim rail down the left: a create button, search, then
 // the sections as icons. Labels show as tooltips and to screen readers. Dragging its edge out
 // (RailGrip) widens it into a sidebar that shows the labels and a list of clients to jump to.
-export default function RailNav({ links, canCreate, clients = [] }: { links: { href: string; label: string; icon?: string }[]; canCreate: boolean; clients?: Business[] }) {
+// Clients get the same New and Search at the top: New goes straight to their request form, and
+// Search covers their own requests (`newHref` set).
+export default function RailNav({ links, canCreate, clients = [], newHref }: { links: { href: string; label: string; icon?: string }[]; canCreate: boolean; clients?: Business[]; newHref?: string }) {
   const path = usePathname();
   const biz = useSearchParams().get("biz");
   return (
@@ -32,6 +34,18 @@ export default function RailNav({ links, canCreate, clients = [] }: { links: { h
           <SearchIcon />
           <span className="rail-label">Search</span>
         </button>
+        </>
+      )}
+      {newHref && (
+        <>
+          <Link href={newHref} className="rail-new" aria-label="New request" title="New request">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+            <span className="rail-label">New request</span>
+          </Link>
+          <button type="button" className="rail-search" onClick={openSearch} aria-label="Search" title="Search (S)" aria-haspopup="dialog">
+            <SearchIcon />
+            <span className="rail-label">Search</span>
+          </button>
         </>
       )}
       <nav className="rail-nav" aria-label="Sections">

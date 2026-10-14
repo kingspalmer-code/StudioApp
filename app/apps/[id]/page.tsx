@@ -3,20 +3,20 @@ import { notFound } from "next/navigation";
 import BizBadge from "@/components/BizBadge";
 import Shell from "@/components/Shell";
 import type { App, AppBackground } from "@/lib/apps";
-import { requireMember } from "@/lib/session";
+import { asClient, requireMember } from "@/lib/session";
 import PatternApp from "./PatternApp";
 
 // One app. Pattern apps: recolour the client's pattern and save it to their gallery of backgrounds.
 export default async function AppPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const { supabase, member, businesses, shell, viewing } = await requireMember(["designer", "manager", "client"]);
+  const { supabase, member, businesses, shell, viewing } = asClient(await requireMember(["designer", "manager", "client"]));
   const [{ data: app }, { data: saved }] = await Promise.all([
     supabase.from("apps").select("*").eq("id", id).maybeSingle<App>(),
     supabase.from("app_backgrounds").select("*").eq("app_id", id).order("created_at", { ascending: false }).returns<AppBackground[]>(),
   ]);
   const biz = businesses.find((b) => b.id === app?.business_id);
-  if (!app || !biz) notFound();
+  if (!app || !biz || (member.role === "client" && !member.business_ids?.includes(biz.id))) notFound();
   const list = saved ?? [];
   const bucket = supabase.storage.from("apps");
   const [source, thumbs, downloads] = await Promise.all([

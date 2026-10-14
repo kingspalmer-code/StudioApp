@@ -1268,3 +1268,4 @@ html.embedded main { padding: 16px 20px 48px; }
 .tell-chips button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .tell-chips button:disabled { opacity: .6; cursor: default; }
 .tell-auto { color: var(--label-2); font-size: 13px; margin: 0 0 6px; }
+a.rail-new, a.app-bar-pill { text-decoration: none; }
