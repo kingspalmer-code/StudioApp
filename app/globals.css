@@ -38,6 +38,8 @@ html, body { margin: 0; }
 body { background: var(--bg); color: var(--label); font: 15px/1.4 var(--font); -webkit-font-smoothing: antialiased; letter-spacing: -.01em; }
 a { color: var(--accent); text-decoration: none; }
 button, input, select, textarea { font: inherit; color: inherit; }
+/* Windows draws the open dropdown list from the option colours, so give options the theme surface and ink (otherwise dark mode shows cream text on a white list). */
+option, optgroup { background-color: var(--surface); color: var(--label); }
 :focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; border-radius: 8px; }
 
 .bar { position: sticky; top: 0; z-index: 20; background: var(--bar); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: .5px solid var(--sep); padding-top: env(safe-area-inset-top, 0px); }
