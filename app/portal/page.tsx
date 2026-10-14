@@ -4,6 +4,7 @@ import Shell from "@/components/Shell";
 import TicketRow from "@/components/TicketRow";
 import { coversFor } from "@/lib/deliveries";
 import type { JobField } from "@/lib/fields";
+import { coreFields } from "@/lib/core-fields";
 import { formatDate, isDone } from "@/lib/priority";
 import { asClient, requireEditor } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
@@ -30,6 +31,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
 
   const { data: fields } = await supabase.from("job_fields").select("*").order("position").order("id").returns<JobField[]>();
   const formFields = (fields ?? []).filter((f) => !f.hidden && f.on_form);
+  const core = coreFields(workspace.core_fields, { trade, solo });
 
   // "Ask for a follow-up" on a finished job: the form starts from that job's details.
   const { data: from } = follow && !isDesigner
@@ -84,7 +86,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
           </form>
         )}
         <div style={{ maxWidth: 640 }}>
-          <NewRequestForm businesses={ordered} defaultName={member.full_name} isDesigner types={ctx.types} fields={formFields} trade={trade} solo={solo} selfId={self?.id} ownerName={owner} helper={helper} people={people} />
+          <NewRequestForm businesses={ordered} defaultName={member.full_name} isDesigner types={ctx.types} fields={formFields} trade={trade} solo={solo} selfId={self?.id} ownerName={owner} helper={helper} people={people} core={core} />
         </div>
       </Shell>
     );
@@ -98,7 +100,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
         <h1 className="large">{followUp ? "Follow-up request" : "New request"}</h1>
         <p className="sub">{followUp ? `Ask ${owner} for more on "${from!.title}". It joins the queue as a new request, linked to the finished one.` : `Send ${owner} a request. It joins the queue, and you can follow it in the overview.`}</p>
         <div style={{ maxWidth: 640 }}>
-          <NewRequestForm businesses={myBizes} defaultName={member.full_name} isDesigner={false} types={ctx.types} fields={formFields} trade={trade} ownerName={owner} helper={helper} followUp={followUp} />
+          <NewRequestForm businesses={myBizes} defaultName={member.full_name} isDesigner={false} types={ctx.types} fields={formFields} trade={trade} ownerName={owner} helper={helper} followUp={followUp} core={core} />
         </div>
       </Shell>
     );
@@ -136,7 +138,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
 
         <ClientRequests
           startOpen={all.length === 0 || previewing || Boolean(followUp) || fresh === "1"}
-          form={{ followUp,  businesses: only ? [only, ...myBizes.filter((b) => b !== only)] : myBizes, defaultName: member.full_name, isDesigner: false, types: ctx.types, fields: formFields, trade, ownerName: owner, helper }}
+          form={{ followUp,  businesses: only ? [only, ...myBizes.filter((b) => b !== only)] : myBizes, defaultName: member.full_name, isDesigner: false, types: ctx.types, fields: formFields, trade, ownerName: owner, helper, core }}
         />
 
         <p className="eyebrow">In progress</p>

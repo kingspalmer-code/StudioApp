@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { ADDABLE_KINDS } from "@/lib/fields";
+import { CORE_KEYS, coreFields, readCore, type CoreKey, type CoreSettings } from "@/lib/core-fields";
 import { STAGE_COLORS } from "@/lib/priority";
 import { requireEditor } from "@/lib/session";
 import type { WorkspaceKind } from "@/lib/types";
@@ -171,6 +172,45 @@ export async function saveField(id: number, formData: FormData) {
     })
     .eq("id", id);
   doneForm();
+}
+
+// The fields at the top of the form (see lib/core-fields.ts), saved on the workspace.
+async function editCore(change: (s: CoreSettings, mode: { trade: boolean; solo: boolean }) => CoreSettings) {
+  const { supabase, workspace } = await requireEditor(["designer"]);
+  const mode = { trade: workspace.kind !== "studio", solo: workspace.kind === "solo" };
+  const next = change(readCore(workspace.core_fields), mode);
+  await supabase.from("workspaces").update({ core_fields: next }).eq("id", workspace.id);
+  doneForm();
+}
+
+const isCore = (k: string): k is CoreKey => (CORE_KEYS as string[]).includes(k);
+
+export async function saveCoreField(key: string, formData: FormData) {
+  if (!isCore(key)) return;
+  const label = text(formData, "label").slice(0, 60);
+  const hint = text(formData, "hint").slice(0, 120);
+  await editCore((s) => ({ ...s, fields: { ...s.fields, [key]: { ...s.fields?.[key], label, hint } } }));
+}
+
+export async function setCoreHidden(key: string, hidden: boolean) {
+  if (!isCore(key)) return;
+  await editCore((s, mode) => {
+    if (!coreFields(s, mode).find((f) => f.key === key)?.canHide) return s;
+    return { ...s, fields: { ...s.fields, [key]: { ...s.fields?.[key], hidden } } };
+  });
+}
+
+export async function moveCoreField(key: string, dir: -1 | 1) {
+  if (!isCore(key)) return;
+  await editCore((s, mode) => {
+    // Move among the fields this workspace shows; customer and phone, when not shown, stay first.
+    const shown = coreFields(s, mode).map((f) => f.key);
+    const i = shown.indexOf(key);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= shown.length) return s;
+    [shown[i], shown[j]] = [shown[j], shown[i]];
+    return { ...s, order: [...CORE_KEYS.filter((k) => !shown.includes(k)), ...shown] };
+  });
 }
 
 export async function setFieldHidden(id: number, hidden: boolean) {
