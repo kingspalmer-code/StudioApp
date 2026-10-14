@@ -28,7 +28,7 @@ const loadMember = cache(async () => {
   const jar = await cookies();
   const rawView = jar.get(VIEW_COOKIE)?.value ?? "";
   const viewId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawView) ? rawView : null;
-  const [{ data: { user } }, { data: row }, { data: businesses }, { data: viewedRows }, { data: stages }, { data: types }, { data: isAdmin }, { data: replies }, { data: mine }] = await Promise.all([
+  const [{ data: { user } }, { data: row }, { data: businesses }, { data: viewedRows }, { data: stages }, { data: types }, { data: isAdmin }, { data: replies }, { data: mine }, { count: appCount }] = await Promise.all([
     // For the profile details (photo, hints); the token's copy can be up to an hour old.
     supabase.auth.getUser(),
     supabase
@@ -44,6 +44,8 @@ const loadMember = cache(async () => {
     supabase.from("support_tickets").select("updated_at, user_seen_at").eq("user_id", userId).eq("last_from", "oatcake").neq("status", "solved"),
     // Every business a client (or manager) can request work for: a client's main one first, then any others.
     supabase.rpc("my_businesses"),
+    // Apps they can open, for the Apps tab in a client's portal.
+    supabase.from("apps").select("id", { count: "exact", head: true }),
   ]);
   if (!user) redirect("/login");
   // Signed in but no workspace yet: set one up.
@@ -52,6 +54,7 @@ const loadMember = cache(async () => {
   const workspace = [...(viewedRows ?? []), ...(ownWorkspace ? [ownWorkspace] : [])];
   const extra = member.role === "designer" ? [] : ((mine as string[] | null) ?? []).filter((id) => id !== member.business_id);
   member.business_ids = member.business_id ? [member.business_id, ...extra] : extra;
+  member.has_apps = Boolean(appCount);
   const viewed = isAdmin && viewId && viewId !== member.workspace_id ? workspace?.find((w) => w.id === viewId) : undefined;
   const own = workspace?.find((w) => w.id === member.workspace_id);
   const ws: Workspace = viewed ?? own ?? { id: member.workspace_id, name: "Oatcake", kind: "studio", owner_name: "" };

@@ -10,7 +10,7 @@ import PatternApp from "./PatternApp";
 export default async function AppPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const { supabase, member, businesses, shell, viewing } = await requireMember(["designer", "manager"]);
+  const { supabase, member, businesses, shell, viewing } = await requireMember(["designer", "manager", "client"]);
   const [{ data: app }, { data: saved }] = await Promise.all([
     supabase.from("apps").select("*").eq("id", id).maybeSingle<App>(),
     supabase.from("app_backgrounds").select("*").eq("app_id", id).order("created_at", { ascending: false }).returns<AppBackground[]>(),
@@ -27,13 +27,15 @@ export default async function AppPage({ params }: { params: Promise<{ id: string
   const url = Object.fromEntries([...thumbs, ...downloads].filter((s) => s.signedUrl).map((s) => [s.path, s.signedUrl]));
   const backgrounds = list.map((b) => ({ ...b, thumb: url[b.thumb_path] ?? "", jpg: url[b.image_path] ?? "", svg: url[b.svg_path] ?? "" }));
   const canEdit = member.role === "designer" && !viewing;
+  // Clients make and download backgrounds; only the studio removes them or changes the app.
+  const canMake = (member.role === "designer" || member.role === "client") && !viewing;
 
   return (
     <Shell {...shell}>
       <p className="eyebrow"><Link href="/apps">Apps</Link></p>
       <h1 className="large app-title">{app.name}</h1>
       <p className="sub gallery-biz"><BizBadge biz={biz} size={18} /> {biz.name}</p>
-      <PatternApp app={app} slug={biz.slug} source={source} backgrounds={backgrounds} canEdit={canEdit} />
+      <PatternApp app={app} slug={biz.slug} source={source} backgrounds={backgrounds} canEdit={canEdit} canMake={canMake} />
     </Shell>
   );
 }

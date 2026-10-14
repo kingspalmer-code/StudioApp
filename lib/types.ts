@@ -31,6 +31,8 @@ export type Member = {
   business_id: string | null;
   // A client's businesses (main one first); only filled in for the signed-in member.
   business_ids?: string[];
+  // Whether there are apps they can open (a client's are only their businesses' ones).
+  has_apps?: boolean;
 };
 
 export type Ticket = {
