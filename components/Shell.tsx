@@ -35,28 +35,28 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
       ...(member.business_ids?.length && !viewing ? [{ href: "/portal", label: "New request" }] : []),
     ];
   // Clients get a sidebar like the studio's: their Overview (with the widgets) first, then their
-  // requests, and Apps when the studio has made one for their business.
+  // requests, and Apps (theirs, or a way to ask for one).
   if (member.role === "client")
     return [
       { href: "/overview", label: "Overview" },
       { href: "/portal", label: "Requests", icon: "requests" },
-      ...(member.has_apps ? [{ href: "/apps", label: "Apps" }] : []),
+      { href: "/apps", label: "Apps" },
     ];
-  // Employees only see the to-do list the owner sets them.
-  if (member.role === "staff") return [{ href: "/tasks", label: "To-do" }];
+  // Employees see the to-do list the owner sets them, and Apps.
+  if (member.role === "staff") return [{ href: "/tasks", label: "To-do" }, { href: "/apps", label: "Apps" }];
   // Who the work is for: businesses (with their staff) on People, customers on Customers, and nobody when working alone.
   const clients =
     workspace.kind === "studio" ? [{ href: "/people", label: "People" }]
     : workspace.kind === "trade" ? [{ href: "/customers", label: "Customers" }]
     : [{ href: "/gallery", label: "Gallery" }];
-  if (viewing) return [main, { href: "/overview", label: "Overview" }, ...clients, ...(workspace.kind === "studio" ? [{ href: "/apps", label: "Apps" }] : [])];
+  if (viewing) return [main, { href: "/overview", label: "Overview" }, ...clients, { href: "/apps", label: "Apps" }];
   return [
     main,
     { href: "/overview", label: "Overview" },
     { href: "/portal", label: `New ${terms.job}` },
     ...clients,
-    // Tools made for one client each, such as a pattern recolourer. Only for workspaces with businesses.
-    ...(workspace.kind === "studio" ? [{ href: "/apps", label: "Apps" }] : []),
+    // Tools made for one client each, such as a pattern recolourer, and a way to ask for new ones.
+    { href: "/apps", label: "Apps" },
     { href: "/team", label: "Team" },
     { href: "/personal", label: "Personal" },
   ];

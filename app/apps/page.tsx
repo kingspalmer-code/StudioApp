@@ -5,9 +5,13 @@ import type { App, AppBackground } from "@/lib/apps";
 import { asClient, requireMember } from "@/lib/session";
 import NewApp from "./NewApp";
 
-// Apps made for clients, each belonging to one business. Opening one uses it.
+// What "Request an app" starts the Help message with.
+const REQUEST = "App request: I'd like an app that ";
+
+// Apps made for clients, each belonging to one business. Opening one uses it. Everyone has this
+// page, with a way to ask for a new app through Help.
 export default async function AppsPage() {
-  const { supabase, member, businesses, terms, workspace, shell, viewing } = asClient(await requireMember(["designer", "manager", "client"]));
+  const { supabase, member, businesses, terms, workspace, shell, viewing } = asClient(await requireMember());
   const [{ data: apps }, { data: latest }] = await Promise.all([
     supabase.from("apps").select("*").order("created_at").returns<App[]>(),
     supabase.from("app_backgrounds").select("app_id, thumb_path, created_at").order("created_at", { ascending: false }).limit(200).returns<AppBackground[]>(),
@@ -25,10 +29,13 @@ export default async function AppsPage() {
   return (
     <Shell {...shell}>
       <h1 className="large">Apps</h1>
-      <p className="sub">{member.role === "client" ? "Tools made for you. Open one to use it." : <>Tools made for your {terms.clients}, one {terms.client} each. Open one to use it.</>}</p>
-      {member.role === "designer" && !viewing && businesses.length > 0 && (
-        <div className="app-new-wrap"><NewApp businesses={businesses} workspaceId={workspace.id} clientWord={terms.client} /></div>
-      )}
+      <p className="sub">
+        {member.role === "designer" ? <>Tools made for your {terms.clients}, one {terms.client} each.</> : "Small tools made to take a fiddly job off your hands."} Got a task you do over and over? Ask for an app that does it for you.
+      </p>
+      <div className="app-new-wrap">
+        {member.role === "designer" && !viewing && businesses.length > 0 && <NewApp businesses={businesses} workspaceId={workspace.id} clientWord={terms.client} />}
+        <Link className="btn plain" href={`/help?from=/apps&q=${encodeURIComponent(REQUEST)}`}>Request an app</Link>
+      </div>
       {list.length ? (
         <div className="gallery apps-list">
           {list.map((a) => (
@@ -45,7 +52,11 @@ export default async function AppsPage() {
           ))}
         </div>
       ) : (
-        <div className="group"><div className="empty">No apps yet.{member.role === "designer" ? " Make one for a " + terms.client + " to get started." : ""}</div></div>
+        <div className="group">
+          <div className="empty">
+            No apps here yet. Tell us what slows you down, such as resizing images, making the same graphic every week or tidying files, and we&apos;ll build an app for it.
+          </div>
+        </div>
       )}
     </Shell>
   );
