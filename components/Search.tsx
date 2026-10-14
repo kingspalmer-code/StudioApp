@@ -97,16 +97,31 @@ function useVoice(onText: (text: string, final: boolean) => void) {
   return { listening, supported, start, stop };
 }
 
+// A client's own pages, for their Search.
+const CLIENT_PAGES = (apps: boolean): Omit<Hit, "kind" | "key">[] => [
+  { title: "Overview", href: "/overview", words: "overview home widgets pickle stats", tags: [] },
+  { title: "Requests", href: "/portal", words: "requests jobs in progress", tags: [] },
+  { title: "Finished work", href: "/portal/archive", words: "finished completed done archive delivered files", tags: [] },
+  ...(apps ? [{ title: "Apps", href: "/apps", words: "apps tools pattern backgrounds", tags: [] }] : []),
+  { title: "Logo and colour", href: "/portal/brand", words: "logo colour color brand", tags: [] },
+  { title: "Account", href: "/account", words: "account profile photo password sign out appearance theme dark light", tags: [] },
+  { title: "Help", href: "/help", words: "help support contact question problem", tags: [] },
+];
+
+// `client` turns it into a client's search: their own requests (for `clients`, their businesses)
+// and their own pages, with New going to the request form.
 export default function Search({
   kind,
   Job,
   Client,
   clients,
+  client,
 }: {
   kind: WorkspaceKind;
   Job: string;
   Client: string;
   clients: { id: string; name: string; slug: string }[];
+  client?: { apps: boolean };
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -150,15 +165,18 @@ export default function Search({
     if (!open || data) return;
     const name = Object.fromEntries(clients.map((c) => [c.id, c.name]));
     const sb = createClient();
-    const pages: Hit[] = PAGES(kind, Job).map((p, i) => ({ ...p, kind: "page", key: `p${i}` }));
-    const actions: Hit[] = [
-      { kind: "page", key: "new", title: `New ${Job.toLowerCase()}, quote or invoice`, run: openCreate, words: `new create add make ${Job} quote invoice task customer invite`, tags: [] },
-    ];
-    const clientHits: Hit[] = clients.map((c) => ({ kind: "client", key: `c${c.id}`, title: c.name, href: `/queue?view=list&biz=${c.slug}`, words: c.name.toLowerCase(), tags: [] }));
+    const pages: Hit[] = (client ? CLIENT_PAGES(client.apps) : PAGES(kind, Job)).map((p, i) => ({ ...p, kind: "page", key: `p${i}` }));
+    const actions: Hit[] = client
+      ? [{ kind: "page", key: "new", title: "New request", href: "/portal?new=1", words: "new create add make request send ask", tags: [] }]
+      : [{ kind: "page", key: "new", title: `New ${Job.toLowerCase()}, quote or invoice`, run: openCreate, words: `new create add make ${Job} quote invoice task customer invite`, tags: [] }];
+    const clientHits: Hit[] = clients.length < 2 && client ? [] : clients.map((c) => ({ kind: "client", key: `c${c.id}`, title: c.name, href: client ? `/overview?business=${c.id}` : `/queue?view=list&biz=${c.slug}`, words: c.name.toLowerCase(), tags: [] }));
+    const tickets = sb.from("tickets").select("id, title, business_id, site_address, status, deadline, updated_at").order("updated_at", { ascending: false }).limit(400);
+    const none = Promise.resolve({ data: [] as never[] });
     Promise.all([
-      sb.from("tickets").select("id, title, business_id, site_address, status, deadline, updated_at").order("updated_at", { ascending: false }).limit(400),
-      sb.from("documents").select("id, kind, number, customer_name, title, status, total, updated_at").order("created_at", { ascending: false }).limit(400),
-      sb.from("personal_tasks").select("id, title, done").eq("done", false).limit(200),
+      // A client only searches requests for their own businesses (also while the studio previews one).
+      client ? tickets.in("business_id", clients.map((c) => c.id)) : tickets,
+      client ? none : sb.from("documents").select("id, kind, number, customer_name, title, status, total, updated_at").order("created_at", { ascending: false }).limit(400),
+      client ? none : sb.from("personal_tasks").select("id, title, done").eq("done", false).limit(200),
     ]).then(
       ([t, d, k]) => {
         const jobs: Hit[] = (t.data ?? []).map((j) => ({
@@ -189,7 +207,7 @@ export default function Search({
       },
       () => setData([...actions, ...pages, ...clientHits])
     );
-  }, [open, data, clients, kind, Job]);
+  }, [open, data, clients, kind, Job, client]);
 
   const groups = useMemo(() => {
     if (!data) return [];
@@ -295,7 +313,7 @@ export default function Search({
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={onKey}
-                placeholder={voice.listening ? "Listening…" : `Search ${Job.toLowerCase()}s, invoices${kind === "solo" ? ", to-dos" : kind === "trade" ? ", customers" : ", businesses"}…`}
+                placeholder={voice.listening ? "Listening…" : client ? "Search your requests…" : `Search ${Job.toLowerCase()}s, invoices${kind === "solo" ? ", to-dos" : kind === "trade" ? ", customers" : ", businesses"}…`}
                 aria-label="Search"
                 role="combobox"
                 aria-expanded="true"
@@ -346,7 +364,7 @@ export default function Search({
                 </div>
               ))}
             </div>
-            {voice.supported && !q && !voice.listening && <p className="sr-hint">Tap the mic and say something like “unpaid invoices for Sarah”.</p>}
+            {voice.supported && !q && !voice.listening && !client && <p className="sr-hint">Tap the mic and say something like “unpaid invoices for Sarah”.</p>}
           </motion.div>
         </div>
       )}
