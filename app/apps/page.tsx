@@ -7,7 +7,7 @@ import NewApp from "./NewApp";
 
 // Apps made for clients, each belonging to one business. Opening one uses it.
 export default async function AppsPage() {
-  const { supabase, member, businesses, terms, workspace, shell, viewing } = await requireMember(["designer", "manager"]);
+  const { supabase, member, businesses, terms, workspace, shell, viewing } = await requireMember(["designer", "manager", "client"]);
   const [{ data: apps }, { data: latest }] = await Promise.all([
     supabase.from("apps").select("*").order("created_at").returns<App[]>(),
     supabase.from("app_backgrounds").select("app_id, thumb_path, created_at").order("created_at", { ascending: false }).limit(200).returns<AppBackground[]>(),
@@ -24,7 +24,7 @@ export default async function AppsPage() {
   return (
     <Shell {...shell}>
       <h1 className="large">Apps</h1>
-      <p className="sub">Tools made for your {terms.clients}, one {terms.client} each. Open one to use it.</p>
+      <p className="sub">{member.role === "client" ? "Tools made for you. Open one to use it." : <>Tools made for your {terms.clients}, one {terms.client} each. Open one to use it.</>}</p>
       {member.role === "designer" && !viewing && businesses.length > 0 && (
         <div className="app-new-wrap"><NewApp businesses={businesses} workspaceId={workspace.id} clientWord={terms.client} /></div>
       )}

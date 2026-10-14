@@ -57,7 +57,7 @@ function ColourField({ id, label, value, onChange }: { id: string; label: string
   );
 }
 
-export default function PatternApp({ app, slug, source, backgrounds, canEdit }: { app: App; slug: string; source: string | null; backgrounds: Saved[]; canEdit: boolean }) {
+export default function PatternApp({ app, slug, source, backgrounds, canEdit, canMake }: { app: App; slug: string; source: string | null; backgrounds: Saved[]; canEdit: boolean; canMake: boolean }) {
   const router = useRouter();
   const [svg, setSvg] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -176,7 +176,7 @@ export default function PatternApp({ app, slug, source, backgrounds, canEdit }: 
           )}
         </div>
         <div className="pattern-controls">
-          {canEdit ? (
+          {canMake ? (
             <>
               <div className="group">
                 <ColourField id="pat-colour" label="Pattern" value={pattern} onChange={setPattern} />
@@ -242,7 +242,7 @@ export default function PatternApp({ app, slug, source, backgrounds, canEdit }: 
               <span className="pattern-actions">
                 {b.jpg && <a className="btn plain small" href={b.jpg}>JPG</a>}
                 {b.svg && <a className="btn plain small" href={b.svg}>SVG</a>}
-                {canEdit && (
+                {canMake && (
                   <button type="button" className="link pm-small" onClick={() => { setPattern(b.pattern_color); setBackground(b.background_color); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
                     Use colours
                   </button>
@@ -253,7 +253,7 @@ export default function PatternApp({ app, slug, source, backgrounds, canEdit }: 
           ))}
         </div>
       ) : (
-        <div className="group"><div className="empty">No backgrounds yet.{canEdit ? " Pick two colours and create the first." : ""}</div></div>
+        <div className="group"><div className="empty">No backgrounds yet.{canMake ? " Pick two colours and create the first." : ""}</div></div>
       )}
 
       {canEdit && (

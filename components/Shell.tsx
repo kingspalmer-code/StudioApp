@@ -32,7 +32,8 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
       { href: "/apps", label: "Apps" },
       ...(member.business_ids?.length && !viewing ? [{ href: "/portal", label: "New request" }] : []),
     ];
-  if (member.role === "client") return [{ href: "/portal", label: "Requests" }];
+  // Clients get Apps when the studio has made one for their business.
+  if (member.role === "client") return [{ href: "/portal", label: "Requests" }, ...(member.has_apps ? [{ href: "/apps", label: "Apps" }] : [])];
   // Employees only see the to-do list the owner sets them.
   if (member.role === "staff") return [{ href: "/tasks", label: "To-do" }];
   // Who the work is for: businesses (with their staff) on People, customers on Customers, and nobody when working alone.
