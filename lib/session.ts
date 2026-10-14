@@ -82,7 +82,9 @@ const loadMember = cache(async () => {
   const helpUnread = (replies ?? []).some((r) => r.updated_at > r.user_seen_at);
   // Usage stats are on unless you've turned them off in your account.
   const track = !user.user_metadata?.no_tracking;
-  const shell = { member, businesses: clients, workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials, askHint, askOpens, askSince, helpUnread, track, preview: undefined as Business | undefined };
+  // Team in the menus is on unless they've switched it off in Settings > Menu.
+  const showTeam = !user.user_metadata?.hide_team;
+  const shell = { member, businesses: clients, workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials, askHint, askOpens, askSince, helpUnread, track, showTeam, preview: undefined as Business | undefined };
   return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview };
 });
 

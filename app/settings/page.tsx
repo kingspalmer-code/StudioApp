@@ -8,6 +8,7 @@ import Submit from "@/components/Submit";
 import { modeTitle } from "@/lib/workspace";
 import WorkMode from "./WorkMode";
 import RequestLink from "./RequestLink";
+import ShowTeam from "./ShowTeam";
 import { headers } from "next/headers";
 
 export default async function SettingsPage() {
@@ -52,6 +53,13 @@ export default async function SettingsPage() {
         <p className="foot">
           Sets the words Oatcake uses and who can send you {terms.jobs}. Switching never deletes anything.
         </p>
+
+        {!viewing && (
+          <>
+            <p className="eyebrow">Menu</p>
+            <ShowTeam on={shell.showTeam} />
+          </>
+        )}
 
         {workspace.kind === "trade" && (
           <>

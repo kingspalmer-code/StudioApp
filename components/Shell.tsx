@@ -19,7 +19,7 @@ import { OatcakeMark } from "./OatcakeLogo";
 import { termsFor } from "@/lib/workspace";
 import Submit from "@/components/Submit";
 
-function linksFor(member: Member, workspace: Workspace, viewing: boolean) {
+function linksFor(member: Member, workspace: Workspace, viewing: boolean, showTeam: boolean) {
   const terms = termsFor(workspace.kind);
   const main = { href: "/queue", label: workspace.kind === "studio" ? "Queue" : terms.Jobs };
   // Managers can look at the queue, every job in it and the gallery of finished work; nothing there lets them change anything.
@@ -45,7 +45,7 @@ function linksFor(member: Member, workspace: Workspace, viewing: boolean) {
     { href: "/overview", label: "Overview" },
     { href: "/portal", label: `New ${terms.job}` },
     ...clients,
-    { href: "/team", label: "Team" },
+    ...(showTeam ? [{ href: "/team", label: "Team" }] : []),
     { href: "/personal", label: "Personal" },
   ];
 }
@@ -62,6 +62,7 @@ export default function Shell({
   askSince = 0,
   helpUnread = false,
   track = false,
+  showTeam = true,
   preview,
   children,
 }: {
@@ -77,13 +78,14 @@ export default function Shell({
   askSince?: number;
   helpUnread?: boolean;
   track?: boolean;
+  showTeam?: boolean;
   preview?: Business;
   children: React.ReactNode;
 }) {
   // Clients see their own business's identity; the workspace owner and manager see Oatcake.
   const biz = member.role === "client" ? businesses.find((b) => b.id === member.business_id) : undefined;
   const brand = biz ? brandFor(biz) : undefined;
-  const links = linksFor(member, workspace, viewing);
+  const links = linksFor(member, workspace, viewing, showTeam);
   // Anyone with more than one section gets the sidebar rail on bigger screens (the tab bar on phones).
   const rail = links.length > 1;
   const canCreate = member.role === "designer" && !viewing;
