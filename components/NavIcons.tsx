@@ -9,6 +9,7 @@ export const NAV_ICONS: Record<string, React.ReactNode> = {
   "/team": <path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2" />,
   // A client's own requests: an in-tray.
   requests: <path d="M4 13h4.5l1.5 2.5h4l1.5-2.5H20M4 13l2.2-7.2A1.2 1.2 0 0 1 7.35 5h9.3a1.2 1.2 0 0 1 1.15.8L20 13v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-5Z" />,
+  "/settings": <path d="M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4" />,
   "/personal": <path d="M9 11l2.5 2.5L16 9M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />,
 };
 NAV_ICONS["/people"] = NAV_ICONS["/customers"];

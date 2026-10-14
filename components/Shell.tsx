@@ -17,6 +17,7 @@ import TabBar from "./TabBar";
 import Tracker from "./Tracker";
 import { OatcakeMark } from "./OatcakeLogo";
 import { termsFor } from "@/lib/workspace";
+import { alwaysOnComputer } from "@/lib/menu";
 import Submit from "@/components/Submit";
 
 export type NavLink = { href: string; label: string; icon?: string };
@@ -49,7 +50,9 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
     workspace.kind === "studio" ? [{ href: "/people", label: "People" }]
     : workspace.kind === "trade" ? [{ href: "/customers", label: "Customers" }]
     : [{ href: "/gallery", label: "Gallery" }];
-  if (viewing) return [main, { href: "/overview", label: "Overview" }, ...clients, { href: "/apps", label: "Apps" }];
+  // Settings is a section of its own, last, so it's always a click away (it used to hide behind your account).
+  const settings = { href: "/settings", label: "Settings" };
+  if (viewing) return [main, { href: "/overview", label: "Overview" }, ...clients, { href: "/apps", label: "Apps" }, settings];
   return [
     main,
     { href: "/overview", label: "Overview" },
@@ -59,6 +62,7 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
     { href: "/apps", label: "Apps" },
     { href: "/team", label: "Team" },
     { href: "/personal", label: "Personal" },
+    settings,
   ];
 }
 
@@ -101,10 +105,10 @@ export default function Shell({
   const links = linksFor(member, workspace, viewing);
   // Anyone with more than one section gets the sidebar rail on bigger screens (the tab bar on phones).
   const rail = links.length > 1;
-  // The sidebar and the phone tab bar leave out what the owner has switched off. The first section always stays.
-  const shown = (off: string[]) => links.filter((l, i) => i === 0 || !off.includes(l.href));
-  const deskLinks = shown(hidden.computer);
-  const phoneLinks = shown(hidden.phone);
+  // The sidebar and the phone tab bar leave out what the owner has switched off. The first section
+  // always stays, and on computers Settings does too.
+  const deskLinks = links.filter((l, i) => alwaysOnComputer(l.href, i) || !hidden.computer.includes(l.href));
+  const phoneLinks = links.filter((l, i) => i === 0 || !hidden.phone.includes(l.href));
   const canCreate = member.role === "designer" && !viewing;
   // Clients get New (their request form) and Search over their own requests too.
   const isClient = member.role === "client";

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Shell from "@/components/Shell";
+import FrameChanged from "@/components/FrameChanged";
 import { loadSettings } from "@/lib/docs-server";
 import { requireMember } from "@/lib/session";
 import DocSettingsForm from "./DocSettingsForm";
@@ -13,7 +14,8 @@ export default async function DocumentSettingsPage() {
   return (
     <Shell {...shell}>
       <div style={{ maxWidth: 720 }}>
-        <p className="eyebrow" style={{ textTransform: "none", letterSpacing: 0 }}><Link href="/settings">‹ Settings</Link></p>
+        <p className="eyebrow settings-back" style={{ textTransform: "none", letterSpacing: 0 }}><Link href="/settings">‹ Settings</Link></p>
+        <FrameChanged at={Date.now()} />
         <h1 className="large">Quotes &amp; invoices</h1>
         <p className="when" style={{ fontSize: 14 }}>Set this up once and every quote and invoice uses it. Make one from any job.</p>
         <DocSettingsForm

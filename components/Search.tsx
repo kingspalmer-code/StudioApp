@@ -52,7 +52,11 @@ const PAGES = (kind: WorkspaceKind, Job: string): Omit<Hit, "kind" | "key">[] =>
   { title: "Personal", href: "/personal", words: "personal tasks to-dos todo list projects", tags: [] },
   { title: "Quote and invoice settings", href: "/settings/documents", words: "settings quote invoice style logo vat bank payment terms branding pdf", tags: [] },
   { title: `${Job} form`, href: "/settings/form", words: "settings form fields questions job request", tags: [] },
-  { title: "Settings", href: "/settings", words: "settings stages types workflow preferences", tags: [] },
+  { title: "Settings", href: "/settings", words: "settings preferences", tags: [] },
+  { title: "Stages", href: "/settings/stages", words: "settings stages workflow statuses steps", tags: [] },
+  { title: `${Job} types`, href: "/settings/types", words: "settings types kinds days lead time", tags: [] },
+  { title: "Menu buttons", href: "/settings/menu", words: "settings menu sidebar tab bar buttons hide show phone computer", tags: [] },
+  { title: "Workspace name", href: "/settings/workspace", words: "settings workspace name rename how you work businesses customers just me mode", tags: [] },
   { title: "Account", href: "/account", words: "account profile photo password sign out appearance theme dark light", tags: [] },
   { title: "Help", href: "/help", words: "help support contact question problem", tags: [] },
 ];
