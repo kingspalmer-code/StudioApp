@@ -1179,8 +1179,13 @@ html.embedded main { padding: 16px 20px 48px; }
 .lcd-name { position: absolute; left: 4px; top: 3px; font-size: 11px; text-transform: none; }
 .lcd-name small { font-size: 8.5px; opacity: .7; margin-left: 3px; }
 .lcd-says { position: absolute; right: 4px; top: 4px; font-size: 8.5px; }
-.lcd-walk { position: absolute; bottom: 2px; left: 30%; width: 60px; height: 66px; display: grid; place-items: end center; animation: lcd-wander 18s steps(36) infinite alternate; }
-.lcd-blob { width: 60px; height: 49px; }
+.lcd-walk { position: absolute; bottom: 2px; left: 30%; width: 60px; height: 72px; display: grid; place-items: end center; animation: lcd-wander 18s steps(36) infinite alternate; }
+.lcd-blob { width: 60px; height: auto; }
+.lcd-blob.baby { width: 34px; }
+.lcd-blob.kid { width: 48px; }
+.lcd-blob.teen { width: 54px; }
+.lcd-stage.levelup .lcd-blob { animation: lcd-grow .4s steps(1) 6; }
+.lcd-stage.levelup .lcd-says { animation: lcd-blink .3s steps(1) 8; }
 .lcd-gherkin { width: 40px; height: 66px; animation: lcd-wiggle .5s steps(1) infinite; }
 .lcd-ink { fill: #1d201a; }
 .lcd-shade { fill: rgba(29,32,26,.32); }
@@ -1212,6 +1217,7 @@ html.embedded main { padding: 16px 20px 48px; }
 @keyframes lcd-blink { 50% { opacity: 0; } }
 @keyframes lcd-hop { 50% { transform: translateY(-4px); } }
 @keyframes lcd-chomp { 50% { transform: scale(1.05, .95); } }
+@keyframes lcd-grow { 50% { transform: scale(1.15); } }
 @keyframes lcd-wiggle { 50% { transform: rotate(-6deg); } }
 @keyframes lcd-wander { from { left: 2%; } to { left: calc(98% - 60px); } }
 @keyframes lcd-dance { 0% { transform: translateY(0) rotate(-10deg); } 25% { transform: translateY(-8px) rotate(0); } 50% { transform: translateY(0) rotate(10deg); } 75% { transform: translateY(-8px) scaleX(-1); } }

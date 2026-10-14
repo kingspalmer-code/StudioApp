@@ -27,6 +27,7 @@ const SHOWN = 2;
 const DEFAULT: Key[] = ["pet", "week"];
 const SHOWN_KEY = "widgets_shown";
 const TIN_KEY = "pickle_tin";
+const LEVEL_KEY = "pickle_level";
 
 function savedShown(): Key[] {
   try {
@@ -188,6 +189,10 @@ function Pet({ pet: start, earnHint }: { pet: PetView | null; earnHint: string }
     try { seen = Number(localStorage.getItem(TIN_KEY) ?? "NaN"); } catch {}
     try { localStorage.setItem(TIN_KEY, String(start.tin)); } catch {}
     if (!Number.isNaN(seen) && start.tin > seen) setNews(`+${start.tin - seen} in the tin!`);
+    let seenLevel = NaN;
+    try { seenLevel = Number(localStorage.getItem(LEVEL_KEY) ?? "NaN"); } catch {}
+    try { localStorage.setItem(LEVEL_KEY, String(start.level)); } catch {}
+    if (!Number.isNaN(seenLevel) && start.level > seenLevel) setNews(`Grew to LV ${start.level}!`);
   }, [start]);
 
   if (!pet) return <p className="widget-empty">Pickle is hatching…</p>;
@@ -206,11 +211,18 @@ function Pet({ pet: start, earnHint }: { pet: PetView | null; earnHint: string }
       setAct("eat");
       setTimeout(() => play("pickle", 3000), 1200);
     }
+    const started = Date.now();
     try {
       const next = await feedPickle(kind);
       if (next) {
-        setPet(next);
-        try { localStorage.setItem(TIN_KEY, String(next.tin)); } catch {}
+        try { localStorage.setItem(TIN_KEY, String(next.tin)); localStorage.setItem(LEVEL_KEY, String(next.level)); } catch {}
+        // Show the new stats (and any growth) once the snack is finished.
+        const wait = Math.max(0, (kind === "golden" ? 3200 : 4200) - (Date.now() - started));
+        const grew = next.level > pet.level;
+        setTimeout(() => {
+          setPet(next);
+          if (grew) play("levelup", 2600);
+        }, wait);
       }
     } finally {
       setBusy(false);
@@ -218,10 +230,10 @@ function Pet({ pet: start, earnHint }: { pet: PetView | null; earnHint: string }
   };
 
   const canDance = pet.hunger >= DANCE_AT;
-  const mood: Mood = act === "eat" || act === "golden" ? "eat" : act === "happy" || act === "dance" || pet.glowing ? "happy" : pet.mood;
+  const mood: Mood = act === "eat" || act === "golden" ? "eat" : act === "happy" || act === "dance" || act === "levelup" || pet.glowing ? "happy" : pet.mood;
   const meters: [string, number][] = [["Food", pet.hunger], ["Joy", pet.happy], ["Grow", pet.growth]];
   const says =
-    act === "golden" ? "Golden!!" : act === "eat" ? "Nom nom!" : act === "pickle" ? "I'm a pickle!" : act === "dance" ? "♪ ♫ ♪" : act === "happy" ? "♥" :
+    act === "golden" ? "Golden!!" : act === "eat" ? "Nom nom!" : act === "pickle" ? "I'm a pickle!" : act === "dance" ? "♪ ♫ ♪" : act === "levelup" ? `Level up! LV ${pet.level}` : act === "happy" ? "♥" :
     news ?? (pet.mood === "sad" ? (pet.tin ? "Feed me?" : "Peckish...") : `Day ${pet.streak} streak`);
   return (
     <div className={`lcd ${pixel.className}${pet.glowing ? " glowing" : ""}`}>
@@ -229,7 +241,7 @@ function Pet({ pet: start, earnHint }: { pet: PetView | null; earnHint: string }
         <span className="lcd-name">Pickle <small>LV {pet.level}</small></span>
         <span className="lcd-says">{says}</span>
         <span className="lcd-walk">
-          {act === "pickle" ? <Gherkin /> : <Blob mood={mood} />}
+          {act === "pickle" ? <Gherkin /> : <Blob mood={mood} stage={stageFor(pet.level)} />}
           {(act === "eat" || act === "golden") && <Snack golden={act === "golden"} />}
           {act === "golden" && <span className="lcd-sparkle" aria-hidden="true">✦ ✧ ✦</span>}
           {act === "pickle" && <span className="lcd-poof" aria-hidden="true">* *</span>}
@@ -260,7 +272,7 @@ function Pet({ pet: start, earnHint }: { pet: PetView | null; earnHint: string }
 
 // How full Pickle has to be before he'll dance.
 const DANCE_AT = 0.6;
-type Act = "eat" | "golden" | "happy" | "dance" | "pickle";
+type Act = "eat" | "golden" | "happy" | "dance" | "pickle" | "levelup";
 
 type Mood = "idle" | "happy" | "sad" | "eat";
 
@@ -291,11 +303,26 @@ function face(rows: string[]) {
   rows.forEach((row, y) => [...row].forEach((c, x) => { if (c === "#") d += `M${(x + 5) * PX} ${(y + 7) * PX}h${PX}v${PX}h-${PX}z`; }));
   return d;
 }
-function Blob({ mood }: { mood: Mood }) {
+// Pickle grows up as he levels: a tiny baby, a bigger blob, then feet, then a crowned grown-up.
+type Stage = "baby" | "kid" | "teen" | "adult";
+function stageFor(level: number): Stage {
+  return level >= 10 ? "adult" : level >= 6 ? "teen" : level >= 3 ? "kid" : "baby";
+}
+const CROWN = ["#..#..#", "##.#.##", "#######", "#######"];
+const FEET = ["..###.......###...", ".####......####..."];
+function sprite(rows: string[], dx: number, dy: number) {
+  let d = "";
+  rows.forEach((row, y) => [...row].forEach((c, x) => { if (c === "#") d += `M${(x + dx) * PX} ${(y + dy) * PX}h${PX}v${PX}h-${PX}z`; }));
+  return d;
+}
+function Blob({ mood, stage }: { mood: Mood; stage: Stage }) {
+  const top = stage === "adult" ? 3 : 0;
+  const feet = stage === "teen" || stage === "adult";
+  const rows = H + top + (feet ? 2 : 0);
   return (
-    <svg className="lcd-blob" viewBox={`0 0 ${W * PX} ${H * PX}`} aria-hidden="true" shapeRendering="crispEdges">
+    <svg className={`lcd-blob ${stage}`} viewBox={`0 ${-top * PX} ${W * PX} ${rows * PX}`} aria-hidden="true" shapeRendering="crispEdges">
       <path className="lcd-shade" d={BODY.shade} />
-      <path className="lcd-ink" d={BODY.ink + face(FACES[mood])} />
+      <path className="lcd-ink" d={BODY.ink + face(FACES[mood]) + (feet ? sprite(FEET, 2, H - 1) : "") + (top ? sprite(CROWN, 7, -top) : "")} />
     </svg>
   );
 }
