@@ -2,12 +2,12 @@ import Link from "next/link";
 import BizBadge from "@/components/BizBadge";
 import Shell from "@/components/Shell";
 import type { App, AppBackground } from "@/lib/apps";
-import { requireMember } from "@/lib/session";
+import { asClient, requireMember } from "@/lib/session";
 import NewApp from "./NewApp";
 
 // Apps made for clients, each belonging to one business. Opening one uses it.
 export default async function AppsPage() {
-  const { supabase, member, businesses, terms, workspace, shell, viewing } = await requireMember(["designer", "manager", "client"]);
+  const { supabase, member, businesses, terms, workspace, shell, viewing } = asClient(await requireMember(["designer", "manager", "client"]));
   const [{ data: apps }, { data: latest }] = await Promise.all([
     supabase.from("apps").select("*").order("created_at").returns<App[]>(),
     supabase.from("app_backgrounds").select("app_id, thumb_path, created_at").order("created_at", { ascending: false }).limit(200).returns<AppBackground[]>(),
@@ -19,7 +19,8 @@ export default async function AppsPage() {
   const paths = Object.values(cover);
   const signed = paths.length ? (await supabase.storage.from("apps").createSignedUrls(paths, 3600)).data ?? [] : [];
   const url = Object.fromEntries(signed.map((s) => [s.path, s.signedUrl]));
-  const list = (apps ?? []).filter((a) => byId[a.business_id]);
+  // A client (or the studio previewing one) only sees their own businesses' apps.
+  const list = (apps ?? []).filter((a) => byId[a.business_id] && (member.role !== "client" || member.business_ids?.includes(a.business_id)));
 
   return (
     <Shell {...shell}>

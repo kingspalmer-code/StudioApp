@@ -28,7 +28,7 @@ const loadMember = cache(async () => {
   const jar = await cookies();
   const rawView = jar.get(VIEW_COOKIE)?.value ?? "";
   const viewId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawView) ? rawView : null;
-  const [{ data: { user } }, { data: row }, { data: businesses }, { data: viewedRows }, { data: stages }, { data: types }, { data: isAdmin }, { data: replies }, { data: mine }, { count: appCount }] = await Promise.all([
+  const [{ data: { user } }, { data: row }, { data: businesses }, { data: viewedRows }, { data: stages }, { data: types }, { data: isAdmin }, { data: replies }, { data: mine }, { data: appRows }] = await Promise.all([
     // For the profile details (photo, hints); the token's copy can be up to an hour old.
     supabase.auth.getUser(),
     supabase
@@ -45,7 +45,7 @@ const loadMember = cache(async () => {
     // Every business a client (or manager) can request work for: a client's main one first, then any others.
     supabase.rpc("my_businesses"),
     // Apps they can open, for the Apps tab in a client's portal.
-    supabase.from("apps").select("id", { count: "exact", head: true }),
+    supabase.from("apps").select("business_id").returns<{ business_id: string }[]>(),
   ]);
   if (!user) redirect("/login");
   // Signed in but no workspace yet: set one up.
@@ -54,7 +54,9 @@ const loadMember = cache(async () => {
   const workspace = [...(viewedRows ?? []), ...(ownWorkspace ? [ownWorkspace] : [])];
   const extra = member.role === "designer" ? [] : ((mine as string[] | null) ?? []).filter((id) => id !== member.business_id);
   member.business_ids = member.business_id ? [member.business_id, ...extra] : extra;
-  member.has_apps = Boolean(appCount);
+  member.has_apps = Boolean(appRows?.length);
+  // Which businesses have apps, so a preview of one client shows Apps only when they have one.
+  const appBusinesses = (appRows ?? []).map((a) => a.business_id);
   const viewed = isAdmin && viewId && viewId !== member.workspace_id ? workspace?.find((w) => w.id === viewId) : undefined;
   const own = workspace?.find((w) => w.id === member.workspace_id);
   const ws: Workspace = viewed ?? own ?? { id: member.workspace_id, name: "Oatcake", kind: "studio", owner_name: "" };
@@ -89,7 +91,7 @@ const loadMember = cache(async () => {
   const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
   const hidden = { phone: list(user.user_metadata?.hide_phone), computer: list(user.user_metadata?.hide_computer) };
   const shell = { member, businesses: clients, workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials, askHint, askOpens, askSince, helpUnread, track, hidden, preview: undefined as Business | undefined };
-  return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview };
+  return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview, appBusinesses };
 });
 
 type Session = Awaited<ReturnType<typeof requireMember>>;
@@ -99,7 +101,7 @@ type Session = Awaited<ReturnType<typeof requireMember>>;
 export function asClient<S extends Session>(session: S, businessId?: string): S {
   const { preview } = session;
   if (!preview || (businessId && businessId !== preview.id)) return session;
-  const member = { ...session.member, role: "client" as Role, business_id: preview.id, business_ids: [preview.id] };
+  const member = { ...session.member, role: "client" as Role, business_id: preview.id, business_ids: [preview.id], has_apps: session.appBusinesses.includes(preview.id) };
   return { ...session, member, shell: { ...session.shell, member, preview } };
 }
 
