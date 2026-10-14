@@ -1115,6 +1115,10 @@ html.in-app .nt-layer { top: var(--app-bar); }
   html.split-open .widgets .widget + .widget { display: none; }
   .ticket[data-open] { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
   .ticket[data-open]::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
+  /* A Settings section open beside the list. */
+  .settings-list .nav-row { position: relative; }
+  .settings-list .nav-row[data-open] { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+  .settings-list .nav-row[data-open]::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
 }
 @keyframes split-in { from { transform: translateX(24px); opacity: 0; } }
 
@@ -1123,6 +1127,8 @@ html.embedded body { padding-top: 0; }
 html.embedded .bar, html.embedded .app-bar, html.embedded .app-drag, html.embedded .tabbar, html.embedded .viewing-bar { display: none !important; }
 html.embedded .has-rail { padding-left: 0; }
 html.embedded main { padding: 16px 20px 48px; }
+/* A Settings section beside the Settings list doesn't need its way back to it. */
+html.embedded .settings-back { display: none; }
 
 /* The widgets above Up next (components/QueueWidgets.tsx). */
 .widgets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) auto; gap: 10px; margin: 4px 0 22px; align-items: stretch; }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Shell from "@/components/Shell";
+import FrameChanged from "@/components/FrameChanged";
 import { ADDABLE_KINDS, KIND_LABELS, type JobField } from "@/lib/fields";
 import { requireMember } from "@/lib/session";
 import { addField, deleteField, moveCoreField, moveField, saveCoreField, saveField, setCoreHidden, setFieldHidden } from "../actions";
@@ -114,7 +115,8 @@ export default async function JobFormPage() {
   return (
     <Shell {...shell}>
       <div style={{ maxWidth: 640 }}>
-        <p className="eyebrow"><Link href="/settings">‹ Settings</Link></p>
+        <p className="eyebrow settings-back"><Link href="/settings">‹ Settings</Link></p>
+        <FrameChanged at={Date.now()} />
         <h1 className="large">{terms.Job} form</h1>
         <p className="sub">
           What the new {terms.job} form asks, in order. Tap a field to rename it or change its hint.{" "}
