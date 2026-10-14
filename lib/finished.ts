@@ -8,11 +8,11 @@ import { tellCustomers } from "@/lib/customers";
 
 // A job reached the last stage, or was sent to the client for review: email the client or manager
 // who sent it, and alert their phone if they've turned alerts on. Only jobs someone sent from their
-// portal count, or ones the studio picked someone to keep updated on (tickets.notify), so other jobs
+// portal count, or ones the studio picked someone to keep updated on (tickets.tell), so other jobs
 // the studio added itself (including imported past work) never email anyone. Each move is sent once.
 
 type Studio = { name: string; replyTo: string; terms: Terms; kind?: WorkspaceKind };
-type Job = { id: number; title: string; created_by: string; notify: string | null; delivered_at: string | null; updated_at: string; business_id: string };
+type Job = { id: number; title: string; created_by: string; tell: string[]; delivered_at: string | null; updated_at: string; business_id: string };
 type Person = { email: string; full_name: string; role: string; business_id: string | null };
 export type Moment = "finished" | "review";
 
@@ -82,13 +82,13 @@ export async function tellRequesters(supabase: SupabaseClient, ids: number[], st
   if (studio.kind === "trade") return tellCustomers(supabase, ids, studio, moment);
   const { data: jobs } = await supabase
     .from("tickets")
-    .select("id, title, created_by, notify, delivered_at, updated_at, business_id")
+    .select("id, title, created_by, tell, delivered_at, updated_at, business_id")
     .in("id", ids)
     .returns<Job[]>();
   const finished = (jobs ?? []).filter((j) => moment === "review" || j.delivered_at);
   if (!finished.length) return;
   const [people, { data: businesses }, { data: files }] = await Promise.all([
-    linkedPeople(supabase, finished.flatMap((j) => [j.created_by, j.notify ?? ""])),
+    linkedPeople(supabase, finished.flatMap((j) => [j.created_by, ...j.tell])),
     supabase.from("businesses").select("id, name").in("id", [...new Set(finished.map((j) => j.business_id))]).returns<{ id: string; name: string }[]>(),
     supabase.from("ticket_deliveries").select("ticket_id").in("ticket_id", finished.map((j) => j.id)).returns<{ ticket_id: number }[]>(),
   ]);
@@ -98,7 +98,7 @@ export async function tellRequesters(supabase: SupabaseClient, ids: number[], st
 
   for (const j of finished) {
     // Whoever sent it, plus anyone the studio picked to keep updated on it.
-    const told = [...new Set([j.created_by, j.notify ?? ""])].map((e) => people.get(e)).filter((p): p is NonNullable<typeof p> => p !== undefined && canSee(p, j.business_id));
+    const told = [...new Set([j.created_by, ...j.tell])].map((e) => people.get(e)).filter((p): p is NonNullable<typeof p> => p !== undefined && canSee(p, j.business_id));
     if (!told.length) continue;
     // Sent once per move; finishing it again after reopening it tells them again.
     if (pushReady() && !(await firstTime(moment, `${j.id}:${moment === "finished" ? j.delivered_at : j.updated_at}`))) continue;
@@ -129,17 +129,17 @@ export async function tellRequesters(supabase: SupabaseClient, ids: number[], st
 
 const hello = (who: Person) => (who.full_name ? `Hi ${who.full_name.split(" ")[0]},` : "Hi,");
 
-// The studio just added a job and picked someone at the business to tell: email them and alert
+// The studio just added a job and picked people to tell: email them and alert
 // their phone. Sent once per job.
 export async function tellPicked(supabase: SupabaseClient, id: number, studio: Studio) {
   const { data: j } = await supabase
     .from("tickets")
-    .select("id, title, type, deadline, notify, business_id")
+    .select("id, title, type, deadline, tell, business_id")
     .eq("id", id)
-    .maybeSingle<{ id: number; title: string; type: string; deadline: string; notify: string | null; business_id: string }>();
-  if (!j?.notify) return;
-  const who = (await linkedPeople(supabase, [j.notify])).get(j.notify);
-  if (!who || !canSee(who, j.business_id)) return;
+    .maybeSingle<{ id: number; title: string; type: string; deadline: string; tell: string[]; business_id: string }>();
+  if (!j?.tell.length) return;
+  const told = [...(await linkedPeople(supabase, j.tell)).values()].filter((p) => canSee(p, j.business_id));
+  if (!told.length) return;
   if (pushReady() && !(await firstTime("new_job", String(j.id)))) return;
   const { data: biz } = await supabase.from("businesses").select("name").eq("id", j.business_id).maybeSingle<{ name: string }>();
   const { job } = studio.terms;
@@ -148,8 +148,8 @@ export async function tellPicked(supabase: SupabaseClient, id: number, studio: S
   const line = `${studio.name} has added a new ${job}${forBiz}: "${j.title}" (${j.type}), due ${due}.`;
   const next = "You can follow it in Oatcake, and you'll hear when there's a draft to look at and when it's finished.";
   await Promise.all([
-    email(who.email, `New ${job}: ${j.title}`, [hello(who), line, next], `${await origin()}/tickets/${j.id}`, "Open in Oatcake", studio.name, studio.replyTo),
-    sendAlert([who.email], { title: `New ${job}: ${j.title}`, body: `${studio.name} added it${forBiz}, due ${due}.`, url: `/tickets/${j.id}`, tag: `ticket-${j.id}-new` }),
+    ...told.map(async (who) => email(who.email, `New ${job}: ${j.title}`, [hello(who), line, next], `${await origin()}/tickets/${j.id}`, "Open in Oatcake", studio.name, studio.replyTo)),
+    sendAlert(told.map((who) => who.email), { title: `New ${job}: ${j.title}`, body: `${studio.name} added it${forBiz}, due ${due}.`, url: `/tickets/${j.id}`, tag: `ticket-${j.id}-new` }),
   ]);
 }
 
@@ -157,13 +157,13 @@ export async function tellPicked(supabase: SupabaseClient, id: number, studio: S
 // updated, with the draft's message, its images and links, and alert their phones. Sent once per draft.
 export async function tellDraft(supabase: SupabaseClient, ticketId: number, draftId: number, studio: Studio) {
   const [{ data: j }, { data: drafts }, { data: files }] = await Promise.all([
-    supabase.from("tickets").select("id, title, created_by, notify, business_id").eq("id", ticketId).maybeSingle<Pick<Job, "id" | "title" | "created_by" | "notify" | "business_id">>(),
+    supabase.from("tickets").select("id, title, created_by, tell, business_id").eq("id", ticketId).maybeSingle<Pick<Job, "id" | "title" | "created_by" | "tell" | "business_id">>(),
     supabase.from("ticket_drafts").select("id, message").eq("ticket_id", ticketId).order("created_at").returns<{ id: number; message: string }[]>(),
     supabase.from("ticket_draft_files").select("path, url, name, mime").eq("draft_id", draftId).order("created_at").returns<{ path: string | null; url: string | null; name: string; mime: string }[]>(),
   ]);
   const round = (drafts ?? []).findIndex((d) => d.id === draftId) + 1;
   if (!j || !round) return;
-  const people = await linkedPeople(supabase, [j.created_by, j.notify ?? ""]);
+  const people = await linkedPeople(supabase, [j.created_by, ...j.tell]);
   const told = [...people.values()].filter((p) => canSee(p, j.business_id));
   if (!told.length) return;
   if (pushReady() && !(await firstTime("draft", String(draftId)))) return;
@@ -197,12 +197,12 @@ export async function peopleToTell(supabase: SupabaseClient, ids: number[]): Pro
   if (!ids.length) return out;
   const { data: jobs } = await supabase
     .from("tickets")
-    .select("id, created_by, notify, business_id")
+    .select("id, created_by, tell, business_id")
     .in("id", ids)
-    .returns<Pick<Job, "id" | "created_by" | "notify" | "business_id">[]>();
-  const people = await linkedPeople(supabase, (jobs ?? []).flatMap((j) => [j.created_by, j.notify ?? ""]));
+    .returns<Pick<Job, "id" | "created_by" | "tell" | "business_id">[]>();
+  const people = await linkedPeople(supabase, (jobs ?? []).flatMap((j) => [j.created_by, ...j.tell]));
   for (const j of jobs ?? []) {
-    const told = [...new Set([j.created_by, j.notify ?? ""])].map((e) => people.get(e)).filter((p): p is NonNullable<typeof p> => p !== undefined && canSee(p, j.business_id));
+    const told = [...new Set([j.created_by, ...j.tell])].map((e) => people.get(e)).filter((p): p is NonNullable<typeof p> => p !== undefined && canSee(p, j.business_id));
     out.set(j.id, told.map((p) => p.full_name || p.email));
   }
   return out;

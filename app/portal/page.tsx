@@ -57,7 +57,8 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
     const people = (members ?? [])
       .map((m) => ({
         email: m.email,
-        name: `${m.full_name || m.email}${m.role === "manager" ? " (manager)" : ""}`,
+        name: m.full_name || m.email,
+        manager: m.role === "manager",
         businesses: [m.business_id, ...(links ?? []).filter((l) => l.email === m.email).map((l) => l.business_id)].filter((b) => b !== null),
       }))
       .sort((a, b) => a.name.localeCompare(b.name));

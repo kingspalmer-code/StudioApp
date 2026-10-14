@@ -10,8 +10,10 @@ import FieldInput from "@/components/FieldInput";
 import { appliesTo, groupFields, readFields, type JobField } from "@/lib/fields";
 import type { Business, JobType } from "@/lib/types";
 import { SELF_PREFIX, slugify } from "@/lib/workspace";
+import TellPicker, { type TellPerson } from "@/components/TellPicker";
 
 const MAX_FILE_MB = 25;
+const names = (ps: { name: string }[]) => ps.map((p) => p.name).join(", ").replace(/, ([^,]*)$/, " and $1");
 
 export default function NewRequestForm({
   businesses,
@@ -44,7 +46,7 @@ export default function NewRequestForm({
   // Starting from a finished job: the new request links back to it and starts with its details.
   followUp?: { id: number; business_id: string; title: string; type: string; brief: string };
   // For the studio: each business's clients and managers, who can be picked to hear about the job.
-  people?: { email: string; name: string; businesses: string[] }[];
+  people?: (TellPerson & { businesses: string[] })[];
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -52,7 +54,7 @@ export default function NewRequestForm({
   const [type, setType] = useState<string>(types.some((t) => t.name === followUp?.type) ? followUp!.type : firstType);
   const [deadline, setDeadline] = useState("");
   const [biz, setBiz] = useState(businesses[0]?.id ?? "");
-  const [notify, setNotify] = useState("");
+  const [tell, setTell] = useState<string[]>([]);
   const self = useRef(selfId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +96,9 @@ export default function NewRequestForm({
   const groups = groupFields(fields);
   const job = solo ? "Project" : trade ? "Job" : "Request";
   const tight = deadline && daysFromToday(deadline) < lead;
-  const canTell = isDesigner && !trade ? people.filter((p) => p.businesses.includes(biz)) : [];
+  // The business's own clients, and any manager (managers can see every job).
+  const canTell = isDesigner && !trade ? people.filter((p) => p.manager || p.businesses.includes(biz)) : [];
+  const picked = canTell.filter((p) => tell.includes(p.email));
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -159,7 +163,7 @@ export default function NewRequestForm({
         ...columns,
         details,
         ...(followUp ? { follows: followUp.id } : {}),
-        ...(notify && canTell.some((p) => p.email === notify) ? { notify } : {}),
+        ...(picked.length ? { tell: picked.map((p) => p.email) } : {}),
       })
       .select("id")
       .single();
@@ -172,8 +176,7 @@ export default function NewRequestForm({
     // Lets the studio know on their phone. Clients only; the studio doesn't need alerting about its own jobs.
     if (!isDesigner && !trade) void alertNewRequest(ticket.id).catch(() => {});
     // The studio picked someone at the business to tell about it.
-    const told = isDesigner && canTell.find((p) => p.email === notify);
-    if (told) void tellPickedPerson(ticket.id).catch(() => {});
+    if (isDesigner && picked.length) void tellPickedPerson(ticket.id).catch(() => {});
 
     const failed: string[] = [];
     for (const file of files) {
@@ -191,7 +194,7 @@ export default function NewRequestForm({
         : trade
           ? `${job} added. It's in your list now.`
           : isDesigner
-            ? `Request added to the queue.${told ? ` ${told.name} has been told.` : ""}`
+            ? `Request added to the queue.${picked.length ? ` ${names(picked)} ${picked.length > 1 ? "have" : "has"} been told.` : ""}`
             : `Request sent. ${ownerName} can see it now.`;
     if (followUp && !onSent && !failed.length) return router.push(`/tickets/${ticket.id}`);
     router.refresh();
@@ -199,7 +202,7 @@ export default function NewRequestForm({
     formRef.current?.reset();
     setType(firstType);
     setDeadline("");
-    setNotify("");
+    setTell([]);
     setBiz(businesses[0]?.id ?? "");
     setExtra([]);
     setDone(message);
@@ -256,7 +259,7 @@ export default function NewRequestForm({
           <div className="row">
             <label htmlFor="business_id">{isDesigner ? "Business" : "For"}</label>
             <div className="ctl">
-              <select id="business_id" name="business_id" required value={biz} onChange={(e) => { setBiz(e.target.value); setNotify(""); }}>
+              <select id="business_id" name="business_id" required value={biz} onChange={(e) => { setBiz(e.target.value); setTell([]); }}>
                 {businesses.map((b) => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
@@ -267,13 +270,8 @@ export default function NewRequestForm({
         {!isDesigner && businesses.length <= 1 && <input type="hidden" name="business_id" value={businesses[0]?.id ?? ""} />}
         {canTell.length > 0 && (
           <div className="row">
-            <label htmlFor="notify">Tell</label>
-            <div className="ctl">
-              <select id="notify" value={notify} onChange={(e) => setNotify(e.target.value)}>
-                <option value="">Nobody</option>
-                {canTell.map((p) => <option key={p.email} value={p.email}>{p.name}</option>)}
-              </select>
-            </div>
+            <span className="k">Tell</span>
+            <div className="ctl"><TellPicker people={canTell} value={tell} onChange={setTell} /></div>
           </div>
         )}
         <div className="row">
@@ -302,7 +300,7 @@ export default function NewRequestForm({
         </div>
       </div>
       <p className="foot">
-        {notify && `${canTell.find((p) => p.email === notify)?.name ?? "They"} will get an email and a phone alert now, and again with each draft you share and when it's ready for review or finished. `}
+        {picked.length > 0 && `${names(picked)} will get an email and a phone alert now, and again with each draft you share and when it's ready for review or finished. `}
         {type} jobs need about {lead} working days.
         {tight ? (isDesigner ? " That deadline is tight." : ` That deadline is tight, so ${ownerName} may come back to you about timing.`) : ""}
       </p>

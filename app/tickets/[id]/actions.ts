@@ -73,9 +73,9 @@ export async function tellAboutDraft(ticketId: number, draftId: number) {
   after(() => tellDraft(supabase, ticketId, draftId, { name: workspace.name, replyTo: member.email, terms, kind: workspace.kind }).catch(() => {}));
 }
 
-// Who the studio keeps updated on a job: one of the business's clients or managers, or nobody.
-export async function setNotify(ticketId: number, email: string) {
+// Who the studio keeps updated on a job: any of the business's clients and any manager.
+export async function setTell(ticketId: number, emails: string[]) {
   const { supabase } = await requireEditor(["designer"]);
-  await supabase.from("tickets").update({ notify: email || null }).eq("id", ticketId);
+  await supabase.from("tickets").update({ tell: [...new Set(emails.map((e) => e.toLowerCase()))] }).eq("id", ticketId);
   revalidatePath(`/tickets/${ticketId}`);
 }

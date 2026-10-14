@@ -41,8 +41,8 @@ export type Ticket = {
   created_by: string;
   // The finished job this one follows on from, if it does.
   follows: number | null;
-  // A client or manager the studio picked to keep updated on this job.
-  notify: string | null;
+  // Clients and managers the studio picked to keep updated on this job.
+  tell: string[];
   requester_name: string;
   title: string;
   type: string;
