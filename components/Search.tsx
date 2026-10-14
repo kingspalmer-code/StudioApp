@@ -47,8 +47,8 @@ const PAGES = (kind: WorkspaceKind, Job: string): Omit<Hit, "kind" | "key">[] =>
   ...(kind === "solo" ? [{ title: "Gallery", href: "/gallery", words: "gallery finished work portfolio", tags: [] }] : [
     { title: kind === "trade" ? "Customers" : "Businesses", href: "/customers", words: "customers clients businesses contacts", tags: [] },
     { title: "People", href: "/people", words: "people team members access invite", tags: [] },
-    { title: "Apps", href: "/apps", words: "apps applications tools pattern backgrounds mailer colours", tags: [] },
   ]),
+  { title: "Apps", href: "/apps", words: "apps applications tools pattern backgrounds mailer colours request new app", tags: [] },
   { title: "Personal", href: "/personal", words: "personal tasks to-dos todo list projects", tags: [] },
   { title: "Quote and invoice settings", href: "/settings/documents", words: "settings quote invoice style logo vat bank payment terms branding pdf", tags: [] },
   { title: `${Job} form`, href: "/settings/form", words: "settings form fields questions job request", tags: [] },
@@ -98,11 +98,11 @@ function useVoice(onText: (text: string, final: boolean) => void) {
 }
 
 // A client's own pages, for their Search.
-const CLIENT_PAGES = (apps: boolean): Omit<Hit, "kind" | "key">[] => [
+const CLIENT_PAGES: Omit<Hit, "kind" | "key">[] = [
   { title: "Overview", href: "/overview", words: "overview home widgets pickle stats", tags: [] },
   { title: "Requests", href: "/portal", words: "requests jobs in progress", tags: [] },
   { title: "Finished work", href: "/portal/archive", words: "finished completed done archive delivered files", tags: [] },
-  ...(apps ? [{ title: "Apps", href: "/apps", words: "apps tools pattern backgrounds", tags: [] }] : []),
+  { title: "Apps", href: "/apps", words: "apps tools pattern backgrounds request new app", tags: [] },
   { title: "Logo and colour", href: "/portal/brand", words: "logo colour color brand", tags: [] },
   { title: "Account", href: "/account", words: "account profile photo password sign out appearance theme dark light", tags: [] },
   { title: "Help", href: "/help", words: "help support contact question problem", tags: [] },
@@ -165,7 +165,7 @@ export default function Search({
     if (!open || data) return;
     const name = Object.fromEntries(clients.map((c) => [c.id, c.name]));
     const sb = createClient();
-    const pages: Hit[] = (client ? CLIENT_PAGES(client.apps) : PAGES(kind, Job)).map((p, i) => ({ ...p, kind: "page", key: `p${i}` }));
+    const pages: Hit[] = (client ? CLIENT_PAGES : PAGES(kind, Job)).map((p, i) => ({ ...p, kind: "page", key: `p${i}` }));
     const actions: Hit[] = client
       ? [{ kind: "page", key: "new", title: "New request", href: "/portal?new=1", words: "new create add make request send ask", tags: [] }]
       : [{ kind: "page", key: "new", title: `New ${Job.toLowerCase()}, quote or invoice`, run: openCreate, words: `new create add make ${Job} quote invoice task customer invite`, tags: [] }];

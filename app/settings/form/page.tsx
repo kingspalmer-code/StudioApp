@@ -2,11 +2,13 @@ import Link from "next/link";
 import Shell from "@/components/Shell";
 import { ADDABLE_KINDS, KIND_LABELS, type JobField } from "@/lib/fields";
 import { requireMember } from "@/lib/session";
-import { addField, deleteField, moveField, saveField, setFieldHidden } from "../actions";
+import { addField, deleteField, moveCoreField, moveField, saveCoreField, saveField, setCoreHidden, setFieldHidden } from "../actions";
+import { coreFields, type CoreField } from "@/lib/core-fields";
 import Submit from "@/components/Submit";
 
 export default async function JobFormPage() {
-  const { supabase, ctx, terms, shell } = await requireMember(["designer"]);
+  const { supabase, ctx, terms, shell, workspace } = await requireMember(["designer"]);
+  const core = coreFields(workspace.core_fields, { trade: workspace.kind !== "studio", solo: workspace.kind === "solo" });
   const { data } = await supabase.from("job_fields").select("*").order("position").order("id").returns<JobField[]>();
   const fields = data ?? [];
   const on = fields.filter((f) => !f.hidden);
@@ -85,15 +87,56 @@ export default async function JobFormPage() {
     </details>
   );
 
+  const coreEditor = (c: CoreField) => (
+    <details className="ctl field-edit">
+      <summary>
+        <span className="field-name">{c.label}</span>
+        <span className="when">{[c.label !== c.defaultLabel && `Was ${c.defaultLabel}`, c.hidden ? "Hidden" : !c.canHide && "Always asked"].filter(Boolean).join(" · ")}</span>
+      </summary>
+      <form action={saveCoreField.bind(null, c.key)} className="field-form">
+        <label>
+          Name
+          <input name="label" defaultValue={c.label === c.defaultLabel ? "" : c.label} placeholder={c.defaultLabel} maxLength={60} />
+        </label>
+        {c.hasHint && (
+          <label>
+            Hint
+            <input name="hint" defaultValue={c.hint} placeholder="Example text shown in the empty box" maxLength={120} />
+          </label>
+        )}
+        <div className="field-actions">
+          <Submit className="btn small" type="submit">Save</Submit>
+        </div>
+      </form>
+    </details>
+  );
+
   return (
     <Shell {...shell}>
       <div style={{ maxWidth: 640 }}>
         <p className="eyebrow"><Link href="/settings">‹ Settings</Link></p>
         <h1 className="large">{terms.Job} form</h1>
         <p className="sub">
-          What the new {terms.job} form asks, in order. {terms.Client}, title, type, needed-by date and importance are always there. Tap a field to change it.{" "}
+          What the new {terms.job} form asks, in order. Tap a field to rename it or change its hint.{" "}
           <Link href="/portal">See the form</Link>
         </p>
+
+        <p className="eyebrow">Top of the form</p>
+        <div className="group">
+          {core.map((c, i) => (
+            <div className="row field-row" key={c.key}>
+              {coreEditor(c)}
+              <span className="stage-tools">
+                <form action={moveCoreField.bind(null, c.key, -1)}><Submit className="link" disabled={i === 0} aria-label={`Move ${c.label} up`}>↑</Submit></form>
+                <form action={moveCoreField.bind(null, c.key, 1)}><Submit className="link" disabled={i === core.length - 1} aria-label={`Move ${c.label} down`}>↓</Submit></form>
+                {c.canHide && (
+                  <form action={setCoreHidden.bind(null, c.key, !c.hidden)}><Submit className="link" aria-label={`${c.hidden ? "Switch on" : "Switch off"} ${c.label}`}>{c.hidden ? "Show" : "Hide"}</Submit></form>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="foot">Every {terms.job} needs these, so only {core.filter((c) => c.canHide).map((c) => c.defaultLabel.toLowerCase()).join(" and ")} can be hidden. A hidden importance means Standard.</p>
 
         <p className="eyebrow">On the form</p>
         <div className="group">

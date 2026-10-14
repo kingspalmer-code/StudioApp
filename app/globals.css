@@ -1235,7 +1235,7 @@ html.embedded main { padding: 16px 20px 48px; }
 .menu-icon svg { width: 22px; height: 22px; }
 
 /* Apps (app/apps): the list, and the pattern maker with its gallery of backgrounds. */
-.app-new-wrap { margin: 0 0 18px; }
+.app-new-wrap { margin: 0 0 18px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
 .app-new { max-width: 640px; }
 .app-new select { width: 100%; border: 0; background: transparent; outline: none; }
 .app-title { margin-bottom: 4px; }
@@ -1324,3 +1324,4 @@ html.embedded main { padding: 16px 20px 48px; }
 .tell-chips button:disabled { opacity: .6; cursor: default; }
 .tell-auto { color: var(--label-2); font-size: 13px; margin: 0 0 6px; }
 a.rail-new, a.app-bar-pill { text-decoration: none; }
+.app-new-wrap .app-new { flex: 1 1 100%; }

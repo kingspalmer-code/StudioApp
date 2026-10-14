@@ -8,6 +8,7 @@ import FieldInput from "@/components/FieldInput";
 import { appliesTo, groupFields, hasValue, showValue, valueOf, type JobField } from "@/lib/fields";
 import { dueLabel, finalStage, formatDate, isDone, money, reviewStage, startBy, startLabel, statusLabel } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
+import { coreFields, type CoreKey } from "@/lib/core-fields";
 import { createClient } from "@/lib/supabase/server";
 import type { Note, Ticket, TicketFile } from "@/lib/types";
 import DeleteTicket from "./DeleteTicket";
@@ -52,6 +53,9 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   if (!t) notFound();
   // While previewing a client, their own jobs show as they see them; anything else shows as usual.
   const { supabase, member, businesses, ctx, terms, workspace, shell, viewing } = asClient(session, t.business_id);
+  // Type and needed-by use the names set in Settings > Job form.
+  const core = coreFields(workspace.core_fields, { trade: false, solo: false });
+  const coreLabel = (k: CoreKey) => core.find((c) => c.key === k)?.label ?? k;
   const trade = workspace.kind !== "studio";
 
   // Then what needs the job itself, also all at once.
@@ -271,8 +275,8 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
         <p className="eyebrow">Details</p>
         <div className="group">
           {biz && <div className="row"><span className="k">{terms.Client}</span><div className="ctl">{biz.name}</div></div>}
-          <div className="row"><span className="k">Type</span><div className="ctl">{t.type}</div></div>
-          <div className="row"><span className="k">Needed by</span><div className="ctl">{formatDate(t.deadline)} <span className="when">({dueLabel(t.deadline)})</span></div></div>
+          <div className="row"><span className="k">{coreLabel("type")}</span><div className="ctl">{t.type}</div></div>
+          <div className="row"><span className="k">{coreLabel("deadline")}</span><div className="ctl">{formatDate(t.deadline)} <span className="when">({dueLabel(t.deadline)})</span></div></div>
           {groups[0] && !groups[0].title && groups[0].fields.map(show)}
           <div className="row"><span className="k">{trade && !t.details?.via_link ? "Added" : "Submitted"}</span><div className="ctl">{formatDate(t.created_at)}{t.requester_name && !shown.has("requester_name") ? ` by ${t.requester_name}` : ""}{t.details?.via_link ? " through your request link" : ""}</div></div>
           {members && keepable.length > 0 && (

@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { PRIORITIES, daysFromToday, todayISO } from "@/lib/priority";
 import FieldInput from "@/components/FieldInput";
 import { appliesTo, groupFields, readFields, type JobField } from "@/lib/fields";
+import { coreFields, type CoreField } from "@/lib/core-fields";
 import type { Business, JobType } from "@/lib/types";
 import { SELF_PREFIX, slugify } from "@/lib/workspace";
 import TellPicker, { type TellPerson } from "@/components/TellPicker";
@@ -29,6 +30,7 @@ export default function NewRequestForm({
   onSent,
   followUp,
   people = [],
+  core: coreProp,
 }: {
   businesses: Business[];
   defaultName: string;
@@ -47,8 +49,11 @@ export default function NewRequestForm({
   followUp?: { id: number; business_id: string; title: string; type: string; brief: string };
   // For the studio: each business's clients and managers, who can be picked to hear about the job.
   people?: (TellPerson & { businesses: string[] })[];
+  // The top-of-form fields as this workspace has set them up (Settings > Job form).
+  core?: CoreField[];
 }) {
   const router = useRouter();
+  const core = coreProp ?? coreFields(null, { trade, solo });
   const formRef = useRef<HTMLFormElement>(null);
   const firstType = types[0]?.name ?? "Other";
   const [type, setType] = useState<string>(types.some((t) => t.name === followUp?.type) ? followUp!.type : firstType);
@@ -159,7 +164,7 @@ export default function NewRequestForm({
         title: get("title"),
         type: get("type"),
         deadline: get("deadline"),
-        priority: get("priority"),
+        priority: get("priority") || "Standard",
         ...columns,
         details,
         ...(followUp ? { follows: followUp.id } : {}),
@@ -238,23 +243,6 @@ export default function NewRequestForm({
     >
       <p className="eyebrow">{solo ? "The project" : trade ? "The job" : "The project"}</p>
       <div className="group">
-        {trade && !solo && (
-          <>
-            <div className="row">
-              <label htmlFor="customer">Customer</label>
-              <div className="ctl">
-                <input id="customer" name="customer" required list="customers" autoComplete="off" placeholder="Existing or new customer" />
-                <datalist id="customers">
-                  {businesses.map((b) => <option key={b.id} value={b.name} />)}
-                </datalist>
-              </div>
-            </div>
-            <div className="row">
-              <label htmlFor="phone">Phone</label>
-              <div className="ctl"><input id="phone" name="phone" type="tel" placeholder="For new customers" /></div>
-            </div>
-          </>
-        )}
         {(isDesigner || businesses.length > 1) && !trade && (
           <div className="row">
             <label htmlFor="business_id">{isDesigner ? "Business" : "For"}</label>
@@ -274,30 +262,35 @@ export default function NewRequestForm({
             <div className="ctl"><TellPicker people={canTell} value={tell} onChange={setTell} /></div>
           </div>
         )}
-        <div className="row">
-          <label htmlFor="title">Title</label>
-          <div className="ctl"><input id="title" name="title" required placeholder={solo ? "e.g. Portfolio site refresh" : trade ? "e.g. Shop front fascia" : "e.g. Halloween weekend poster"} /></div>
-        </div>
-        <div className="row">
-          <label htmlFor="type">Type</label>
-          <div className="ctl">
-            <select id="type" name="type" value={type} onChange={(e) => setType(e.target.value)}>
-              {types.map((t) => <option key={t.id}>{t.name}</option>)}
-            </select>
+        {core.filter((c) => !c.hidden).map((c) => (
+          <div className="row" key={c.key}>
+            <label htmlFor={c.key}>{c.label}</label>
+            <div className="ctl">
+              {c.key === "customer" ? (
+                <>
+                  <input id="customer" name="customer" required list="customers" autoComplete="off" placeholder={c.hint || undefined} />
+                  <datalist id="customers">
+                    {businesses.map((b) => <option key={b.id} value={b.name} />)}
+                  </datalist>
+                </>
+              ) : c.key === "phone" ? (
+                <input id="phone" name="phone" type="tel" placeholder={c.hint || undefined} />
+              ) : c.key === "title" ? (
+                <input id="title" name="title" required placeholder={c.hint || undefined} />
+              ) : c.key === "type" ? (
+                <select id="type" name="type" value={type} onChange={(e) => setType(e.target.value)}>
+                  {types.map((t) => <option key={t.id}>{t.name}</option>)}
+                </select>
+              ) : c.key === "deadline" ? (
+                <input id="deadline" name="deadline" type="date" required min={todayISO()} value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+              ) : (
+                <select id="priority" name="priority">
+                  {PRIORITIES.map((p) => <option key={p}>{p}</option>)}
+                </select>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="row">
-          <label htmlFor="deadline">Needed by</label>
-          <div className="ctl"><input id="deadline" name="deadline" type="date" required min={todayISO()} value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
-        </div>
-        <div className="row">
-          <label htmlFor="priority">Importance</label>
-          <div className="ctl">
-            <select id="priority" name="priority">
-              {PRIORITIES.map((p) => <option key={p}>{p}</option>)}
-            </select>
-          </div>
-        </div>
+        ))}
       </div>
       <p className="foot">
         {picked.length > 0 && `${names(picked)} will get an email and a phone alert now, and again with each draft you share and when it's ready for review or finished. `}

@@ -30,7 +30,7 @@ export type AppModel = {
   created_at: string;
 };
 
-// The apps bucket takes files up to this size (migration 032), the free plan's limit.
+// The apps bucket takes files up to this size (migration 033), the free plan's limit.
 export const MODEL_MAX_MB = 50;
 
 // "4.2 MB" from a number of bytes.
