@@ -380,10 +380,10 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 .field-name { font-weight: 500; }
 .field-heading { font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: .06em; color: var(--label-2); }
 .field-form { display: grid; gap: 10px; margin-top: 12px; }
-.field-form > label:not(.tick) { display: grid; gap: 4px; font-size: 13px; color: var(--label-2); }
-.field-form > label:not(.tick) :is(input, select, textarea) { width: 100%; border: .5px solid var(--sep); border-radius: 8px; padding: 8px 10px; background: var(--surface); color: var(--label); font-size: 15px; }
-.field-form .tick, .types .tick { display: flex; gap: 8px; align-items: center; font-size: 14px; }
-.field-form .tick input, .types .tick input { width: auto; }
+.field-form > label:not(.field-check) { display: grid; gap: 4px; font-size: 13px; color: var(--label-2); }
+.field-form > label:not(.field-check) :is(input, select, textarea) { width: 100%; border: .5px solid var(--sep); border-radius: 8px; padding: 8px 10px; background: var(--surface); color: var(--label); font-size: 15px; }
+.field-check { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.35; color: var(--label); }
+.field-check input { width: auto; flex: none; margin: 2px 0 0; accent-color: var(--accent); }
 .types { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; }
 .types legend { font-size: 13px; color: var(--label-2); margin-bottom: 4px; }
 .field-actions { display: flex; gap: 12px; align-items: center; margin-top: 8px; flex-wrap: wrap; }

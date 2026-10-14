@@ -56,13 +56,13 @@ export default async function JobFormPage() {
                 <textarea name="options" defaultValue={f.options.join("\n")} rows={4} />
               </label>
             )}
-            <label className="tick"><input type="checkbox" name="required" defaultChecked={f.required} /> Must be filled in</label>
-            <label className="tick"><input type="checkbox" name="on_form" defaultChecked={f.on_form} /> Ask on the new {terms.job} form (otherwise only on the {terms.job} page)</label>
+            <label className="field-check"><input type="checkbox" name="required" defaultChecked={f.required} /> Must be filled in</label>
+            <label className="field-check"><input type="checkbox" name="on_form" defaultChecked={f.on_form} /> Ask on the new {terms.job} form (otherwise only on the {terms.job} page)</label>
             {ctx.types.length > 1 && (
               <fieldset className="types">
                 <legend>Ask for these {terms.job} types</legend>
                 {ctx.types.map((t) => (
-                  <label className="tick" key={t.id}>
+                  <label className="field-check" key={t.id}>
                     <input type="checkbox" name="type_ids" value={t.id} defaultChecked={!f.type_ids?.length || f.type_ids.includes(t.id)} /> {t.name}
                   </label>
                 ))}
