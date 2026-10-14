@@ -47,6 +47,7 @@ const PAGES = (kind: WorkspaceKind, Job: string): Omit<Hit, "kind" | "key">[] =>
   ...(kind === "solo" ? [{ title: "Gallery", href: "/gallery", words: "gallery finished work portfolio", tags: [] }] : [
     { title: kind === "trade" ? "Customers" : "Businesses", href: "/customers", words: "customers clients businesses contacts", tags: [] },
     { title: "People", href: "/people", words: "people team members access invite", tags: [] },
+    { title: "Apps", href: "/apps", words: "apps applications tools pattern backgrounds mailer colours", tags: [] },
   ]),
   { title: "Personal", href: "/personal", words: "personal tasks to-dos todo list projects", tags: [] },
   { title: "Quote and invoice settings", href: "/settings/documents", words: "settings quote invoice style logo vat bank payment terms branding pdf", tags: [] },

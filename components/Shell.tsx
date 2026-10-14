@@ -29,6 +29,7 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
       main,
       { href: "/overview", label: "Overview" },
       { href: "/gallery", label: "Gallery" },
+      { href: "/apps", label: "Apps" },
       ...(member.business_ids?.length && !viewing ? [{ href: "/portal", label: "New request" }] : []),
     ];
   if (member.role === "client") return [{ href: "/portal", label: "Requests" }];
@@ -39,12 +40,14 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
     workspace.kind === "studio" ? [{ href: "/people", label: "People" }]
     : workspace.kind === "trade" ? [{ href: "/customers", label: "Customers" }]
     : [{ href: "/gallery", label: "Gallery" }];
-  if (viewing) return [main, { href: "/overview", label: "Overview" }, ...clients];
+  if (viewing) return [main, { href: "/overview", label: "Overview" }, ...clients, ...(workspace.kind === "studio" ? [{ href: "/apps", label: "Apps" }] : [])];
   return [
     main,
     { href: "/overview", label: "Overview" },
     { href: "/portal", label: `New ${terms.job}` },
     ...clients,
+    // Tools made for one client each, such as a pattern recolourer. Only for workspaces with businesses.
+    ...(workspace.kind === "studio" ? [{ href: "/apps", label: "Apps" }] : []),
     { href: "/team", label: "Team" },
     { href: "/personal", label: "Personal" },
   ];

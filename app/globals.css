@@ -1214,3 +1214,37 @@ html.embedded main { padding: 16px 20px 48px; }
 .menu-buttons .menu-head .ctl { flex: 1; }
 .menu-icon { flex: none; width: 22px; height: 22px; color: var(--label-2); }
 .menu-icon svg { width: 22px; height: 22px; }
+
+/* Apps (app/apps): the list, and the pattern maker with its gallery of backgrounds. */
+.app-new-wrap { margin: 0 0 18px; }
+.app-new { max-width: 640px; }
+.app-new select { width: 100%; border: 0; background: transparent; outline: none; }
+.app-title { margin-bottom: 4px; }
+.eyebrow a { color: inherit; }
+.pattern-maker { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 24px; align-items: start; margin-bottom: 8px; }
+.pattern-stage { position: relative; width: 100%; border-radius: var(--r); overflow: hidden; box-shadow: 0 0 0 .5px var(--sep); display: grid; place-items: center; transition: background .15s; }
+.pattern-lines { position: absolute; inset: 0; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; transition: background .15s; }
+.pattern-wait { color: #fff; mix-blend-mode: difference; padding: 16px; text-align: center; }
+.pattern-controls { max-width: 460px; }
+.pattern-controls .eyebrow:first-child { margin-top: 0; }
+.pattern-note { margin: 10px 4px 0; }
+.pm-hex { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase; }
+.pm-colour { flex: none; width: 40px; height: 30px; border: 0; padding: 0; background: none; cursor: pointer; border-radius: 8px; }
+.pm-colour::-webkit-color-swatch-wrapper { padding: 0; }
+.pm-colour::-webkit-color-swatch { border: 0; border-radius: 8px; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.25); }
+.pm-colour::-moz-color-swatch { border: 0; border-radius: 8px; }
+.pm-pairs { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 4px; }
+.pm-pair { width: 34px; height: 34px; border-radius: 50%; border: 5px solid; cursor: pointer; padding: 0; box-shadow: 0 0 0 .5px var(--sep); }
+.pm-pair[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--label); }
+.pm-meta { display: flex; align-items: center; gap: 4px; }
+.pm-dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 .5px var(--sep); flex: none; }
+.pm-dot + .pm-dot { margin-right: 4px; }
+.pattern-gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.pattern-gallery .gallery-img img { object-fit: cover; }
+.pattern-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+.link.pm-small { font-size: 13px; }
+.danger-link { color: var(--red); }
+@media (max-width: 700px) {
+  .pattern-maker { grid-template-columns: minmax(0, 1fr); }
+  .pattern-stage { width: min(100%, 300px); margin: 0 auto; }
+}
