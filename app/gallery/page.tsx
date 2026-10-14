@@ -3,16 +3,21 @@ import BizBadge from "@/components/BizBadge";
 import Shell from "@/components/Shell";
 import { coversFor } from "@/lib/deliveries";
 import { formatDate, isDone } from "@/lib/priority";
-import { requireMember } from "@/lib/session";
+import { asClient, requireMember } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
 
-// Every finished piece of work across the businesses a manager can see, newest first. Read-only:
-// opening one shows its files to view or download, nothing here changes anything.
+// Every finished piece of work someone can see, newest first: the studio and managers see every
+// business, a client sees their own businesses. Read-only: opening one shows its files to view or
+// download, nothing here changes anything. Employees never see jobs, so they have no gallery.
 export default async function GalleryPage({ searchParams }: { searchParams: Promise<{ year?: string; type?: string; business?: string }> }) {
   const { year, type, business } = await searchParams;
-  const { supabase, businesses, ctx, terms, workspace, shell } = await requireMember(["manager", "designer"]);
+  const { supabase, member, businesses, ctx, terms, workspace, shell } = asClient(await requireMember(["manager", "designer", "client"]));
   const byId = Object.fromEntries(businesses.map((b) => [b.id, b]));
-  const { data } = await supabase.from("tickets").select("*").returns<Ticket[]>();
+  // The database already limits a client to their businesses; this also scopes a studio preview of one client.
+  const client = member.role === "client";
+  let query = supabase.from("tickets").select("*");
+  if (client) query = query.in("business_id", member.business_ids ?? []);
+  const { data } = await query.returns<Ticket[]>();
   const finished = (data ?? [])
     .filter((t) => isDone(t, ctx))
     .map((t) => ({ ...t, when: t.delivered_at ?? t.deadline }))
@@ -36,7 +41,7 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
   return (
     <Shell {...shell}>
       <h1 className="large">Gallery</h1>
-      <p className="sub">{workspace.kind === "solo" ? `Every ${terms.job} you've finished.` : <>Everything that&apos;s been finished for your {terms.clients}.</>} Open one to view or download its files.</p>
+      <p className="sub">{client ? <>Everything that&apos;s been finished for you.</> : workspace.kind === "solo" ? `Every ${terms.job} you've finished.` : <>Everything that&apos;s been finished for your {terms.clients}.</>} Open one to view or download its files.</p>
       <div className="archive-filters">
         {bizIds.length > 1 && workspace.kind !== "solo" && (
           <nav className="seg" aria-label={terms.client}>

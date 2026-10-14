@@ -36,11 +36,12 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
       ...(member.business_ids?.length && !viewing ? [{ href: "/portal", label: "New request" }] : []),
     ];
   // Clients get a sidebar like the studio's: their Overview (with the widgets) first, then their
-  // requests, and Apps (theirs, or a way to ask for one).
+  // requests, their gallery of finished work, and Apps (theirs, or a way to ask for one).
   if (member.role === "client")
     return [
       { href: "/overview", label: "Overview" },
       { href: "/portal", label: "Requests", icon: "requests" },
+      { href: "/gallery", label: "Gallery" },
       { href: "/apps", label: "Apps" },
     ];
   // Employees see the to-do list the owner sets them, and Apps.
@@ -49,15 +50,18 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
   const clients =
     workspace.kind === "studio" ? [{ href: "/people", label: "People" }]
     : workspace.kind === "trade" ? [{ href: "/customers", label: "Customers" }]
-    : [{ href: "/gallery", label: "Gallery" }];
+    : [];
+  // Everyone who sees jobs gets the gallery of finished work.
+  const gallery = { href: "/gallery", label: "Gallery" };
   // Settings is a section of its own, last, so it's always a click away (it used to hide behind your account).
   const settings = { href: "/settings", label: "Settings" };
-  if (viewing) return [main, { href: "/overview", label: "Overview" }, ...clients, { href: "/apps", label: "Apps" }, settings];
+  if (viewing) return [main, { href: "/overview", label: "Overview" }, ...clients, gallery, { href: "/apps", label: "Apps" }, settings];
   return [
     main,
     { href: "/overview", label: "Overview" },
     { href: "/portal", label: `New ${terms.job}` },
     ...clients,
+    gallery,
     // Tools made for one client each, such as a pattern recolourer, and a way to ask for new ones.
     { href: "/apps", label: "Apps" },
     { href: "/team", label: "Team" },
