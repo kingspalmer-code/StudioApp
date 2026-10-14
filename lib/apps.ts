@@ -5,7 +5,7 @@ export type App = {
   id: string;
   workspace_id: string;
   business_id: string;
-  kind: "pattern";
+  kind: AppKind;
   name: string;
   source_path: string | null;
   // The part of the pattern a background shows, in the SVG's own units, saved at one pixel per
@@ -13,6 +13,31 @@ export type App = {
   frame: Frame | null;
   created_at: string;
 };
+
+// pattern: recolour a one-colour SVG into backgrounds. model: a gallery of STL models to view in 3D.
+export type AppKind = "pattern" | "model";
+export const KIND_LABEL: Record<AppKind, string> = { pattern: "Pattern backgrounds", model: "3D viewer" };
+
+export type AppModel = {
+  id: string;
+  app_id: string;
+  name: string;
+  file_path: string;
+  thumb_path: string | null;
+  size_bytes: number;
+  triangles: number;
+  created_by: string;
+  created_at: string;
+};
+
+// The apps bucket takes files up to this size (migration 033), the free plan's limit.
+export const MODEL_MAX_MB = 50;
+
+// "4.2 MB" from a number of bytes.
+export function fileSize(bytes: number) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB`;
+}
 
 export type Frame = { x: number; y: number; w: number; h: number };
 

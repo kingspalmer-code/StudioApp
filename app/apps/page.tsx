@@ -1,7 +1,7 @@
 import Link from "next/link";
 import BizBadge from "@/components/BizBadge";
 import Shell from "@/components/Shell";
-import type { App, AppBackground } from "@/lib/apps";
+import { KIND_LABEL, type App, type AppBackground, type AppModel } from "@/lib/apps";
 import { asClient, requireMember } from "@/lib/session";
 import NewApp from "./NewApp";
 
@@ -12,14 +12,16 @@ const REQUEST = "App request: I'd like an app that ";
 // page, with a way to ask for a new app through Help.
 export default async function AppsPage() {
   const { supabase, member, businesses, terms, workspace, shell, viewing } = asClient(await requireMember());
-  const [{ data: apps }, { data: latest }] = await Promise.all([
+  const [{ data: apps }, { data: latest }, { data: latestModels }] = await Promise.all([
     supabase.from("apps").select("*").order("created_at").returns<App[]>(),
     supabase.from("app_backgrounds").select("app_id, thumb_path, created_at").order("created_at", { ascending: false }).limit(200).returns<AppBackground[]>(),
+    supabase.from("app_models").select("app_id, thumb_path, created_at").not("thumb_path", "is", null).order("created_at", { ascending: false }).limit(200).returns<AppModel[]>(),
   ]);
   const byId = Object.fromEntries(businesses.map((b) => [b.id, b]));
-  // Each app's card shows the background saved in it most recently.
+  // Each app's card shows the background or model saved in it most recently.
   const cover: Record<string, string> = {};
   for (const b of latest ?? []) cover[b.app_id] ??= b.thumb_path;
+  for (const m of latestModels ?? []) if (m.thumb_path) cover[m.app_id] ??= m.thumb_path;
   const paths = Object.values(cover);
   const signed = paths.length ? (await supabase.storage.from("apps").createSignedUrls(paths, 3600)).data ?? [] : [];
   const url = Object.fromEntries(signed.map((s) => [s.path, s.signedUrl]));
@@ -40,8 +42,8 @@ export default async function AppsPage() {
         <div className="gallery apps-list">
           {list.map((a) => (
             <Link key={a.id} href={`/apps/${a.id}`} className="gallery-card">
-              <span className="gallery-img">
-                {cover[a.id] && url[cover[a.id]] ? <img src={url[cover[a.id]]} alt="" loading="lazy" /> : <span>Pattern backgrounds</span>}
+              <span className={`gallery-img${a.kind === "model" ? " model-cover" : ""}`}>
+                {cover[a.id] && url[cover[a.id]] ? <img src={url[cover[a.id]]} alt="" loading="lazy" /> : <span>{KIND_LABEL[a.kind] ?? "App"}</span>}
               </span>
               <b>{a.name}</b>
               <small className="when gallery-biz">

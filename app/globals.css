@@ -1292,6 +1292,35 @@ html.embedded .settings-back { display: none; }
   .pattern-stage { width: min(100%, 300px); margin: 0 auto; }
 }
 
+/* 3D viewer apps (app/apps/[id]/ModelViewer): the model large, with its finish and lighting below. */
+.mv { margin-bottom: 4px; }
+.mv-stage { position: relative; height: min(62vh, 560px); min-height: 280px; border-radius: var(--r); overflow: hidden; box-shadow: 0 0 0 .5px var(--sep); display: grid; place-items: center;
+  background: radial-gradient(ellipse at 50% 35%, var(--surface-2), var(--surface) 70%); touch-action: none; }
+.mv-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; outline: none; }
+.mv-stage canvas:active { cursor: grabbing; }
+.mv-wait { position: relative; display: grid; gap: 12px; justify-items: center; padding: 16px; text-align: center; }
+.mv-hint { position: absolute; left: 12px; bottom: 10px; font-size: 12px; color: var(--label-3); pointer-events: none; }
+.mv-corner { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
+.mv-icon { display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 9px; background: var(--surface-2); color: var(--label); box-shadow: 0 0 0 .5px var(--sep); cursor: pointer; padding: 0; }
+.mv-icon:hover { background: var(--fill); }
+.mv-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mv-bar { display: grid; gap: 8px; margin-top: 10px; }
+.mv-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.mv-chips button { display: inline-flex; align-items: center; gap: 6px; border: .5px solid var(--sep); background: var(--surface-2); color: var(--label); font: inherit; font-size: 13px; font-weight: 500; padding: 5px 11px; border-radius: 999px; cursor: pointer; }
+.mv-chips button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.mv-swatch { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.25); flex: none; }
+.mv-swatch.mv-gold, .mv-swatch.mv-silver, .mv-swatch.mv-rose { background-image: linear-gradient(135deg, rgba(255,255,255,.7), transparent 55%, rgba(0,0,0,.25)) !important; }
+.mv-swatch.mv-wire { background: transparent !important; box-shadow: inset 0 0 0 1.5px currentColor; }
+.mv-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.mv-name { font-size: 17px; margin: 14px 0 4px; }
+.mv-full { position: fixed; inset: 0; z-index: 60; margin: 0; background: var(--bg); padding: 12px; display: flex; flex-direction: column; }
+.mv-full .mv-stage { flex: 1; height: auto; }
+.mv-thumb { border: 0; padding: 0; cursor: pointer; width: 100%; font: inherit; }
+.mv-thumb img { object-fit: contain !important; }
+.mv-card.on .mv-thumb { box-shadow: 0 0 0 2px var(--accent); }
+.model-cover img { object-fit: contain !important; }
+@media (max-width: 700px) { .mv-stage { height: min(56vh, 420px); } .mv-hint { display: none; } }
+
 /* Picking who to keep updated on a job */
 .tell-pick { display: grid; gap: 8px; padding: 2px 0; justify-items: start; }
 .tell-pick small { display: block; color: var(--label-2); font-size: 12px; margin-bottom: 4px; }
