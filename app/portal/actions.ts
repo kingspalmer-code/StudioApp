@@ -93,10 +93,10 @@ export async function tellPickedPerson(ticketId: number) {
   const { supabase, member, workspace, terms } = await requireEditor(["designer"]);
   const { data: t } = await supabase
     .from("tickets")
-    .select("created_by, created_at, notify")
+    .select("created_by, created_at, tell")
     .eq("id", ticketId)
-    .maybeSingle<{ created_by: string; created_at: string; notify: string | null }>();
-  if (!t?.notify || t.created_by !== member.email || Date.now() - Date.parse(t.created_at) > 15 * 60_000) return;
+    .maybeSingle<{ created_by: string; created_at: string; tell: string[] }>();
+  if (!t?.tell.length || t.created_by !== member.email || Date.now() - Date.parse(t.created_at) > 15 * 60_000) return;
   await tellPicked(supabase, ticketId, { name: workspace.name, replyTo: member.email, terms });
 }
 

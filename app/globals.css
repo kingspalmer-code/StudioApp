@@ -1248,3 +1248,12 @@ html.embedded main { padding: 16px 20px 48px; }
   .pattern-maker { grid-template-columns: minmax(0, 1fr); }
   .pattern-stage { width: min(100%, 300px); margin: 0 auto; }
 }
+
+/* Picking who to keep updated on a job */
+.tell-pick { display: grid; gap: 8px; padding: 2px 0; justify-items: start; }
+.tell-pick small { display: block; color: var(--label-2); font-size: 12px; margin-bottom: 4px; }
+.tell-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tell-chips button { border: .5px solid var(--sep); background: var(--surface-2); color: var(--label); font: inherit; font-size: 13px; font-weight: 500; padding: 5px 11px; border-radius: 999px; cursor: pointer; }
+.tell-chips button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.tell-chips button:disabled { opacity: .6; cursor: default; }
+.tell-auto { color: var(--label-2); font-size: 13px; margin: 0 0 6px; }

@@ -70,10 +70,13 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   ]);
   const followsFrom = (links ?? []).find((x) => x.id === t.follows);
   const linkedHere = new Set((memberLinks ?? []).map((l) => l.email));
+  // The business's own clients and any manager (managers can see every job), apart from whoever
+  // sent it: they're told anyway.
   const keepable = (members ?? [])
-    .filter((m) => m.email !== t.created_by && (m.business_id === t.business_id || linkedHere.has(m.email)))
-    .map((m) => ({ email: m.email, name: `${m.full_name || m.email}${m.role === "manager" ? " (manager)" : ""}` }))
+    .filter((m) => m.email !== t.created_by && (m.role === "manager" || m.business_id === t.business_id || linkedHere.has(m.email)))
+    .map((m) => ({ email: m.email, name: m.full_name || m.email, manager: m.role === "manager" }))
     .sort((a, b) => a.name.localeCompare(b.name));
+  const sentBy = (members ?? []).find((m) => m.email === t.created_by);
   const followUps = (links ?? []).filter((x) => x.follows === id);
   const drafts = draftRows ?? [];
   const docs = member.role === "designer" ? (docRows ?? []).map(asDoc) : [];
@@ -84,7 +87,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   // Clients keep adding notes after sending a request. A manager can on a request they sent, and
   // can reply on a finished job for a business they're linked to.
   const linked = (member.business_ids ?? []).includes(t.business_id);
-  const canNote = member.role !== "manager" || t.created_by === member.email || t.notify === member.email || (done && linked && !viewing);
+  const canNote = member.role !== "manager" || t.created_by === member.email || t.tell.includes(member.email) || (done && linked && !viewing);
   // On a finished job, the client (or a linked manager) can ask for a follow-up request from here.
   const canFollowUp = done && !trade && !viewing && member.role !== "designer" && linked;
   // The studio and the client can add files after a job's sent (an invoice, a forgotten photo);
@@ -271,7 +274,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           {groups[0] && !groups[0].title && groups[0].fields.map(show)}
           <div className="row"><span className="k">{trade && !t.details?.via_link ? "Added" : "Submitted"}</span><div className="ctl">{formatDate(t.created_at)}{t.requester_name && !shown.has("requester_name") ? ` by ${t.requester_name}` : ""}{t.details?.via_link ? " through your request link" : ""}</div></div>
           {members && keepable.length > 0 && (
-            <div className="row"><span className="k">Also tell</span><div className="ctl"><KeptUpdated ticketId={t.id} value={t.notify ?? ""} people={keepable} /></div></div>
+            <div className="row"><span className="k">Also tell</span><div className="ctl"><KeptUpdated ticketId={t.id} value={t.tell ?? []} people={keepable} sender={sentBy ? sentBy.full_name || sentBy.email : null} /></div></div>
           )}
           {quote != null && (
             <div className="row"><span className="k">Left to pay</span><div className="ctl">{money(Math.max(0, quote - (paid ?? 0)))}</div></div>
