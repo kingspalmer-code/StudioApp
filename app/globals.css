@@ -1315,10 +1315,12 @@ html.embedded .settings-back { display: none; }
 .mv-name { font-size: 17px; margin: 14px 0 4px; }
 .mv-full { position: fixed; inset: 0; z-index: 60; margin: 0; background: var(--bg); padding: 12px; display: flex; flex-direction: column; }
 .mv-full .mv-stage { flex: 1; height: auto; }
-.mv-thumb { border: 0; padding: 0; cursor: pointer; width: 100%; font: inherit; }
-.mv-thumb img { object-fit: contain !important; }
-.mv-card.on .mv-thumb { box-shadow: 0 0 0 2px var(--accent); }
-.model-cover img { object-fit: contain !important; }
+.app-builtin { background: radial-gradient(ellipse at 50% 35%, var(--surface-2), var(--surface) 70%); }
+.app-builtin svg { width: 38%; height: auto; fill: none; stroke: var(--label-2); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; transition: transform .3s; }
+.gallery-card:hover .app-builtin svg { transform: rotate(-8deg) scale(1.05); }
+.mv-open { display: grid; gap: 10px; justify-items: center; }
+.mv-stage.drop { box-shadow: 0 0 0 2px var(--accent); }
+.mv-files { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 14px 0 0; }
 @media (max-width: 700px) { .mv-stage { height: min(56vh, 420px); } .mv-hint { display: none; } }
 
 /* Picking who to keep updated on a job */
@@ -1331,3 +1333,5 @@ html.embedded .settings-back { display: none; }
 .tell-auto { color: var(--label-2); font-size: 13px; margin: 0 0 6px; }
 a.rail-new, a.app-bar-pill { text-decoration: none; }
 .app-new-wrap .app-new { flex: 1 1 100%; }
+.mv-files button > span { opacity: .55; font-size: 15px; line-height: 1; margin-left: 2px; }
+.mv-files button > span:hover { opacity: 1; }
