@@ -125,6 +125,17 @@ export default function SplitPanel({
   const closeRef = useRef(close);
   closeRef.current = close;
 
+  // Something was saved in a job open here (components/FrameChanged.tsx): show it in the queue now.
+  useEffect(() => {
+    const changed = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin || e.data?.type !== "oatcake:changed") return;
+      if (![...refs.current.values()].some((f) => f.contentWindow === e.source)) return;
+      router.refresh();
+    };
+    window.addEventListener("message", changed);
+    return () => window.removeEventListener("message", changed);
+  }, [router]);
+
   useEffect(() => {
     if (openId === null) return;
     const key = (e: KeyboardEvent) => e.key === "Escape" && !e.defaultPrevented && closeRef.current();
