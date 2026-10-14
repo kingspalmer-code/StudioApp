@@ -1,19 +1,17 @@
 "use server";
 
-import { GOLDEN_COST, petView, type PetRow, type PetView } from "@/lib/pet";
-import { finalStage } from "@/lib/priority";
+import { GOLDEN_COST, oatcakesEarned, petView, type PetRow, type PetView } from "@/lib/pet";
 import { requireEditor } from "@/lib/session";
 
 // Give Pickle an oatcake from the tin, or five of them as a golden one. Returns how Pickle is now
 // (unchanged when the tin hasn't enough).
 export async function feedPickle(kind: "oatcake" | "golden"): Promise<PetView | null> {
-  const { supabase, ctx } = await requireEditor(["designer"]);
-  const [{ data: row }, { count }] = await Promise.all([
+  const { supabase, ctx, member } = await requireEditor(["designer", "manager", "client"]);
+  const [{ data: row }, delivered] = await Promise.all([
     supabase.from("pets").select("*").maybeSingle<PetRow>(),
-    supabase.from("tickets").select("id", { count: "exact", head: true }).eq("status", finalStage(ctx)),
+    oatcakesEarned(supabase, member, ctx),
   ]);
   if (!row) return null;
-  const delivered = count ?? 0;
   const cost = kind === "golden" ? GOLDEN_COST : 1;
   if (petView(row, delivered).tin < cost) return petView(row, delivered);
   const now = new Date().toISOString();

@@ -10,7 +10,7 @@ type Hidden = { phone: string[]; computer: string[] };
 // Which buttons show in the menu: the tab bar on phones, and the sidebar on computers and the Mac app.
 // Saved to this account. The first one always stays, so the menu is never empty, and hidden pages
 // still open from links and alerts.
-export default function MenuButtons({ links, hidden }: { links: { href: string; label: string }[]; hidden: Hidden }) {
+export default function MenuButtons({ links, hidden }: { links: { href: string; label: string; icon?: string }[]; hidden: Hidden }) {
   const router = useRouter();
   const [value, setValue] = useState<Hidden>(hidden);
   const [busy, setBusy] = useState(false);
@@ -32,7 +32,7 @@ export default function MenuButtons({ links, hidden }: { links: { href: string; 
       </div>
       {links.map((l, i) => (
         <div className="row" key={l.href}>
-          <span className="menu-icon"><NavIcon href={l.href} /></span>
+          <span className="menu-icon"><NavIcon href={l.icon ?? l.href} /></span>
           <div className="ctl">
             <div style={{ fontWeight: 600 }}>{l.label}</div>
             {i === 0 && <div className="when">Always shown</div>}
