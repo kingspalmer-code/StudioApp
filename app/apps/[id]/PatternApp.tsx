@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import ConfirmButton from "@/components/ConfirmButton";
-import { THUMB_WIDTH, area, cleanSvg, colourName, crop, isHex, recolour, type App, type AppBackground } from "@/lib/apps";
+import { THUMB_WIDTH, area, cleanSvg, colourName, crop, recolour, type App, type AppBackground } from "@/lib/apps";
 import { createClient } from "@/lib/supabase/client";
 import { deleteApp, deleteBackground } from "../actions";
 
@@ -30,29 +30,90 @@ async function toJpeg(svg: string, width: number, height: number) {
   }
 }
 
+const toRgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+const toHex = (rgb: number[]) => `#${rgb.map((n) => n.toString(16).padStart(2, "0")).join("")}`;
+
+// Reads a typed or pasted colour: #B5ACE5, B5ACE5, #BAE, rgb(181, 172, 229) or 181 172 229.
+function readColour(text: string): string | null {
+  const t = text.trim().toLowerCase();
+  const nums = t.replace(/^rgba?\(|\)$/g, "").split(/[\s,]+/).filter(Boolean);
+  if (nums.length === 3 && nums.every((n) => /^\d{1,3}$/.test(n) && Number(n) <= 255)) return toHex(nums.map(Number));
+  const h = t.replace(/^#/, "");
+  if (/^[0-9a-f]{6}$/.test(h)) return `#${h}`;
+  if (/^[0-9a-f]{3}$/.test(h)) return `#${[...h].map((c) => c + c).join("")}`;
+  return null;
+}
+
+// One colour: the picker, a HEX box and R, G and B boxes, all kept in step. Typing or pasting an
+// exact code anywhere changes the colour as soon as it's a whole one.
 function ColourField({ id, label, value, onChange }: { id: string; label: string; value: string; onChange: (v: string) => void }) {
-  const [text, setText] = useState(value.toUpperCase());
-  useEffect(() => setText(value.toUpperCase()), [value]);
+  const [hex, setHex] = useState(value.slice(1).toUpperCase());
+  const [rgb, setRgb] = useState(toRgb(value).map(String));
+  useEffect(() => {
+    setHex(value.slice(1).toUpperCase());
+    setRgb(toRgb(value).map(String));
+  }, [value]);
+  const reset = () => {
+    setHex(value.slice(1).toUpperCase());
+    setRgb(toRgb(value).map(String));
+  };
   return (
-    <div className="row">
-      <label htmlFor={id}>{label}</label>
-      <div className="ctl">
-        <input
-          aria-label={`${label} hex code`}
-          value={text}
-          maxLength={7}
-          spellCheck={false}
-          className="pm-hex"
-          onChange={(e) => {
-            const v = e.target.value.trim();
-            setText(v);
-            const hex = v.startsWith("#") ? v : `#${v}`;
-            if (isHex(hex)) onChange(hex.toLowerCase());
-          }}
-          onBlur={() => setText(value.toUpperCase())}
-        />
+    <div className="row stack pm-field">
+      <label htmlFor={`${id}-hex`}>{label}</label>
+      <div className="pm-inputs">
+        <input id={id} type="color" className="pm-colour" value={value} aria-label={`${label}: pick a colour`} onChange={(e) => onChange(e.target.value.toLowerCase())} />
+        <span className="pm-box pm-hexbox">
+          <span aria-hidden="true">#</span>
+          <input
+            id={`${id}-hex`}
+            value={hex}
+            inputMode="text"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            aria-label={`${label} HEX code`}
+            placeholder="B5ACE5"
+            onChange={(e) => {
+              const v = e.target.value.replace(/^#/, "");
+              setHex(v.toUpperCase().slice(0, 30));
+              // A full six-digit code applies as you type; short codes and RGB typed here apply when
+              // you press Enter or leave the box, so the colour doesn't jump mid-way.
+              if (/^[0-9a-f]{6}$/i.test(v.trim())) onChange(`#${v.trim().toLowerCase()}`);
+            }}
+            onPaste={(e) => {
+              const c = readColour(e.clipboardData.getData("text"));
+              if (c) {
+                e.preventDefault();
+                onChange(c);
+              }
+            }}
+            onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+            onBlur={() => {
+              const c = readColour(hex);
+              if (c && c !== value) onChange(c);
+              else reset();
+            }}
+          />
+        </span>
+        {(["R", "G", "B"] as const).map((ch, i) => (
+          <span key={ch} className="pm-box pm-rgbbox">
+            <span aria-hidden="true">{ch}</span>
+            <input
+              value={rgb[i]}
+              inputMode="numeric"
+              maxLength={3}
+              aria-label={`${label} ${ch === "R" ? "red" : ch === "G" ? "green" : "blue"} (0 to 255)`}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, "").slice(0, 3);
+                const next = rgb.map((x, j) => (j === i ? v : x));
+                setRgb(next);
+                if (next.every((n) => n !== "" && Number(n) <= 255)) onChange(toHex(next.map(Number)));
+              }}
+              onBlur={reset}
+            />
+          </span>
+        ))}
       </div>
-      <input id={id} type="color" className="pm-colour" value={value} onChange={(e) => onChange(e.target.value.toLowerCase())} />
     </div>
   );
 }
@@ -179,8 +240,8 @@ export default function PatternApp({ app, slug, source, backgrounds, canEdit, ca
           {canMake ? (
             <>
               <div className="group">
-                <ColourField id="pat-colour" label="Pattern" value={pattern} onChange={setPattern} />
-                <ColourField id="bg-colour" label="Background" value={background} onChange={setBackground} />
+                <ColourField id="pat-colour" label="Pattern colour" value={pattern} onChange={setPattern} />
+                <ColourField id="bg-colour" label="Background colour" value={background} onChange={setBackground} />
                 <div className="row">
                   <button type="button" className="link" onClick={() => { setPattern(background); setBackground(pattern); }}>Swap colours</button>
                 </div>
