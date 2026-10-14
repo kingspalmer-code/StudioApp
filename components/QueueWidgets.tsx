@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { Silkscreen } from "next/font/google";
-import { useEffect, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
+import { createPortal } from "react-dom";
 import { feedPickle } from "@/app/queue/pet";
 import { GOLDEN_COST, type PetView } from "@/lib/pet";
 
@@ -180,7 +181,32 @@ function Pet({ pet: start, earnHint }: { pet: PetView | null; earnHint: string }
   const [act, setAct] = useState<Act | null>(null);
   const [busy, setBusy] = useState(false);
   const [news, setNews] = useState<string | null>(null);
+  const [out, setOut] = useState<Outing | null>(null);
+  const stageEl = useRef<HTMLButtonElement>(null);
+  const walkEl = useRef<HTMLSpanElement>(null);
   useEffect(() => setPet(start), [start]);
+
+  // In his screen Pickle always heads toward your cursor (left and right), hopping as he goes.
+  useEffect(() => {
+    let cursor: number | null = null, x = -1, raf = 0;
+    const move = (e: PointerEvent) => { cursor = e.clientX; };
+    const tick = () => {
+      const box = stageEl.current?.getBoundingClientRect(), w = walkEl.current;
+      if (box && w) {
+        const max = box.width - w.offsetWidth;
+        if (x < 0) x = max / 2;
+        const target = cursor === null ? x : Math.min(max, Math.max(0, cursor - box.left - w.offsetWidth / 2));
+        const d = target - x;
+        x += Math.sign(d) * Math.min(Math.abs(d), 2.5);
+        w.style.left = `${Math.round(x / 2) * 2}px`;
+        w.classList.toggle("moving", Math.abs(d) > 3);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    addEventListener("pointermove", move);
+    return () => { cancelAnimationFrame(raf); removeEventListener("pointermove", move); };
+  }, []);
 
   // Oatcakes earned since you last looked get a mention.
   useEffect(() => {
@@ -188,7 +214,11 @@ function Pet({ pet: start, earnHint }: { pet: PetView | null; earnHint: string }
     let seen = NaN;
     try { seen = Number(localStorage.getItem(TIN_KEY) ?? "NaN"); } catch {}
     try { localStorage.setItem(TIN_KEY, String(start.tin)); } catch {}
-    if (!Number.isNaN(seen) && start.tin > seen) setNews(`+${start.tin - seen} in the tin!`);
+    if (!Number.isNaN(seen) && start.tin > seen) {
+      setNews(`+${start.tin - seen} in the tin!`);
+      // Fresh oatcakes from a finished job: Pickle hops out of the screen and explores the page.
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) setOut("explore");
+    }
     let seenLevel = NaN;
     try { seenLevel = Number(localStorage.getItem(LEVEL_KEY) ?? "NaN"); } catch {}
     try { localStorage.setItem(LEVEL_KEY, String(start.level)); } catch {}
@@ -234,19 +264,27 @@ function Pet({ pet: start, earnHint }: { pet: PetView | null; earnHint: string }
   const meters: [string, number][] = [["Food", pet.hunger], ["Joy", pet.happy], ["Grow", pet.growth]];
   const says =
     act === "golden" ? "Golden!!" : act === "eat" ? "Nom nom!" : act === "pickle" ? "I'm a pickle!" : act === "dance" ? "♪ ♫ ♪" : act === "levelup" ? `Level up! LV ${pet.level}` : act === "happy" ? "♥" :
-    news ?? (pet.mood === "sad" ? (pet.tin ? "Feed me?" : "Peckish...") : `Day ${pet.streak} streak`);
+    out ? "Exploring!" : news ?? (pet.mood === "sad" ? (pet.tin ? "Feed me?" : "Peckish...") : `Day ${pet.streak} streak`);
   return (
     <div className={`lcd ${pixel.className}${pet.glowing ? " glowing" : ""}`}>
-      <button type="button" className={`lcd-stage ${act ?? mood}`} onClick={() => !act && play("happy", 1600)} aria-label={`Pickle, level ${pet.level}. Click to give Pickle a fuss`}>
+      <button
+        type="button"
+        ref={stageEl}
+        className={`lcd-stage ${act ?? mood}${out ? " away" : ""}`}
+        onClick={() => !act && !out && play("happy", 1600)}
+        onDoubleClick={() => (!act || act === "happy") && setOut("explore")}
+        aria-label={`Pickle, level ${pet.level}. Click to give Pickle a fuss, double-click to let him out to explore`}
+      >
         <span className="lcd-name">Pickle <small>LV {pet.level}</small></span>
         <span className="lcd-says">{says}</span>
-        <span className="lcd-walk">
+        <span className="lcd-walk" ref={walkEl}>
           {act === "pickle" ? <Gherkin /> : <Blob mood={mood} stage={stageFor(pet.level)} />}
           {(act === "eat" || act === "golden") && <Snack golden={act === "golden"} />}
           {act === "golden" && <span className="lcd-sparkle" aria-hidden="true">✦ ✧ ✦</span>}
           {act === "pickle" && <span className="lcd-poof" aria-hidden="true">* *</span>}
         </span>
       </button>
+      {out && <Roam key={out} mode={out} stage={stageFor(pet.level)} home={() => stageEl.current?.getBoundingClientRect() ?? null} onHome={() => { setOut(null); play("happy", 1600); }} />}
       <div className="lcd-meters">
         {meters.map(([label, v]) => (
           <span key={label} className="lcd-meter" title={`${label} ${Math.round(v * 100)}%`}>
@@ -256,17 +294,82 @@ function Pet({ pet: start, earnHint }: { pet: PetView | null; earnHint: string }
         ))}
       </div>
       <div className="lcd-keys">
-        <button type="button" onClick={() => feed("oatcake")} disabled={busy || !!act || !pet.tin} title={pet.tin ? "Give Pickle an oatcake" : earnHint}>
+        <button type="button" onClick={() => feed("oatcake")} disabled={busy || !!act || !!out || !pet.tin} title={pet.tin ? "Give Pickle an oatcake" : earnHint}>
           Feed <b>×{pet.tin}</b>
         </button>
-        <button type="button" onClick={() => feed("golden")} disabled={busy || !!act || pet.tin < GOLDEN_COST} title={`Swap ${GOLDEN_COST} oatcakes for a golden one`}>
+        <button type="button" onClick={() => feed("golden")} disabled={busy || !!act || !!out || pet.tin < GOLDEN_COST} title={`Swap ${GOLDEN_COST} oatcakes for a golden one`}>
           ★ Gold
         </button>
-        <button type="button" onClick={() => play("dance", 3200)} disabled={!!act || !canDance} title={canDance ? "Make Pickle dance" : "Pickle needs feeding before he'll dance"}>
+        <button type="button" onClick={() => play("dance", 3200)} disabled={!!act || !!out || !canDance} title={canDance ? "Make Pickle dance" : "Pickle needs feeding before he'll dance"}>
           Dance
         </button>
       </div>
     </div>
+  );
+}
+
+// Pickle out of the screen: after a job is finished (or when you double-click him) he hops out and
+// bounces between spots around the page by himself, then trots back home. Clicking him (or Escape)
+// sends him home early. Inside his screen he follows your cursor instead (see Pet).
+type Outing = "explore";
+const ROAM_MS: Record<Outing, number> = { explore: 14_000 };
+function Roam({ mode, stage, home, onHome }: { mode: Outing; stage: Stage; home: () => DOMRect | null; onHome: () => void }) {
+  const el = useRef<HTMLButtonElement>(null);
+  const back = useRef(false);
+  const done = useRef(onHome);
+  const where = useRef(home);
+  done.current = onHome;
+  where.current = home;
+  useEffect(() => {
+    const spot = (r: DOMRect) => [r.left + r.width / 2, r.bottom - 20];
+    const home = () => where.current();
+    const h = home();
+    let [x, y] = h ? spot(h) : [innerWidth / 2, innerHeight / 2];
+    let [tx, ty] = [x, y - 60];
+    let raf = 0, rest = 0;
+    // Somewhere new on screen, away from the edges.
+    const pick = () => { tx = 60 + Math.random() * (innerWidth - 120); ty = 90 + Math.random() * (innerHeight - 150); };
+    pick();
+    const key = (e: KeyboardEvent) => { if (e.key === "Escape") back.current = true; };
+    const timer = setTimeout(() => (back.current = true), ROAM_MS[mode]);
+    const tick = () => {
+      if (back.current) {
+        const r = home();
+        if (!r) return done.current();
+        [tx, ty] = spot(r);
+      }
+      let dx = tx - x, dy = ty - y, d = Math.hypot(dx, dy);
+      if (back.current && d < 10) return done.current();
+      // Exploring: arrive, look around for a beat, then hop off somewhere else.
+      if (!back.current && d < 4) {
+        if (!rest) rest = performance.now() + 600 + Math.random() * 1400;
+        else if (performance.now() > rest) { rest = 0; pick(); }
+        dx = dy = d = 0;
+      }
+      const step = Math.min(d, back.current ? 10 : 5 + d / 40);
+      if (d > 1) { x += (dx / d) * step; y += (dy / d) * step; }
+      const n = el.current;
+      if (n) {
+        // Whole pixels, like the LCD.
+        n.style.transform = `translate(${Math.round(x / 2) * 2}px, ${Math.round(y / 2) * 2}px)`;
+        n.classList.toggle("moving", d > 6);
+        if (Math.abs(dx) > 3) n.classList.toggle("left", dx < 0);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    addEventListener("keydown", key);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(timer);
+      removeEventListener("keydown", key);
+    };
+  }, []);
+  return createPortal(
+    <button ref={el} type="button" className="pickle-out" onClick={() => (back.current = true)} aria-label="Pickle is exploring. Click to send him home">
+      <span><Blob mood="happy" stage={stage} /></span>
+    </button>,
+    document.body,
   );
 }
 
