@@ -82,7 +82,10 @@ const loadMember = cache(async () => {
   const helpUnread = (replies ?? []).some((r) => r.updated_at > r.user_seen_at);
   // Usage stats are on unless you've turned them off in your account.
   const track = !user.user_metadata?.no_tracking;
-  const shell = { member, businesses: clients, workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials, askHint, askOpens, askSince, helpUnread, track, preview: undefined as Business | undefined };
+  // Menu buttons switched off in Settings > Menu, on phones and on computers (including the Mac app).
+  const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+  const hidden = { phone: list(user.user_metadata?.hide_phone), computer: list(user.user_metadata?.hide_computer) };
+  const shell = { member, businesses: clients, workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials, askHint, askOpens, askSince, helpUnread, track, hidden, preview: undefined as Business | undefined };
   return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview };
 });
 

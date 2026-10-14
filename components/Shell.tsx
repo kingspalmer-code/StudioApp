@@ -19,7 +19,7 @@ import { OatcakeMark } from "./OatcakeLogo";
 import { termsFor } from "@/lib/workspace";
 import Submit from "@/components/Submit";
 
-function linksFor(member: Member, workspace: Workspace, viewing: boolean) {
+export function linksFor(member: Member, workspace: Workspace, viewing: boolean) {
   const terms = termsFor(workspace.kind);
   const main = { href: "/queue", label: workspace.kind === "studio" ? "Queue" : terms.Jobs };
   // Managers can look at the queue, every job in it and the gallery of finished work; nothing there lets them change anything.
@@ -62,6 +62,7 @@ export default function Shell({
   askSince = 0,
   helpUnread = false,
   track = false,
+  hidden = { phone: [], computer: [] },
   preview,
   children,
 }: {
@@ -77,6 +78,8 @@ export default function Shell({
   askSince?: number;
   helpUnread?: boolean;
   track?: boolean;
+  // Menu buttons the owner switched off in Settings > Menu, by href.
+  hidden?: { phone: string[]; computer: string[] };
   preview?: Business;
   children: React.ReactNode;
 }) {
@@ -86,6 +89,10 @@ export default function Shell({
   const links = linksFor(member, workspace, viewing);
   // Anyone with more than one section gets the sidebar rail on bigger screens (the tab bar on phones).
   const rail = links.length > 1;
+  // The sidebar and the phone tab bar leave out what the owner has switched off. The first section always stays.
+  const shown = (off: string[]) => links.filter((l, i) => i === 0 || !off.includes(l.href));
+  const deskLinks = shown(hidden.computer);
+  const phoneLinks = shown(hidden.phone);
   const canCreate = member.role === "designer" && !viewing;
   const terms = termsFor(workspace.kind);
 
@@ -108,7 +115,7 @@ export default function Shell({
               <OatcakeMark height={22} />
             </Link>
           )}
-          {rail ? <RailNav links={links} canCreate={canCreate} clients={businesses} /> : <NavLinks links={links} />}
+          {rail ? <RailNav links={deskLinks} canCreate={canCreate} clients={businesses} /> : <NavLinks links={links} />}
           {canCreate && <SearchButton />}
           {member.role === "designer" && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake hint={askHint} opens={askOpens} since={askSince} />}
           {/* What other people have done on your jobs. Top right of the page, whatever the layout. */}
@@ -158,7 +165,7 @@ export default function Shell({
           children
         )}
       </main>
-      <TabBar links={links} canCreate={canCreate} />
+      <TabBar links={phoneLinks} canCreate={canCreate} />
       {canCreate && (
         <CreateMenu
           kind={workspace.kind}

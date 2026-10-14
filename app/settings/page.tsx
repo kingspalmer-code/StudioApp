@@ -8,6 +8,8 @@ import Submit from "@/components/Submit";
 import { modeTitle } from "@/lib/workspace";
 import WorkMode from "./WorkMode";
 import RequestLink from "./RequestLink";
+import MenuButtons from "./MenuButtons";
+import { linksFor } from "@/components/Shell";
 import { headers } from "next/headers";
 
 export default async function SettingsPage() {
@@ -52,6 +54,14 @@ export default async function SettingsPage() {
         <p className="foot">
           Sets the words Oatcake uses and who can send you {terms.jobs}. Switching never deletes anything.
         </p>
+
+        {!viewing && (
+          <>
+            <p className="eyebrow">Menu</p>
+            <MenuButtons links={linksFor(shell.member, workspace, false)} hidden={shell.hidden} />
+            <p className="foot">Turn off what you don&apos;t use to keep the menu simple. Hidden pages still open from links and alerts.</p>
+          </>
+        )}
 
         {workspace.kind === "trade" && (
           <>
