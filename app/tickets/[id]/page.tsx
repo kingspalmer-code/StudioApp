@@ -23,6 +23,7 @@ import { asDoc } from "@/lib/docs-server";
 import Deliveries from "@/components/Deliveries";
 import { signDeliveries, type Delivery, type Draft, type DraftFile } from "@/lib/deliveries";
 import Submit from "@/components/Submit";
+import FrameChanged from "@/components/FrameChanged";
 
 const IMAGE = /\.(png|jpe?g|gif|webp|svg)$/i;
 
@@ -199,6 +200,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
 
   return (
     <Shell {...shell}>
+      <FrameChanged at={Date.now()} />
       <div style={{ maxWidth: 720 }}>
         {biz && (
           <p className="eyebrow" style={{ display: "flex", alignItems: "center", gap: 8, textTransform: "none", letterSpacing: 0 }}>
