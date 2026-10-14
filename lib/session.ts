@@ -6,7 +6,7 @@ import { createClient, PREVIEW_COOKIE, VIEW_COOKIE } from "./supabase/server";
 import type { Business, JobType, Member, Role, Stage, Workspace } from "./types";
 import { clientsLogIn, isSelf, termsFor } from "./workspace";
 
-export const HOME: Record<Role, string> = { designer: "/queue", manager: "/overview", client: "/portal", staff: "/tasks" };
+export const HOME: Record<Role, string> = { designer: "/queue", manager: "/overview", client: "/overview", staff: "/tasks" };
 
 // Loads the signed-in member and their workspace, or sends them to sign in. Pass roles to restrict a page.
 // Every database call goes out at once: the sign-in is checked from the session token itself, so

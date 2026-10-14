@@ -8,8 +8,9 @@ import { GOLDEN_COST, type PetView } from "@/lib/pet";
 
 const pixel = Silkscreen({ weight: "400", subsets: ["latin"] });
 
-// The row of widgets above Up next: Pickle the pixel pet (earns an oatcake for every job delivered),
-// the week ahead, the latest finished work and this week's tally. Two show at a time; the button
+// The row of widgets above Up next, and on a client's Overview: Pickle the pixel pet (an oatcake
+// for every job delivered, or for clients every request sent), the week ahead, the latest finished
+// work and this week's tally. Two show at a time; the button
 // on the right picks which, and dragging a handle swaps them round. Kept on this computer.
 export type WeekDay = { date: string; label: string; today: boolean; jobs: { id: number; title: string; color: string }[] };
 export type ReelItem = { id: number; title: string; url: string };
@@ -35,7 +36,7 @@ function savedShown(): Key[] {
   return DEFAULT;
 }
 
-export default function QueueWidgets({ week, reel, pet, tally }: { week: WeekDay[]; reel: ReelItem[]; pet: PetView | null; tally: WeekStats }) {
+export default function QueueWidgets({ week, reel, pet, tally, earnHint = "Deliver a job to earn an oatcake" }: { week: WeekDay[]; reel: ReelItem[]; pet: PetView | null; tally: WeekStats; earnHint?: string }) {
   const [shown, setShown] = useState<Key[]>(DEFAULT);
   const [menu, setMenu] = useState(false);
   const [dragging, setDragging] = useState<Key | null>(null);
@@ -71,7 +72,7 @@ export default function QueueWidgets({ week, reel, pet, tally }: { week: WeekDay
   };
 
   const body: Record<Key, React.ReactNode> = {
-    pet: <Pet pet={pet} />,
+    pet: <Pet pet={pet} earnHint={earnHint} />,
     week: <Week days={week} />,
     reel: <Reel items={reel} />,
     tally: <Tally {...tally} />,
@@ -170,10 +171,10 @@ function Tally({ delivered, due, late }: WeekStats) {
   );
 }
 
-// Pickle, a little LCD pet like an old Tamagotchi (rules in lib/pet.ts). Delivered jobs fill its
-// tin with oatcakes; Feed gives it one, and five can be swapped for a golden one. Visiting each
+// Pickle, a little LCD pet like an old Tamagotchi (rules in lib/pet.ts). Delivered jobs (or sent
+// requests) fill its tin with oatcakes; Feed gives it one, and five can be swapped for a golden one. Visiting each
 // day keeps a streak going. It never dies, it just gets peckish.
-function Pet({ pet: start }: { pet: PetView | null }) {
+function Pet({ pet: start, earnHint }: { pet: PetView | null; earnHint: string }) {
   const [pet, setPet] = useState(start);
   const [act, setAct] = useState<Act | null>(null);
   const [busy, setBusy] = useState(false);
@@ -243,7 +244,7 @@ function Pet({ pet: start }: { pet: PetView | null }) {
         ))}
       </div>
       <div className="lcd-keys">
-        <button type="button" onClick={() => feed("oatcake")} disabled={busy || !!act || !pet.tin} title={pet.tin ? "Give Pickle an oatcake" : "Deliver a job to earn an oatcake"}>
+        <button type="button" onClick={() => feed("oatcake")} disabled={busy || !!act || !pet.tin} title={pet.tin ? "Give Pickle an oatcake" : earnHint}>
           Feed <b>×{pet.tin}</b>
         </button>
         <button type="button" onClick={() => feed("golden")} disabled={busy || !!act || pet.tin < GOLDEN_COST} title={`Swap ${GOLDEN_COST} oatcakes for a golden one`}>

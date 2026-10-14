@@ -19,7 +19,9 @@ import { OatcakeMark } from "./OatcakeLogo";
 import { termsFor } from "@/lib/workspace";
 import Submit from "@/components/Submit";
 
-export function linksFor(member: Member, workspace: Workspace, viewing: boolean) {
+export type NavLink = { href: string; label: string; icon?: string };
+
+export function linksFor(member: Member, workspace: Workspace, viewing: boolean): NavLink[] {
   const terms = termsFor(workspace.kind);
   const main = { href: "/queue", label: workspace.kind === "studio" ? "Queue" : terms.Jobs };
   // Managers can look at the queue, every job in it and the gallery of finished work; nothing there lets them change anything.
@@ -32,8 +34,14 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
       { href: "/apps", label: "Apps" },
       ...(member.business_ids?.length && !viewing ? [{ href: "/portal", label: "New request" }] : []),
     ];
-  // Clients get Apps when the studio has made one for their business.
-  if (member.role === "client") return [{ href: "/portal", label: "Requests" }, ...(member.has_apps ? [{ href: "/apps", label: "Apps" }] : [])];
+  // Clients get a sidebar like the studio's: their Overview (with the widgets) first, then their
+  // requests, and Apps when the studio has made one for their business.
+  if (member.role === "client")
+    return [
+      { href: "/overview", label: "Overview" },
+      { href: "/portal", label: "Requests", icon: "requests" },
+      ...(member.has_apps ? [{ href: "/apps", label: "Apps" }] : []),
+    ];
   // Employees only see the to-do list the owner sets them.
   if (member.role === "staff") return [{ href: "/tasks", label: "To-do" }];
   // Who the work is for: businesses (with their staff) on People, customers on Customers, and nobody when working alone.

@@ -235,6 +235,9 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
   .has-rail > .bar .bar-in { height: 100%; max-width: none; flex-direction: column; flex-wrap: nowrap; padding: 16px 0 18px; gap: 6px; }
   .has-rail > .bar .brand { margin: 4px 0 16px; flex: none; }
   .has-rail > .bar .brand .oatcake-mark { width: 56px !important; height: 12px !important; }
+  /* A client's business badge heads their rail; its name shows once the sidebar is widened. */
+  .has-rail > .bar .client-brand { margin: 4px 0 16px; flex: none; flex-direction: column; gap: 0; }
+  .has-rail > .bar .client-brand > span { display: none; }
   .has-rail > .bar .bar-search { display: none; }
   .rail-search { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 0; cursor: pointer; background: none; color: var(--label-2); flex: none; margin-bottom: 8px; }
   .rail-search:hover { color: var(--label); background: var(--fill); }
@@ -728,6 +731,12 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 
 /* Client portal */
 .portal { max-width: 720px; }
+/* A client's Overview (app/overview/page.tsx): heading with New request beside it. */
+.client-overview { max-width: 900px; }
+.overview-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.overview-head .btn { flex: none; margin-top: 6px; }
+.client-overview .stats { margin-bottom: 4px; }
+.client-overview .eyebrow .dot { margin-right: 4px; vertical-align: 1px; }
 .portal-head { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
 .portal-head .badge { flex: none; }
 .portal-head .large { margin: 0; }
@@ -1054,6 +1063,8 @@ html.in-app .nt-layer { top: var(--app-bar); }
   html[data-rail="open"] .has-rail > .bar .bar-in { align-items: stretch; padding: 16px 12px 18px; }
   html[data-rail="open"] .has-rail > .bar .brand { align-self: flex-start; margin-left: 10px; }
   html[data-rail="open"] .has-rail > .bar .brand .oatcake-mark { width: 84px !important; height: 18px !important; }
+  html[data-rail="open"] .has-rail > .bar .client-brand { flex-direction: row; gap: 10px; align-self: stretch; margin-left: 8px; }
+  html[data-rail="open"] .has-rail > .bar .client-brand > span { display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   html[data-rail="open"] .rail-label { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; font-weight: 500; }
   html[data-rail="open"] .rail-new { width: auto; height: 38px; border-radius: 12px; display: flex; gap: 8px; padding: 0 14px; justify-content: flex-start; font: inherit; }
   html[data-rail="open"] .rail-new:hover { transform: none; filter: brightness(1.06); }

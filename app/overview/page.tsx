@@ -1,13 +1,21 @@
+import Link from "next/link";
 import BizBadge from "@/components/BizBadge";
+import QueueWidgets from "@/components/QueueWidgets";
 import Shell from "@/components/Shell";
 import SplitHost from "@/components/SplitHost";
 import TicketRow from "@/components/TicketRow";
-import { daysFromToday, formatDate, isAtRisk, isDone, money, sortQueue, stageColor } from "@/lib/priority";
-import { requireMember } from "@/lib/session";
+import { hatchBase, oatcakesEarned } from "@/lib/pet";
+import { daysFromToday, finalStage, formatDate, isAtRisk, isDone, money, sortQueue, stageColor } from "@/lib/priority";
+import { asClient, requireMember } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
+import { loadWidgets } from "@/lib/widgets";
 
-export default async function OverviewPage() {
-  const { supabase, businesses, ctx, terms, workspace, shell } = await requireMember(["manager", "designer"]);
+type Session = Awaited<ReturnType<typeof requireMember>>;
+
+export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ business?: string }> }) {
+  const session = asClient(await requireMember(["manager", "designer", "client"]));
+  if (session.member.role === "client") return <ClientOverview session={session} business={(await searchParams).business} />;
+  const { supabase, member, businesses, ctx, terms, workspace, shell, viewing } = session;
   const { data } = await supabase.from("tickets").select("*").returns<Ticket[]>();
   const all = data ?? [];
   const open = sortQueue(all, ctx);
@@ -31,8 +39,18 @@ export default async function OverviewPage() {
     { n: deliveredThisMonth, label: "Delivered this month", color: "var(--green)" },
   ];
 
+  // Managers get the widget row too, with an oatcake for Pickle for every request they send.
+  const manager = member.role === "manager" && !viewing;
+  const widgets = manager
+    ? await (async () => {
+        const earned = await oatcakesEarned(supabase, member, ctx);
+        return <QueueWidgets {...await loadWidgets(supabase, all, ctx, byId, { earned, base: hatchBase(member, earned) })} earnHint="Send a request to earn an oatcake" />;
+      })()
+    : null;
+
   return (
     <Shell {...shell}>
+      {widgets}
       <h1 className="large">Overview</h1>
       <p className="sub">Workload and progress across all your {workspace.kind === "solo" ? terms.jobs : terms.clients}.</p>
       <div className="stats">
@@ -99,6 +117,115 @@ export default async function OverviewPage() {
         </div>
       </div>
       </SplitHost>
+    </Shell>
+  );
+}
+
+// A client's Overview, where they land: the widget row (Pickle earns an oatcake for every request
+// they send), a few totals, then every open request grouped by where it's up to.
+async function ClientOverview({ session, business }: { session: Session; business?: string }) {
+  const { supabase, member, businesses, ctx, workspace, shell } = session;
+  const previewing = Boolean(shell.preview);
+  const owner = workspace.owner_name || "the studio";
+  const myBizes = (member.business_ids ?? []).map((id) => businesses.find((b) => b.id === id)).filter((b) => b !== undefined);
+  const several = myBizes.length > 1;
+  const only = several ? myBizes.find((b) => b.id === business) : undefined;
+  const ids = only ? [only.id] : myBizes.map((b) => b.id);
+  const byId = Object.fromEntries(myBizes.map((b) => [b.id, b]));
+
+  const [{ data }, earned] = await Promise.all([
+    supabase.from("tickets").select("*").in("business_id", ids).order("deadline").returns<Ticket[]>(),
+    previewing ? Promise.resolve(0) : oatcakesEarned(supabase, member, ctx),
+  ]);
+  const all = data ?? [];
+  const open = all.filter((t) => !isDone(t, ctx));
+  const done = all
+    .filter((t) => isDone(t, ctx))
+    .sort((a, b) => (b.delivered_at ?? b.deadline).localeCompare(a.delivered_at ?? a.deadline));
+  const [widgets, { data: draftRows }] = await Promise.all([
+    // While the studio previews a client, Pickle stays out of it: it's the client's own pet.
+    loadWidgets(supabase, all, ctx, byId, previewing ? undefined : { earned, base: hatchBase(member, earned) }),
+    open.length
+      ? supabase.from("ticket_drafts").select("ticket_id, final_at").in("ticket_id", open.map((t) => t.id)).returns<{ ticket_id: number; final_at: string | null }[]>()
+      : Promise.resolve({ data: [] }),
+  ]);
+  const withDraft = new Set((draftRows ?? []).filter((d) => !d.final_at).map((d) => d.ticket_id));
+
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const waiting = open.filter((t) => t.status === "waiting" || withDraft.has(t.id)).length;
+  const stats = [
+    { n: open.length, label: "In progress" },
+    { n: waiting, label: "Waiting on you", color: waiting ? "var(--orange)" : undefined },
+    { n: open.filter((t) => { const d = daysFromToday(t.deadline); return d >= 0 && d <= 7; }).length, label: "Due this week" },
+    { n: done.filter((t) => t.delivered_at && new Date(t.delivered_at) >= monthStart).length, label: "Finished this month", color: "var(--green)" },
+  ];
+  // Open requests under the stage they're at, in the studio's order of stages.
+  const final = finalStage(ctx);
+  const groups = ctx.stages
+    .filter((st) => st.key !== final)
+    .map((st) => ({ st, items: open.filter((t) => t.status === st.key) }))
+    .filter((g) => g.items.length);
+  const row = (t: Ticket) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} showBusiness={several && !only} draft={withDraft.has(t.id)} />;
+  const q = (path: string) => (only ? `${path}${path.includes("?") ? "&" : "?"}business=${only.id}` : path);
+
+  return (
+    <Shell {...shell}>
+      <QueueWidgets {...widgets} earnHint="Send a request to earn an oatcake" />
+      <div className="client-overview">
+        <div className="overview-head">
+          <div>
+            <h1 className="large">Overview</h1>
+            <p className="sub">How your requests to {owner} are going.</p>
+          </div>
+          <Link href={q("/portal?new=1")} className="btn">+ New request</Link>
+        </div>
+        {several && (
+          <nav className="seg portal-businesses" aria-label="Business">
+            <Link href="/overview" aria-current={!only ? "page" : undefined}>All</Link>
+            {myBizes.map((b) => <Link key={b.id} href={`/overview?business=${b.id}`} aria-current={only?.id === b.id ? "page" : undefined}>{b.name}</Link>)}
+          </nav>
+        )}
+        <div className="stats">
+          {stats.map((s) => (
+            <div className="stat" key={s.label}>
+              <b style={s.color ? { color: s.color } : undefined}>{s.n}</b>
+              <span>{s.label}</span>
+            </div>
+          ))}
+        </div>
+
+        <SplitHost warm={open.slice(0, 2).map((t) => t.id)}>
+          {groups.length ? (
+            groups.map(({ st, items }) => (
+              <div key={st.key}>
+                <p className="eyebrow">
+                  <span className="dot" style={{ background: stageColor(st.color), width: 7, height: 7 }} /> {st.label} · {items.length}
+                </p>
+                <div className="group">{items.map(row)}</div>
+              </div>
+            ))
+          ) : (
+            <>
+              <p className="eyebrow">In progress</p>
+              <div className="group">
+                <div className="empty">{all.length ? "Nothing in progress right now." : "No requests yet. Send your first one and it shows here."}</div>
+              </div>
+            </>
+          )}
+
+          {done.length > 0 && (
+            <>
+              <div className="eyebrow-row">
+                <p className="eyebrow">Recently finished</p>
+                <Link href={q("/portal/archive")} className="eyebrow-link">See all {done.length} ›</Link>
+              </div>
+              <div className="group">{done.slice(0, 5).map(row)}</div>
+            </>
+          )}
+        </SplitHost>
+      </div>
     </Shell>
   );
 }

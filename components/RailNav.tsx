@@ -17,7 +17,7 @@ export function SearchIcon() {
 // On iPad and desktop the top bar becomes a slim rail down the left: a create button, search, then
 // the sections as icons. Labels show as tooltips and to screen readers. Dragging its edge out
 // (RailGrip) widens it into a sidebar that shows the labels and a list of clients to jump to.
-export default function RailNav({ links, canCreate, clients = [] }: { links: { href: string; label: string }[]; canCreate: boolean; clients?: Business[] }) {
+export default function RailNav({ links, canCreate, clients = [] }: { links: { href: string; label: string; icon?: string }[]; canCreate: boolean; clients?: Business[] }) {
   const path = usePathname();
   const biz = useSearchParams().get("biz");
   return (
@@ -40,7 +40,7 @@ export default function RailNav({ links, canCreate, clients = [] }: { links: { h
           .filter((l) => !canCreate || l.href !== "/portal")
           .map((l) => (
             <Link key={l.href} href={l.href} aria-current={path.startsWith(l.href) ? "page" : undefined} aria-label={l.label} title={l.label}>
-              <NavIcon href={l.href} strokeWidth={1.7} />
+              <NavIcon href={l.icon ?? l.href} strokeWidth={1.7} />
               <span className="rail-label">{l.label}</span>
             </Link>
           ))}

@@ -13,8 +13,8 @@ import Walkthrough from "@/components/Walkthrough";
 import { startPreview } from "@/app/actions";
 import Submit from "@/components/Submit";
 
-export default async function PortalPage({ searchParams }: { searchParams: Promise<{ tour?: string; business?: string; follow?: string }> }) {
-  const { tour, business, follow } = await searchParams;
+export default async function PortalPage({ searchParams }: { searchParams: Promise<{ tour?: string; business?: string; follow?: string; new?: string }> }) {
+  const { tour, business, follow, new: fresh } = await searchParams;
   const { supabase, member, businesses, self, ctx, workspace, shell, terms } = asClient(await requireEditor(["client", "designer", "manager"]));
   const previewing = Boolean(shell.preview);
   const trade = workspace.kind !== "studio";
@@ -135,7 +135,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
         )}
 
         <ClientRequests
-          startOpen={all.length === 0 || previewing || Boolean(followUp)}
+          startOpen={all.length === 0 || previewing || Boolean(followUp) || fresh === "1"}
           form={{ followUp,  businesses: only ? [only, ...myBizes.filter((b) => b !== only)] : myBizes, defaultName: member.full_name, isDesigner: false, types: ctx.types, fields: formFields, trade, ownerName: owner, helper }}
         />
 
