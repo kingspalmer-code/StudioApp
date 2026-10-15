@@ -1115,6 +1115,8 @@ html.in-app .nt-layer { top: var(--app-bar); }
   html.split-open .widgets .widget + .widget { display: none; }
   .ticket[data-open] { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
   .ticket[data-open]::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
+  /* A gallery piece open beside the gallery. */
+  .gallery-card[data-open] .gallery-img { box-shadow: 0 0 0 2.5px var(--accent); }
   /* A Settings section open beside the list. */
   .settings-list .nav-row { position: relative; }
   .settings-list .nav-row[data-open] { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
