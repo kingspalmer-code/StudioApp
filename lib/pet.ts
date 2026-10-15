@@ -3,12 +3,14 @@ import { finalStage, todayISO, type Ctx } from "./priority";
 import type { Member } from "./types";
 
 // Pickle, the pixel pet above the queue (components/QueueWidgets.tsx; table: pets, migration 027).
-// Every delivered job puts an oatcake in the studio's tin; for clients and managers (on their
-// Overview, migration 031) it's every request they send. You feed them from the tin, or save five
+// Every delivered job puts an oatcake in the studio's tin; managers (on their Overview, migration
+// 031) earn one for every request they send. A business that sends requests has one Pickle shared
+// by all its logins (business_pets, migration 034), which earns an oatcake for every finished job. You feed them from the tin, or save five
 // for a golden oatcake. Coming back each day keeps a streak going. Pickle never dies: hunger and
 // mood bottom out at "peckish" and "glum", and one oatcake perks them up.
 export type PetRow = {
-  owner_email: string;
+  owner_email?: string;
+  business_id?: string;
   earned_base: number;
   fed: number;
   golden: number;
@@ -69,20 +71,49 @@ export function hatchBase(member: Member, earned: number) {
   return member.role === "designer" ? earned - STARTER_OATCAKES : Math.min(0, earned - STARTER_OATCAKES);
 }
 
+// Whose Pickle: your own, or a business's (shared by everyone who requests for it).
+export type PetOwner = { business: string } | undefined;
+const petTable = (owner: PetOwner) => (owner ? "business_pets" : "pets");
+const loadPet = (supabase: SupabaseClient, owner: PetOwner) => {
+  const q = supabase.from(petTable(owner)).select("*");
+  return (owner ? q.eq("business_id", owner.business) : q).maybeSingle<PetRow>();
+};
+const savePet = (supabase: SupabaseClient, owner: PetOwner, row: PetRow, change: Partial<PetRow>) =>
+  owner ? supabase.from("business_pets").update(change).eq("business_id", owner.business) : supabase.from("pets").update(change).eq("owner_email", row.owner_email!);
+
+// A business earns an oatcake for every one of its jobs that's finished; its Pickle starts with
+// all the ones already finished (at least the starter few).
+export async function businessOatcakes(supabase: SupabaseClient, business: string, ctx: Ctx): Promise<number> {
+  const { count } = await supabase.from("tickets").select("id", { count: "exact", head: true }).eq("business_id", business).eq("status", finalStage(ctx));
+  return count ?? 0;
+}
+
+// Give Pickle an oatcake from the tin, or five as a golden one, given how many have been earned.
+export async function feedPet(supabase: SupabaseClient, owner: PetOwner, earned: number, kind: "oatcake" | "golden"): Promise<PetView | null> {
+  const { data: row } = await loadPet(supabase, owner);
+  if (!row) return null;
+  const cost = kind === "golden" ? GOLDEN_COST : 1;
+  if (petView(row, earned).tin < cost) return petView(row, earned);
+  const now = new Date().toISOString();
+  const change = kind === "golden" ? { golden: row.golden + 1, last_golden_at: now, last_fed_at: now } : { fed: row.fed + 1, last_fed_at: now };
+  await savePet(supabase, owner, row, change);
+  return petView({ ...row, ...change }, earned);
+}
+
 // Called when the queue page loads: hatches Pickle the first time (with a few oatcakes to start)
 // and counts today's visit toward the streak.
-export async function visitPet(supabase: SupabaseClient, delivered: number, base = delivered - STARTER_OATCAKES): Promise<PetView | null> {
+export async function visitPet(supabase: SupabaseClient, delivered: number, base = delivered - STARTER_OATCAKES, owner?: PetOwner): Promise<PetView | null> {
   const today = todayISO();
-  const { data: row } = await supabase.from("pets").select("*").maybeSingle<PetRow>();
+  const { data: row } = await loadPet(supabase, owner);
   if (!row) {
-    const fresh = { earned_base: base, last_visit: today, streak: 1, best_streak: 1, last_fed_at: new Date().toISOString() };
-    const { data } = await supabase.from("pets").insert(fresh).select("*").single<PetRow>();
+    const fresh = { ...(owner ? { business_id: owner.business } : {}), earned_base: base, last_visit: today, streak: 1, best_streak: 1, last_fed_at: new Date().toISOString() };
+    const { data } = await supabase.from(petTable(owner)).insert(fresh).select("*").single<PetRow>();
     return data ? petView(data, delivered) : null;
   }
   if (row.last_visit === today) return petView(row, delivered);
   const yesterday = new Date(Date.parse(today) - DAY).toISOString().slice(0, 10);
   const streak = row.last_visit === yesterday ? row.streak + 1 : 1;
   const next = { ...row, last_visit: today, streak, best_streak: Math.max(row.best_streak, streak) };
-  await supabase.from("pets").update({ last_visit: today, streak, best_streak: next.best_streak }).eq("owner_email", row.owner_email);
+  await savePet(supabase, owner, row, { last_visit: today, streak, best_streak: next.best_streak });
   return petView(next, delivered);
 }

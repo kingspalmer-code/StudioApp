@@ -4,7 +4,7 @@ import QueueWidgets from "@/components/QueueWidgets";
 import Shell from "@/components/Shell";
 import SplitHost from "@/components/SplitHost";
 import TicketRow from "@/components/TicketRow";
-import { hatchBase, oatcakesEarned } from "@/lib/pet";
+import { businessOatcakes, hatchBase, oatcakesEarned, STARTER_OATCAKES } from "@/lib/pet";
 import { daysFromToday, finalStage, formatDate, isAtRisk, isDone, money, sortQueue, stageColor } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
@@ -121,8 +121,8 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   );
 }
 
-// A client's Overview, where they land: the widget row (Pickle earns an oatcake for every request
-// they send), a few totals, then every open request grouped by where it's up to.
+// A client's Overview, where they land: the widget row (Pickle is the business's, shared by all its
+// logins, and earns an oatcake for every one of its jobs that's finished), a few totals, then every open request grouped by where it's up to.
 async function ClientOverview({ session, business }: { session: Session; business?: string }) {
   const { supabase, member, businesses, ctx, workspace, shell } = session;
   const previewing = Boolean(shell.preview);
@@ -133,9 +133,11 @@ async function ClientOverview({ session, business }: { session: Session; busines
   const ids = only ? [only.id] : myBizes.map((b) => b.id);
   const byId = Object.fromEntries(myBizes.map((b) => [b.id, b]));
 
+  // The business whose Pickle shows: the one picked above, else their main business.
+  const petBiz = only?.id ?? member.business_id ?? myBizes[0]?.id;
   const [{ data }, earned] = await Promise.all([
     supabase.from("tickets").select("*").in("business_id", ids).order("deadline").returns<Ticket[]>(),
-    previewing ? Promise.resolve(0) : oatcakesEarned(supabase, member, ctx),
+    previewing || !petBiz ? Promise.resolve(0) : businessOatcakes(supabase, petBiz, ctx),
   ]);
   const all = data ?? [];
   const open = all.filter((t) => !isDone(t, ctx));
@@ -144,7 +146,7 @@ async function ClientOverview({ session, business }: { session: Session; busines
     .sort((a, b) => (b.delivered_at ?? b.deadline).localeCompare(a.delivered_at ?? a.deadline));
   const [widgets, { data: draftRows }] = await Promise.all([
     // While the studio previews a client, Pickle stays out of it: it's the client's own pet.
-    loadWidgets(supabase, all, ctx, byId, previewing ? undefined : { earned, base: hatchBase(member, earned) }),
+    loadWidgets(supabase, all, ctx, byId, previewing || !petBiz ? undefined : { earned, base: Math.min(0, earned - STARTER_OATCAKES), owner: { business: petBiz } }),
     open.length
       ? supabase.from("ticket_drafts").select("ticket_id, final_at").in("ticket_id", open.map((t) => t.id)).returns<{ ticket_id: number; final_at: string | null }[]>()
       : Promise.resolve({ data: [] }),
@@ -172,7 +174,7 @@ async function ClientOverview({ session, business }: { session: Session; busines
 
   return (
     <Shell {...shell}>
-      <QueueWidgets {...widgets} earnHint="Send a request to earn an oatcake" />
+      <QueueWidgets {...widgets} earnHint="Each finished project earns an oatcake" petBusiness={petBiz} />
       <div className="client-overview">
         <div className="overview-head">
           <div>

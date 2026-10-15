@@ -38,7 +38,8 @@ function savedShown(): Key[] {
   return DEFAULT;
 }
 
-export default function QueueWidgets({ week, reel, pet, tally, earnHint = "Deliver a job to earn an oatcake" }: { week: WeekDay[]; reel: ReelItem[]; pet: PetView | null; tally: WeekStats; earnHint?: string }) {
+// `petBusiness` makes Pickle that business's shared pet (a client's Overview).
+export default function QueueWidgets({ week, reel, pet, tally, earnHint = "Deliver a job to earn an oatcake", petBusiness }: { week: WeekDay[]; reel: ReelItem[]; pet: PetView | null; tally: WeekStats; earnHint?: string; petBusiness?: string }) {
   const [shown, setShown] = useState<Key[]>(DEFAULT);
   const [menu, setMenu] = useState(false);
   const [dragging, setDragging] = useState<Key | null>(null);
@@ -74,7 +75,7 @@ export default function QueueWidgets({ week, reel, pet, tally, earnHint = "Deliv
   };
 
   const body: Record<Key, React.ReactNode> = {
-    pet: <Pet pet={pet} earnHint={earnHint} />,
+    pet: <Pet pet={pet} earnHint={earnHint} business={petBusiness} />,
     week: <Week days={week} />,
     reel: <Reel items={reel} />,
     tally: <Tally {...tally} />,
@@ -176,7 +177,8 @@ function Tally({ delivered, due, late }: WeekStats) {
 // Pickle, a little LCD pet like an old Tamagotchi (rules in lib/pet.ts). Delivered jobs (or sent
 // requests) fill its tin with oatcakes; Feed gives it one, and five can be swapped for a golden one. Visiting each
 // day keeps a streak going. It never dies, it just gets peckish.
-function Pet({ pet: start, earnHint }: { pet: PetView | null; earnHint: string }) {
+function Pet({ pet: start, earnHint, business }: { pet: PetView | null; earnHint: string; business?: string }) {
+  const tinKey = business ? `${TIN_KEY}_${business}` : TIN_KEY;
   const [pet, setPet] = useState(start);
   const [act, setAct] = useState<Act | null>(null);
   const [busy, setBusy] = useState(false);
@@ -212,8 +214,8 @@ function Pet({ pet: start, earnHint }: { pet: PetView | null; earnHint: string }
   useEffect(() => {
     if (!start) return;
     let seen = NaN;
-    try { seen = Number(localStorage.getItem(TIN_KEY) ?? "NaN"); } catch {}
-    try { localStorage.setItem(TIN_KEY, String(start.tin)); } catch {}
+    try { seen = Number(localStorage.getItem(tinKey) ?? "NaN"); } catch {}
+    try { localStorage.setItem(tinKey, String(start.tin)); } catch {}
     if (!Number.isNaN(seen) && start.tin > seen) {
       setNews(`+${start.tin - seen} in the tin!`);
       // Fresh oatcakes from a finished job: Pickle hops out of the screen and explores the page.
@@ -243,9 +245,9 @@ function Pet({ pet: start, earnHint }: { pet: PetView | null; earnHint: string }
     }
     const started = Date.now();
     try {
-      const next = await feedPickle(kind);
+      const next = await feedPickle(kind, business);
       if (next) {
-        try { localStorage.setItem(TIN_KEY, String(next.tin)); localStorage.setItem(LEVEL_KEY, String(next.level)); } catch {}
+        try { localStorage.setItem(tinKey, String(next.tin)); localStorage.setItem(LEVEL_KEY, String(next.level)); } catch {}
         // Show the new stats (and any growth) once the snack is finished.
         const wait = Math.max(0, (kind === "golden" ? 3200 : 4200) - (Date.now() - started));
         const grew = next.level > pet.level;

@@ -4,7 +4,7 @@ import type QueueWidgets from "@/components/QueueWidgets";
 import type { WeekDay } from "@/components/QueueWidgets";
 import { brandFor } from "./brands";
 import { coversFor } from "./deliveries";
-import { visitPet } from "./pet";
+import { visitPet, type PetOwner } from "./pet";
 import { isDone, todayISO, type Ctx } from "./priority";
 import type { Business, Ticket } from "./types";
 
@@ -16,8 +16,8 @@ export async function loadWidgets(
   all: Ticket[],
   ctx: Ctx,
   byId: Record<string, Business>,
-  pet?: { earned: number; base: number },
-): Promise<Omit<ComponentProps<typeof QueueWidgets>, "earnHint">> {
+  pet?: { earned: number; base: number; owner?: PetOwner },
+): Promise<Omit<ComponentProps<typeof QueueWidgets>, "earnHint" | "petBusiness">> {
   const today = todayISO();
   const dayAt = (n: number) => new Date(Date.parse(today) + n * 86_400_000).toISOString().slice(0, 10);
   const monday = dayAt(-((new Date(today).getUTCDay() + 6) % 7));
@@ -43,7 +43,7 @@ export async function loadWidgets(
     .slice(0, 24);
   const [covers, petView] = await Promise.all([
     coversFor(supabase, recent.map((t) => t.id)),
-    pet ? visitPet(supabase, pet.earned, pet.base) : Promise.resolve(null),
+    pet ? visitPet(supabase, pet.earned, pet.base, pet.owner) : Promise.resolve(null),
   ]);
   const reel = recent.filter((t) => covers[t.id]?.url).slice(0, 6).map((t) => ({ id: t.id, title: t.title, url: covers[t.id]!.url! }));
   return { week, reel, pet: petView, tally: { delivered: deliveredWeek, due: open.filter((t) => t.deadline <= sunday).length, late } };
