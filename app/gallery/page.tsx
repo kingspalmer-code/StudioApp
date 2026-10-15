@@ -1,6 +1,7 @@
 import Link from "next/link";
 import BizBadge from "@/components/BizBadge";
 import Shell from "@/components/Shell";
+import SplitHost from "@/components/SplitHost";
 import { coversFor } from "@/lib/deliveries";
 import { formatDate, isDone } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
@@ -9,6 +10,7 @@ import type { Ticket } from "@/lib/types";
 // Every finished piece of work someone can see, newest first: the studio and managers see every
 // business, a client sees their own businesses. Read-only: opening one shows its files to view or
 // download, nothing here changes anything. Employees never see jobs, so they have no gallery.
+// On wide screens a piece opens in the panel on the right, like a job beside the queue.
 export default async function GalleryPage({ searchParams }: { searchParams: Promise<{ year?: string; type?: string; business?: string }> }) {
   const { year, type, business } = await searchParams;
   const { supabase, member, businesses, ctx, terms, workspace, shell } = asClient(await requireMember(["manager", "designer", "client"]));
@@ -65,6 +67,7 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
         )}
       </div>
       {shown.length ? (
+        <SplitHost>
         <div className="gallery">
           {shown.map((t) => (
             <Link key={t.id} href={`/tickets/${t.id}`} className="gallery-card">
@@ -79,6 +82,7 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
             </Link>
           ))}
         </div>
+        </SplitHost>
       ) : (
         <div className="group"><div className="empty">Nothing finished yet.</div></div>
       )}
