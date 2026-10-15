@@ -1344,3 +1344,46 @@ a.rail-new, a.app-bar-pill { text-decoration: none; }
 .app-new-wrap .app-new { flex: 1 1 100%; }
 .mv-files button > span { opacity: .55; font-size: 15px; line-height: 1; margin-left: 2px; }
 .mv-files button > span:hover { opacity: 1; }
+
+/* Edit sidebar (right-click the sidebar, components/SidebarEdit.tsx): the buttons jiggle a little
+   to show they can be moved, removed ones wait underneath to be put back, and Done saves. */
+.ctx-menu { position: fixed; z-index: 90; min-width: 170px; padding: 5px; border-radius: 10px; background: var(--surface); border: .5px solid var(--sep); box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+.ctx-menu button { display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 10px; border: 0; border-radius: 6px; background: none; color: var(--label); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.ctx-menu button:hover, .ctx-menu button:focus-visible { background: var(--accent); color: var(--accent-ink); outline: none; }
+.ctx-menu svg { width: 17px; height: 17px; flex: none; }
+.rail-edit { display: none; }
+@media (min-width: 701px) {
+  .rail-edit { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: auto; }
+  html[data-rail="open"] .rail-edit { align-items: stretch; }
+  .rail-edit-tip { font-size: 11px; line-height: 1.3; color: var(--label-2); text-align: center; max-width: 60px; }
+  html[data-rail="open"] .rail-edit-tip { max-width: none; font-size: 12px; text-align: left; padding: 0 12px; }
+  .rail-nav.editing { margin-bottom: 0; }
+  .rail-edit-item { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; color: var(--label); background: var(--fill); outline: 1px dashed var(--sep); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; animation: rail-jiggle .32s ease-in-out infinite alternate; }
+  .rail-edit-item:nth-child(even) { animation-delay: -.16s; }
+  .rail-edit-item svg { width: 22px; height: 22px; }
+  .rail-edit-item.held { opacity: .35; animation: none; }
+  .rail-edit-item.gone { opacity: .12; animation: none; }
+  .rail-edit-item.nope { animation: rail-nope .35s ease; }
+  html[data-rail="open"] .rail-edit-item { width: auto; height: 38px; display: flex; align-items: center; gap: 12px; padding: 0 12px; border-radius: 10px; }
+  html[data-rail="open"] .rail-edit-item svg { width: 20px; height: 20px; flex: none; }
+  .rail-removed { display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 8px; border-top: .5px solid var(--sep); }
+  html[data-rail="open"] .rail-removed { align-items: stretch; }
+  .rail-removed .rail-head { padding: 0 0 4px; font-size: 10px; }
+  html[data-rail="open"] .rail-removed .rail-head { padding: 0 12px 4px; font-size: 12px; }
+  .rail-removed button { position: relative; display: grid; place-items: center; width: 44px; height: 38px; border: 0; border-radius: 10px; background: none; color: var(--label-2); opacity: .7; cursor: pointer; font: inherit; }
+  .rail-removed button:hover { opacity: 1; background: var(--fill); color: var(--label); }
+  .rail-removed button svg { width: 20px; height: 20px; }
+  .rail-removed .rail-add { position: absolute; right: 2px; top: 2px; width: 13px !important; height: 13px !important; padding: 1px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); }
+  html[data-rail="open"] .rail-removed button { width: auto; display: flex; align-items: center; gap: 12px; padding: 0 12px; }
+  html[data-rail="open"] .rail-removed .rail-add { position: static; margin-left: auto; }
+  .rail-done { align-self: center; }
+  html[data-rail="open"] .rail-done { align-self: stretch; }
+  .rail-ghost { position: fixed; z-index: 95; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--surface); color: var(--label); box-shadow: 0 8px 24px rgba(0,0,0,.22); pointer-events: none; transform: scale(1.06); }
+  .rail-ghost svg { width: 22px; height: 22px; }
+  .rail-ghost.out { background: var(--red); color: #fff; }
+  .rail-ghost.stays { background: var(--fill); color: var(--label-2); }
+  .rail-ghost-note { position: absolute; left: calc(100% + 8px); white-space: nowrap; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: var(--surface); color: var(--label); box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+}
+@keyframes rail-jiggle { from { transform: rotate(-1.2deg); } to { transform: rotate(1.2deg); } }
+@keyframes rail-nope { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+@media (prefers-reduced-motion: reduce) { .rail-edit-item { animation: none; } }

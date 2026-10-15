@@ -17,10 +17,10 @@ import TabBar from "./TabBar";
 import Tracker from "./Tracker";
 import { OatcakeMark } from "./OatcakeLogo";
 import { termsFor } from "@/lib/workspace";
-import { alwaysOnComputer } from "@/lib/menu";
+import { alwaysOnComputer, ordered } from "@/lib/menu";
 import Submit from "@/components/Submit";
 
-export type NavLink = { href: string; label: string; icon?: string };
+export type NavLink = { href: string; label: string; icon?: string; fixed?: boolean };
 
 export function linksFor(member: Member, workspace: Workspace, viewing: boolean): NavLink[] {
   const terms = termsFor(workspace.kind);
@@ -82,7 +82,7 @@ export default function Shell({
   askSince = 0,
   helpUnread = false,
   track = false,
-  hidden = { phone: [], computer: [] },
+  hidden = { phone: [], computer: [], order: [] },
   preview,
   children,
 }: {
@@ -98,8 +98,9 @@ export default function Shell({
   askSince?: number;
   helpUnread?: boolean;
   track?: boolean;
-  // Menu buttons the owner switched off in Settings > Menu, by href.
-  hidden?: { phone: string[]; computer: string[] };
+  // Menu buttons the owner switched off in Settings > Menu (or dragged out of the sidebar), by href,
+  // and the order they dragged the sidebar into.
+  hidden?: { phone: string[]; computer: string[]; order?: string[] };
   preview?: Business;
   children: React.ReactNode;
 }) {
@@ -111,7 +112,10 @@ export default function Shell({
   const rail = links.length > 1;
   // The sidebar and the phone tab bar leave out what the owner has switched off. The first section
   // always stays, and on computers Settings does too.
-  const deskLinks = links.filter((l, i) => alwaysOnComputer(l.href, i) || !hidden.computer.includes(l.href));
+  // The sidebar is in the order the owner dragged it into; the ones that always stay are marked so
+  // Edit sidebar won't let them be dragged out.
+  const deskAll = ordered(links.map((l, i) => ({ ...l, fixed: alwaysOnComputer(l.href, i) })), hidden.order);
+  const deskLinks = deskAll.filter((l) => l.fixed || !hidden.computer.includes(l.href));
   const phoneLinks = links.filter((l, i) => i === 0 || !hidden.phone.includes(l.href));
   const canCreate = member.role === "designer" && !viewing;
   // Clients get New (their request form) and Search over their own requests too.
@@ -138,7 +142,7 @@ export default function Shell({
               <OatcakeMark height={22} />
             </Link>
           )}
-          {rail ? <RailNav links={deskLinks} canCreate={canCreate} clients={businesses} newHref={newHref} /> : <NavLinks links={links} />}
+          {rail ? <RailNav links={deskLinks} all={deskAll} hidden={hidden.computer} editable={!viewing && !preview} canCreate={canCreate} clients={businesses} newHref={newHref} /> : <NavLinks links={links} />}
           {(canCreate || isClient) && <SearchButton />}
           {member.role === "designer" && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake hint={askHint} opens={askOpens} since={askSince} />}
           {/* What other people have done on your jobs. Top right of the page, whatever the layout. */}
