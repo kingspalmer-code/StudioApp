@@ -25,6 +25,7 @@ import Deliveries from "@/components/Deliveries";
 import { signDeliveries, type Delivery, type Draft, type DraftFile } from "@/lib/deliveries";
 import Submit from "@/components/Submit";
 import FrameChanged from "@/components/FrameChanged";
+import { signedUrls } from "@/lib/signed";
 
 const IMAGE = /\.(png|jpe?g|gif|webp|svg)$/i;
 
@@ -71,7 +72,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
       : [{ data: null }, { data: null }],
     signDeliveries(supabase, deliveryRows ?? []),
     signDeliveries(supabase, (draftFileRows ?? []).map(({ ticket_drafts: _, ...f }: DraftFile & { ticket_drafts?: unknown }) => f)),
-    files?.length ? supabase.storage.from("inspiration").createSignedUrls(files.map((f) => f.path), 3600).then((r) => r.data ?? []) : [],
+    files?.length ? signedUrls(supabase, "inspiration", files.map((f) => f.path)).then((u) => files.map((f) => ({ signedUrl: u[f.path] ?? null }))) : [],
   ]);
   const followsFrom = (links ?? []).find((x) => x.id === t.follows);
   const linkedHere = new Set((memberLinks ?? []).map((l) => l.email));

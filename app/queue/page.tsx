@@ -8,6 +8,7 @@ import { loadWidgets } from "@/lib/widgets";
 import Walkthrough from "@/components/Walkthrough";
 import { daysFromToday, finalStage, formatDate, isDone, money, sortQueue, startBy, startLabel } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 import type { Ticket } from "@/lib/types";
 
 export default async function QueuePage({
@@ -16,11 +17,15 @@ export default async function QueuePage({
   searchParams: Promise<{ view?: string; biz?: string; tour?: string }>;
 }) {
   const { view = "list", biz = "all", tour } = await searchParams;
-  const { supabase, member, businesses, ctx, terms, workspace, shell, viewing } = await requireMember(["designer", "manager"]);
+  // The jobs load alongside the session rather than after it; the database only returns what this login may see.
+  const db = await createClient();
+  const [{ supabase, member, businesses, ctx, terms, workspace, shell, viewing }, { data }] = await Promise.all([
+    requireMember(["designer", "manager"]),
+    db.from("tickets").select("*").returns<Ticket[]>(),
+  ]);
   // Managers see the same queue, read-only: no Select, no delivering or deleting, no tour.
   const canEdit = member.role === "designer" && !viewing;
   const trade = workspace.kind !== "studio";
-  const { data } = await supabase.from("tickets").select("*").returns<Ticket[]>();
   const all = data ?? [];
   const queue = sortQueue(all, ctx);
   const byId = Object.fromEntries(businesses.map((b) => [b.id, b]));

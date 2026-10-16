@@ -29,14 +29,21 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   const only = several ? myBizes.find((b) => b.id === business) : undefined;
   const helper = Boolean(process.env.ANTHROPIC_API_KEY) && !trade;
 
-  const { data: fields } = await supabase.from("job_fields").select("*").order("position").order("id").returns<JobField[]>();
+  // The form's fields, the job a follow-up starts from and a client's own requests all load at once.
+  const ids = only ? [only.id] : myBizes.map((b) => b.id);
+  const [{ data: fields }, { data: from }, { data }] = await Promise.all([
+    supabase.from("job_fields").select("*").order("position").order("id").returns<JobField[]>(),
+    follow && !isDesigner
+      ? supabase.from("tickets").select("id, title, type, business_id, status, delivered_at").eq("id", Number(follow)).maybeSingle<Pick<Ticket, "id" | "title" | "type" | "business_id" | "status" | "delivered_at">>()
+      : Promise.resolve({ data: null }),
+    member.role === "client"
+      ? supabase.from("tickets").select("*").in("business_id", ids).order("deadline").returns<Ticket[]>()
+      : Promise.resolve({ data: null as Ticket[] | null }),
+  ]);
   const formFields = (fields ?? []).filter((f) => !f.hidden && f.on_form);
   const core = coreFields(workspace.core_fields, { trade, solo });
 
   // "Ask for a follow-up" on a finished job: the form starts from that job's details.
-  const { data: from } = follow && !isDesigner
-    ? await supabase.from("tickets").select("id, title, type, business_id, status, delivered_at").eq("id", Number(follow)).maybeSingle<Pick<Ticket, "id" | "title" | "type" | "business_id" | "status" | "delivered_at">>()
-    : { data: null };
   const followUp = from && myBizes.some((b) => b.id === from.business_id)
     ? {
         id: from.id,
@@ -107,8 +114,6 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   }
 
   // A client: their own portal. New request, what's in progress, and what's been finished.
-  const ids = only ? [only.id] : myBizes.map((b) => b.id);
-  const { data } = await supabase.from("tickets").select("*").in("business_id", ids).order("deadline").returns<Ticket[]>();
   const byId = Object.fromEntries(myBizes.map((b) => [b.id, b]));
   const all = data ?? [];
   const open = all.filter((t) => !isDone(t, ctx));
