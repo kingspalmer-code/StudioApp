@@ -5,6 +5,7 @@ import Shell from "@/components/Shell";
 import type { App, AppBackground } from "@/lib/apps";
 import { asClient, requireMember } from "@/lib/session";
 import PatternApp from "./PatternApp";
+import { signedUrls } from "@/lib/signed";
 
 // One app. Pattern apps: recolour the client's pattern and save it to their gallery of backgrounds.
 export default async function AppPage({ params }: { params: Promise<{ id: string }> }) {
@@ -21,7 +22,7 @@ export default async function AppPage({ params }: { params: Promise<{ id: string
   const bucket = supabase.storage.from("apps");
   const [source, thumbs, downloads] = await Promise.all([
     app.source_path ? bucket.createSignedUrl(app.source_path, 3600).then((r) => r.data?.signedUrl ?? null) : Promise.resolve(null),
-    list.length ? bucket.createSignedUrls(list.map((b) => b.thumb_path), 3600).then((r) => r.data ?? []) : Promise.resolve([]),
+    signedUrls(supabase, "apps", list.map((b) => b.thumb_path)).then((u) => Object.entries(u).map(([path, signedUrl]) => ({ path, signedUrl }))),
     list.length ? bucket.createSignedUrls(list.flatMap((b) => [b.image_path, b.svg_path]), 3600, { download: true }).then((r) => r.data ?? []) : Promise.resolve([]),
   ]);
   const url = Object.fromEntries([...thumbs, ...downloads].filter((s) => s.signedUrl).map((s) => [s.path, s.signedUrl]));

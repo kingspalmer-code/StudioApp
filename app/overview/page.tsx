@@ -16,7 +16,12 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   const session = asClient(await requireMember(["manager", "designer", "client"]));
   if (session.member.role === "client") return <ClientOverview session={session} business={(await searchParams).business} />;
   const { supabase, member, businesses, ctx, terms, workspace, shell, viewing } = session;
-  const { data } = await supabase.from("tickets").select("*").returns<Ticket[]>();
+  // Managers get the widget row too, with an oatcake for Pickle for every request they send.
+  const manager = member.role === "manager" && !viewing;
+  const [{ data }, earned] = await Promise.all([
+    supabase.from("tickets").select("*").returns<Ticket[]>(),
+    manager ? oatcakesEarned(supabase, member, ctx) : Promise.resolve(0),
+  ]);
   const all = data ?? [];
   const open = sortQueue(all, ctx);
   const done = all
@@ -39,13 +44,8 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
     { n: deliveredThisMonth, label: "Delivered this month", color: "var(--green)" },
   ];
 
-  // Managers get the widget row too, with an oatcake for Pickle for every request they send.
-  const manager = member.role === "manager" && !viewing;
   const widgets = manager
-    ? await (async () => {
-        const earned = await oatcakesEarned(supabase, member, ctx);
-        return <QueueWidgets {...await loadWidgets(supabase, all, ctx, byId, { earned, base: hatchBase(member, earned) })} earnHint="Send a request to earn an oatcake" />;
-      })()
+    ? <QueueWidgets {...await loadWidgets(supabase, all, ctx, byId, { earned, base: hatchBase(member, earned) })} earnHint="Send a request to earn an oatcake" />
     : null;
 
   return (

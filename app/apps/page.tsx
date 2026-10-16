@@ -4,6 +4,7 @@ import Shell from "@/components/Shell";
 import type { App, AppBackground } from "@/lib/apps";
 import { asClient, requireMember } from "@/lib/session";
 import NewApp from "./NewApp";
+import { signedUrls } from "@/lib/signed";
 
 // What "Request an app" starts the Help message with.
 const REQUEST = "App request: I'd like an app that ";
@@ -22,8 +23,7 @@ export default async function AppsPage() {
   const cover: Record<string, string> = {};
   for (const b of latest ?? []) cover[b.app_id] ??= b.thumb_path;
   const paths = Object.values(cover);
-  const signed = paths.length ? (await supabase.storage.from("apps").createSignedUrls(paths, 3600)).data ?? [] : [];
-  const url = Object.fromEntries(signed.map((s) => [s.path, s.signedUrl]));
+  const url = await signedUrls(supabase, "apps", paths);
   // A client (or the studio previewing one) only sees their own businesses' apps.
   const list = (apps ?? []).filter((a) => byId[a.business_id] && (member.role !== "client" || member.business_ids?.includes(a.business_id)));
 

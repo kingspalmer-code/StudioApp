@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { downloadUrl, signedUrls } from "./signed";
 
 // Finished files the studio delivers on a job: stored in Oatcake, or a link to somewhere else.
 export type Delivery = { id: number; ticket_id: number; path: string | null; url: string | null; name: string; size: number; mime: string; created_at: string };
@@ -24,19 +25,14 @@ export function fileSize(bytes: number) {
 // Short-lived links to view each file, and to download it with its own name.
 export async function signDeliveries<T extends Pick<Delivery, "path" | "url" | "name">>(supabase: SupabaseClient, rows: T[]): Promise<Signed<T>[]> {
   const stored = rows.filter((d) => d.path);
-  const bucket = supabase.storage.from("deliveries");
-  const view: Record<string, string> = {};
   const download: Record<string, string> = {};
-  if (stored.length) {
-    const { data } = await bucket.createSignedUrls(stored.map((d) => d.path!), 3600);
-    for (const s of data ?? []) if (s.path && s.signedUrl) view[s.path] = s.signedUrl;
-    await Promise.all(
-      stored.map(async (d) => {
-        const { data: one } = await bucket.createSignedUrl(d.path!, 3600, { download: d.name });
-        if (one?.signedUrl) download[d.path!] = one.signedUrl;
-      })
-    );
-  }
+  const [view] = await Promise.all([
+    signedUrls(supabase, "deliveries", stored.map((d) => d.path!)),
+    ...stored.map(async (d) => {
+      const url = await downloadUrl(supabase, "deliveries", d.path!, d.name);
+      if (url) download[d.path!] = url;
+    }),
+  ]);
   return rows.map((d) => ({ ...d, view: d.path ? view[d.path] ?? null : d.url, download: d.path ? download[d.path] ?? null : d.url }));
 }
 
@@ -53,8 +49,7 @@ export async function coversFor(supabase: SupabaseClient, ticketIds: number[]) {
   }
   const paths = Object.values(first).map((d) => d.path!);
   if (paths.length) {
-    const { data: signed } = await supabase.storage.from("deliveries").createSignedUrls(paths, 3600);
-    const byPath = Object.fromEntries((signed ?? []).filter((s) => s.path && s.signedUrl).map((s) => [s.path!, s.signedUrl]));
+    const byPath = await signedUrls(supabase, "deliveries", paths);
     for (const [id, d] of Object.entries(first)) covers[Number(id)].url = byPath[d.path!] ?? null;
   }
   return covers;
