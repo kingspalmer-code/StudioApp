@@ -56,12 +56,23 @@ export function startLabel(n: number): { text: string; tone: "" | "warm" | "hot"
   return { text: `Start in ${n}d`, tone: "" };
 }
 
-export function formatDate(date: string): string {
+export function formatDate(date: string, withWeekday = false): string {
   return new Date(date.length === 10 ? date + "T12:00:00" : date).toLocaleDateString("en-GB", {
+    ...(withWeekday ? { weekday: "short" as const } : {}),
     day: "numeric",
     month: "short",
     timeZone: TZ,
   });
+}
+
+// How far off a date is, for places that already show the date itself.
+export function whenLabel(date: string): string {
+  const n = daysFromToday(date);
+  if (n < -1) return `${-n} days overdue`;
+  if (n === -1) return "1 day overdue";
+  if (n === 0) return "today";
+  if (n === 1) return "tomorrow";
+  return `in ${n} days`;
 }
 
 export function dueLabel(date: string): string {
