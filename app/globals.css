@@ -1469,3 +1469,103 @@ button.access-preset[aria-pressed="true"] { background: var(--fill); }
 .ticket-plan { flex: none; width: 46px; display: grid; place-items: center; color: var(--label-3); }
 .ticket-plan svg { width: 20px; height: 20px; }
 .ticket-plan:hover, .ticket-plan:focus-visible { color: #ff5a1f; background: var(--surface-2); }
+
+/* Liquid glass: the chrome that floats over the page (phone tab bar, the Create and More sheets,
+   the round header buttons, notifications, menus) is frosted, tinted with the oat palette, and lit
+   along its top edge. Content (cards, lists, forms, quotes) stays solid so it reads cleanly.
+   Without backdrop blur, or with Reduce Transparency on, the glass falls back to a solid surface. */
+:root {
+  --glass: rgba(255,252,247,.62); --glass-thick: rgba(252,248,241,.80);
+  --glass-tint: linear-gradient(180deg, rgba(255,255,255,.34), rgba(255,255,255,.06) 42%, rgba(255,255,255,0));
+  --glass-edge: inset 0 1px 0 rgba(255,255,255,.75), inset 0 0 0 .5px rgba(255,255,255,.45), inset 0 -1px 1px rgba(56,42,37,.05);
+  --glass-line: rgba(56,42,37,.10);
+  --glass-shadow: 0 1px 2px rgba(56,42,37,.06), 0 10px 34px rgba(56,42,37,.14);
+  --glass-blur: blur(22px) saturate(190%); --glass-blur-deep: blur(36px) saturate(180%);
+  --glass-press: rgba(56,42,37,.07);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --glass: rgba(46,36,32,.56); --glass-thick: rgba(36,28,25,.76);
+    --glass-tint: linear-gradient(180deg, rgba(255,240,222,.12), rgba(255,240,222,.02) 42%, rgba(255,240,222,0));
+    --glass-edge: inset 0 1px 0 rgba(255,244,230,.20), inset 0 0 0 .5px rgba(255,244,230,.12), inset 0 -1px 1px rgba(0,0,0,.25);
+    --glass-line: rgba(243,233,220,.10);
+    --glass-shadow: 0 1px 2px rgba(0,0,0,.35), 0 12px 38px rgba(0,0,0,.45);
+    --glass-press: rgba(243,233,220,.10);
+  }
+}
+:root[data-theme="dark"] {
+  --glass: rgba(46,36,32,.56); --glass-thick: rgba(36,28,25,.76);
+  --glass-tint: linear-gradient(180deg, rgba(255,240,222,.12), rgba(255,240,222,.02) 42%, rgba(255,240,222,0));
+  --glass-edge: inset 0 1px 0 rgba(255,244,230,.20), inset 0 0 0 .5px rgba(255,244,230,.12), inset 0 -1px 1px rgba(0,0,0,.25);
+  --glass-line: rgba(243,233,220,.10);
+  --glass-shadow: 0 1px 2px rgba(0,0,0,.35), 0 12px 38px rgba(0,0,0,.45);
+  --glass-press: rgba(243,233,220,.10);
+}
+/* The Create sheet and notifications keep their dark roast in both themes, so their glass is always dark. */
+.ct-panel, .nt-panel {
+  --glass: rgba(31,24,21,.70); --glass-thick: rgba(28,21,19,.80);
+  --glass-tint: linear-gradient(180deg, rgba(255,240,222,.12), rgba(255,240,222,.02) 42%, rgba(255,240,222,0));
+  --glass-edge: inset 0 1px 0 rgba(255,244,230,.20), inset 0 0 0 .5px rgba(255,244,230,.12), inset 0 -1px 1px rgba(0,0,0,.25);
+  --glass-press: rgba(243,233,220,.10);
+}
+
+.bar-search, .bell-btn, .widget-more,
+.more-panel, .ct-panel, .nt-panel, .widget-menu, .ctx-menu {
+  background: var(--glass-tint), var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-edge), 0 0 0 .5px var(--glass-line), var(--glass-shadow);
+}
+/* Sheets and panels hold lists to read, so they use the thicker, blurrier glass. */
+.more-panel, .ct-panel, .nt-panel, .widget-menu, .ctx-menu { background: var(--glass-tint), var(--glass-thick); -webkit-backdrop-filter: var(--glass-blur-deep); backdrop-filter: var(--glass-blur-deep); }
+.bar-search, .bell-btn { transition: transform .18s cubic-bezier(.3,1.6,.5,1), background-color .15s; }
+.bar-search:active, .bell-btn:active { transform: scale(.92); }
+.bell-btn[aria-expanded="true"] { background: var(--accent); }
+.widget-more:hover, .widget-more[aria-expanded="true"] { background: var(--glass-tint), var(--glass-thick); }
+.ctx-menu { border: 0; border-radius: 14px; }
+.widget-menu { border-radius: 18px; }
+.widget-menu button:hover, .more-panel a:active, .more-panel a[aria-current="page"] { background: var(--glass-press); }
+.nt-panel { box-shadow: var(--glass-edge), 0 30px 80px rgba(0,0,0,.5); }
+.nt-panel .nt-item { background: rgba(18,13,12,.55); }
+.nt-panel .nt-item:hover { background: rgba(33,26,23,.7); }
+
+/* Create sheet: the tiles are clear glass beads sitting on the sheet. */
+.ct-panel { box-shadow: var(--glass-edge), 0 24px 70px rgba(0,0,0,.4); }
+.more-panel { box-shadow: var(--glass-edge), 0 0 0 .5px var(--glass-line), 0 20px 60px rgba(0,0,0,.28); }
+.ct-tile, .ct-job, .ct-task input { background: rgba(243,233,220,.07); box-shadow: inset 0 1px 0 rgba(255,244,230,.10), inset 0 0 0 .5px rgba(255,244,230,.07); }
+.ct-tile:hover, .ct-tile:focus-visible, .ct-job:hover, .ct-job:focus-visible { background: rgba(243,233,220,.13); }
+.ct-tile { transition: transform .18s cubic-bezier(.3,1.6,.5,1), background-color .15s; }
+
+@media (max-width: 700px) {
+  /* The tab bar lifts off the bottom edge as a floating capsule, with a soft pill under the current section. */
+  .tabbar {
+    left: 12px; right: 12px; bottom: max(10px, env(safe-area-inset-bottom, 0px));
+    padding: 5px; gap: 2px; border: 0; border-radius: 32px;
+    background: var(--glass-tint), var(--glass);
+    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-edge), 0 0 0 .5px var(--glass-line), var(--glass-shadow);
+  }
+  .tabbar a, .tabbar button { padding: 6px 0 5px; border-radius: 26px; transition: background-color .2s, transform .18s cubic-bezier(.3,1.6,.5,1); }
+  .tabbar a:active, .tabbar button:active { transform: scale(.94); }
+  .tabbar a[aria-current="page"], .tabbar .more.on { background: var(--glass-press); }
+  .tabbar .add svg { box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 2px 8px rgba(0,0,0,.18); }
+  main.has-tabbar { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+  .more-panel { border-radius: 30px; }
+}
+@media (min-width: 701px) {
+  .has-rail > .bar .bell-btn { background: var(--glass-tint), var(--glass); box-shadow: var(--glass-edge), var(--glass-shadow); }
+  .has-rail > .bar .bell-btn[aria-expanded="true"] { background: var(--accent); }
+  .sr-panel { background: var(--glass-tint), var(--glass-thick); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); box-shadow: var(--glass-edge), var(--glass-shadow); }
+}
+html.in-app .has-rail > .bar .bell-btn { background: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+html.in-app .has-rail > .bar .bell-btn[aria-expanded="true"] { background: var(--accent); }
+
+/* No blur available, or Reduce Transparency is on: solid surfaces, keeping the lit edge. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root { --glass: var(--surface); --glass-thick: var(--surface); }
+  .ct-panel, .nt-panel { --glass: #1f1815; --glass-thick: #1f1815; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root { --glass: var(--surface); --glass-thick: var(--surface); }
+  .ct-panel, .nt-panel { --glass: #1f1815; --glass-thick: #1f1815; }
+  .bar-search, .bell-btn, .widget-more, .more-panel, .ct-panel, .nt-panel, .widget-menu, .ctx-menu, .tabbar, .sr-panel { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
