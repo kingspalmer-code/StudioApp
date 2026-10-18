@@ -17,7 +17,7 @@ import TabBar from "./TabBar";
 import Tracker from "./Tracker";
 import { OatcakeMark } from "./OatcakeLogo";
 import { termsFor } from "@/lib/workspace";
-import { alwaysOnComputer, ordered } from "@/lib/menu";
+import { alwaysOnComputer, onPhoneTab, ordered } from "@/lib/menu";
 import Submit from "@/components/Submit";
 
 export type NavLink = { href: string; label: string; icon?: string; fixed?: boolean };
@@ -82,7 +82,7 @@ export default function Shell({
   askSince = 0,
   helpUnread = false,
   track = false,
-  hidden = { phone: [], computer: [], order: [] },
+  hidden = { computer: [], order: [] },
   preview,
   children,
 }: {
@@ -99,8 +99,8 @@ export default function Shell({
   helpUnread?: boolean;
   track?: boolean;
   // Menu buttons the owner switched off in Settings > Menu (or dragged out of the sidebar), by href,
-  // and the order they dragged the sidebar into.
-  hidden?: { phone: string[]; computer: string[]; order?: string[] };
+  // the order they dragged the sidebar into, and the ones they picked for the phone tab bar.
+  hidden?: { phoneTabs?: string[]; computer: string[]; order?: string[] };
   preview?: Business;
   children: React.ReactNode;
 }) {
@@ -110,13 +110,15 @@ export default function Shell({
   const links = linksFor(member, workspace, viewing);
   // Anyone with more than one section gets the sidebar rail on bigger screens (the tab bar on phones).
   const rail = links.length > 1;
-  // The sidebar and the phone tab bar leave out what the owner has switched off. The first section
-  // always stays, and on computers Settings does too.
+  // The sidebar leaves out what the owner has switched off. The first section always stays, and
+  // Settings does too.
   // The sidebar is in the order the owner dragged it into; the ones that always stay are marked so
   // Edit sidebar won't let them be dragged out.
   const deskAll = ordered(links.map((l, i) => ({ ...l, fixed: alwaysOnComputer(l.href, i) })), hidden.order);
   const deskLinks = deskAll.filter((l) => l.fixed || !hidden.computer.includes(l.href));
-  const phoneLinks = links.filter((l, i) => i === 0 || !hidden.phone.includes(l.href));
+  // On phones the first few sit on the tab bar and the rest under More.
+  const phoneLinks = links.filter((l, i) => onPhoneTab(l.href, i, hidden.phoneTabs));
+  const moreLinks = links.filter((l, i) => !onPhoneTab(l.href, i, hidden.phoneTabs));
   const canCreate = member.role === "designer" && !viewing;
   // Clients get New (their request form) and Search over their own requests too.
   const isClient = member.role === "client";
@@ -198,7 +200,7 @@ export default function Shell({
           children
         )}
       </main>
-      <TabBar links={phoneLinks} canCreate={canCreate} />
+      <TabBar links={phoneLinks} more={moreLinks} canCreate={canCreate} />
       {canCreate && (
         <CreateMenu
           kind={workspace.kind}
