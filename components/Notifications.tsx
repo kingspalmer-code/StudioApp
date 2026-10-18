@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { groupByDay, hrefFor, initialsOf, isMessage, NOTIFICATION_COLUMNS, people, phrase, stackPhrase, stackUp, whenLabel, type Notification } from "@/lib/notifications";
+import { groupByDay, hrefFor, initialsOf, isMessage, NOTIFICATION_COLUMNS, people, phrase, refOf, stackPhrase, stackUp, whenLabel, type Notification } from "@/lib/notifications";
 
 export type Tab = "unread" | "read" | "archived";
 export const TABS: { key: Tab; label: string }[] = [
@@ -141,7 +141,7 @@ function OneCard({ items, feed, tab, onOpen }: { items: Notification[]; feed: Fe
 function bySame(items: Notification[]) {
   const groups = new Map<string, Notification[]>();
   for (const n of items) {
-    const k = `${n.ticket_id ?? `t${n.staff_task_id}`}:${n.actor_name}`;
+    const k = `${refOf(n)}:${n.actor_name}`;
     groups.set(k, [...(groups.get(k) ?? []), n]);
   }
   return [...groups.values()];

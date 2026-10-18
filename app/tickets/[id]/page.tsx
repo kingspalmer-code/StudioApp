@@ -6,7 +6,7 @@ import StatusChip from "@/components/StatusChip";
 import { addNote, saveDetails, setPinned, setStatus } from "@/app/actions";
 import FieldInput from "@/components/FieldInput";
 import { appliesTo, groupFields, hasValue, showValue, valueOf, type JobField } from "@/lib/fields";
-import { PRIORITIES, finalStage, formatDate, isDone, money, reviewStage, startBy, startLabel, statusLabel, whenLabel } from "@/lib/priority";
+import { PRIORITIES, finalStage, formatDate, isDone, money, reviewStage, startBy, startLabel, statusLabel, todayISO, whenLabel } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
 import { coreFields, type CoreKey } from "@/lib/core-fields";
 import { createClient } from "@/lib/supabase/server";
@@ -27,6 +27,8 @@ import { signDeliveries, type Delivery, type Draft, type DraftFile } from "@/lib
 import Submit from "@/components/Submit";
 import FrameChanged from "@/components/FrameChanged";
 import { signedUrls } from "@/lib/signed";
+import JobHours from "@/components/JobHours";
+import { TIME_COLUMNS, type TimeLog } from "@/lib/hours";
 
 const IMAGE = /\.(png|jpe?g|gif|webp|svg)$/i;
 
@@ -40,7 +42,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   const id = Number(rawId);
   // Everything that only needs the job's number loads at once, alongside the session.
   const db = await createClient();
-  const [session, { data: t }, { data: notes }, { data: files }, { data: fields }, { data: docRows }, { data: deliveryRows }, { data: draftRows }, { data: draftFileRows }, { data: events }] = await Promise.all([
+  const [session, { data: t }, { data: notes }, { data: files }, { data: fields }, { data: docRows }, { data: deliveryRows }, { data: draftRows }, { data: draftFileRows }, { data: events }, { data: timeRows }, { data: people }] = await Promise.all([
     requireMember(undefined, "requests"),
     db.from("tickets").select("*").eq("id", id).maybeSingle<Ticket>(),
     db.from("ticket_notes").select("*").eq("ticket_id", id).order("created_at").returns<Note[]>(),
@@ -51,6 +53,9 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
     db.from("ticket_drafts").select("*").eq("ticket_id", id).order("created_at").returns<Draft[]>(),
     db.from("ticket_draft_files").select("*, ticket_drafts!inner(ticket_id)").eq("ticket_drafts.ticket_id", id).order("created_at").returns<DraftFile[]>(),
     db.from("ticket_events").select("*").eq("ticket_id", id).order("created_at").returns<TicketEvent[]>(),
+    // Hours worked on it, from here or the calendar. Clients see none (the database keeps them out).
+    db.from("time_logs").select(TIME_COLUMNS).eq("ticket_id", id).eq("gone", false).returns<TimeLog[]>(),
+    db.from("members").select("email, full_name").in("role", ["designer", "staff"]).returns<{ email: string; full_name: string }[]>(),
   ]);
   if (!t) notFound();
   // While previewing a client, their own jobs show as they see them; anything else shows as usual.
@@ -269,6 +274,8 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
               <form action={setPinned.bind(null, t.id, !t.pinned)}>
                 <Submit className="btn plain small" type="submit">{t.pinned ? "Unpin from top" : "Pin to top"}</Submit>
               </form>
+              {/* Break the job into dated steps on the calendar. */}
+              <Link className="btn plain small" href={`/calendar?job=${t.id}`}>Plan on calendar</Link>
             </div>
           </>
         )}
@@ -365,6 +372,23 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
 
         {!draftsUp && draftSection}
         {!deliveriesUp && deliveries}
+
+        {isDesigner && (
+          <>
+            <p className="eyebrow" id="hours">Hours</p>
+            <div className="group">
+              <JobHours
+                initial={timeRows ?? []}
+                ticketId={t.id}
+                me={session.member.email}
+                names={Object.fromEntries((people ?? []).map((p) => [p.email, p.full_name || p.email]))}
+                canEditAll={session.member.role === "designer" && !session.member.staff}
+                readOnly={viewing || Boolean(shell.readOnly)}
+                today={todayISO()}
+              />
+            </div>
+          </>
+        )}
 
         {isDesigner && (
           <>

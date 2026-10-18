@@ -5,12 +5,15 @@
 export type NotificationKind =
   | "request" | "follow_up" | "job" | "note" | "draft_note" | "approval" | "files" | "draft" | "review" | "finished"
   // About an employee's task (Team and To-do) rather than a job.
-  | "task" | "task_note" | "task_signoff" | "task_confirmed" | "task_reopened";
+  | "task" | "task_note" | "task_signoff" | "task_confirmed" | "task_reopened"
+  // About something on the calendar.
+  | "plan" | "reminder";
 
 export type Notification = {
   id: number;
   ticket_id: number | null;
   staff_task_id?: number | null;
+  plan_item_id?: number | null;
   kind: NotificationKind;
   title: string;
   actor_name: string;
@@ -22,7 +25,7 @@ export type Notification = {
   created_at: string;
 };
 
-export const NOTIFICATION_COLUMNS = "id, ticket_id, staff_task_id, kind, title, actor_name, actor_avatar, body, count, read_at, archived_at, created_at";
+export const NOTIFICATION_COLUMNS = "id, ticket_id, staff_task_id, plan_item_id, kind, title, actor_name, actor_avatar, body, count, read_at, archived_at, created_at";
 
 // "<Kingsley> <shared a draft of> <Spring menu>": the words either side of the job's name.
 export function phrase(n: Pick<Notification, "kind" | "count">): [string, string] {
@@ -42,11 +45,14 @@ export function phrase(n: Pick<Notification, "kind" | "count">): [string, string
     case "task_signoff": return ["finished", "and asked you to sign it off"];
     case "task_confirmed": return ["signed off", ""];
     case "task_reopened": return ["sent back", ""];
+    case "plan": return ["put on your calendar:", ""];
+    case "reminder": return ["reminder:", ""];
   }
 }
 
 // Where tapping it goes: the part of the job page it's about.
-export function hrefFor(n: Pick<Notification, "kind" | "ticket_id" | "staff_task_id">) {
+export function hrefFor(n: Pick<Notification, "kind" | "ticket_id" | "staff_task_id" | "plan_item_id">) {
+  if (n.plan_item_id) return `/calendar?item=${n.plan_item_id}`;
   if (n.staff_task_id) return `/tasks/${n.staff_task_id}`;
   if (!n.ticket_id) return "/notifications";
   const spot = n.kind === "note" ? "#notes" : n.kind === "draft_note" || n.kind === "approval" || n.kind === "draft" ? "#drafts" : n.kind === "files" ? "#files" : "";
@@ -89,6 +95,10 @@ export const initialsOf = (name: string) =>
 // - requests, files, drafts and other moves from several people or on several jobs stack into one
 //   card that opens up;
 // - notes, replies and approvals are never stacked with other people's: those are the messages.
+// What a notification is about: a job, an employee's task, or something on the calendar.
+export const refOf = (n: Pick<Notification, "ticket_id" | "staff_task_id" | "plan_item_id">) =>
+  n.ticket_id ?? (n.staff_task_id ? `t${n.staff_task_id}` : `p${n.plan_item_id}`);
+
 export type Card = { key: string; kind: "one" | "stack"; items: Notification[] };
 
 const MESSAGES = new Set<NotificationKind>(["note", "draft_note", "approval", "task_note", "task_signoff", "task_reopened"]);
@@ -99,7 +109,7 @@ export function stackUp(list: Notification[]): Card[] {
   const same = new Map<string, Card>();
   const stacks = new Map<string, Card>();
   for (const n of list) {
-    const one = `${n.kind}:${n.ticket_id ?? `t${n.staff_task_id}`}:${n.actor_name}`;
+    const one = `${n.kind}:${refOf(n)}:${n.actor_name}`;
     const existing = same.get(one);
     if (existing) {
       existing.items.push(n);
@@ -120,7 +130,7 @@ export function stackUp(list: Notification[]): Card[] {
     if (!isMessage(n)) stacks.set(n.kind, card);
   }
   // A card whose items are all one person on one job reads as one thing, however many there are.
-  for (const c of cards) if (c.kind === "stack" && new Set(c.items.map((n) => `${n.ticket_id ?? `t${n.staff_task_id}`}:${n.actor_name}`)).size === 1) c.kind = "one";
+  for (const c of cards) if (c.kind === "stack" && new Set(c.items.map((n) => `${refOf(n)}:${n.actor_name}`)).size === 1) c.kind = "one";
   return cards;
 }
 
@@ -144,6 +154,8 @@ export function stackPhrase(kind: NotificationKind, jobs: number): string {
     case "finished": return `finished ${jobs} jobs`;
     case "task": return `gave you ${jobs} tasks`;
     case "task_confirmed": return `signed off ${jobs} tasks`;
+    case "plan": return `put ${jobs} things on your calendar`;
+    case "reminder": return `${jobs} reminders`;
     default: return `did ${jobs} things`;
   }
 }
