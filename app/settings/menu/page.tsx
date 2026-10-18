@@ -14,7 +14,7 @@ export default async function MenuSettingsPage() {
       <div style={{ maxWidth: 640 }}>
         <SectionHead title="Menu" />
         <MenuButtons links={linksFor(shell.member, workspace, false)} hidden={shell.hidden} />
-        <p className="foot">Turn off what you don&apos;t use to keep the menu simple. Hidden pages still open from links and alerts.</p>
+        <p className="foot">Turn off what you don&apos;t use to keep the menu simple. On your phone, buttons that are off wait under More. Hidden pages still open from links and alerts.</p>
       </div>
     </Shell>
   );

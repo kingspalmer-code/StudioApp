@@ -6,10 +6,11 @@ const KINDS = new Set(["view", "time", "action", "error"]);
 
 export async function POST(req: Request) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.no_tracking) return new Response(null, { status: 204 });
+  // Checked from the sign-in token, so saving stats never waits on the sign-in server.
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  const user = claims?.sub ? { id: claims.sub, user_metadata: (claims.user_metadata ?? {}) as Record<string, unknown> } : null;
+  if (!user || user.user_metadata.no_tracking) return new Response(null, { status: 204 });
   const body = (await req.json().catch(() => null)) as { events?: unknown[] } | null;
   const rows = (Array.isArray(body?.events) ? body.events : [])
     .slice(0, 40)

@@ -224,6 +224,17 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
   .tabbar .add svg { width: 30px; height: 30px; padding: 5px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); margin-top: -3px; }
   .tabbar .add { color: var(--label-2); }
   main.has-tabbar { padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+  .tabbar .more.on { color: var(--accent); }
+  /* More: the sections that don't fit on the tab bar, as a short list from the bottom. */
+  .more-layer { position: fixed; inset: 0; z-index: 60; }
+  .more-scrim { position: absolute; inset: 0; background: rgba(15,10,8,.36); }
+  .more-panel { position: absolute; left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-radius: 26px; padding: 10px 8px 8px; box-shadow: 0 20px 60px rgba(0,0,0,.3); max-height: calc(100dvh - 60px); overflow: auto; }
+  .more-panel .ct-grab { background: var(--label-3); opacity: .5; }
+  .more-panel a { display: flex; align-items: center; gap: 14px; padding: 13px 14px; border-radius: 14px; color: var(--label); font-size: 16px; font-weight: 600; -webkit-tap-highlight-color: transparent; }
+  .more-panel a:active, .more-panel a[aria-current="page"] { background: var(--fill); }
+  .more-panel a[aria-current="page"] { color: var(--accent); }
+  .more-panel svg { width: 22px; height: 22px; color: var(--label-2); flex: none; }
+  .more-panel a[aria-current="page"] svg { color: var(--accent); }
 }
 
 /* iPad and desktop: the top bar turns into a slim rail down the left, with create at the top,
