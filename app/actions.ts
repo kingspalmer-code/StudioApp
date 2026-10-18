@@ -4,13 +4,15 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
+import { allows } from "@/lib/access";
 import { requireEditor } from "@/lib/session";
 import { createClient, PREVIEW_COOKIE } from "@/lib/supabase/server";
 import { appliesTo, readFields, type JobField } from "@/lib/fields";
 import { emailInvite } from "@/lib/invite";
 import { alertNewNote } from "@/app/portal/actions";
 import { logEvents, notYetFinished, tellRequesters } from "@/lib/finished";
-import { finalStage, reviewStage } from "@/lib/priority";
+import { finalStage, PRIORITIES, reviewStage } from "@/lib/priority";
+import { isSelf, slugify } from "@/lib/workspace";
 import type { Role, Status } from "@/lib/types";
 
 export async function signOut() {
@@ -51,12 +53,17 @@ export async function setPinned(id: number, pinned: boolean) {
   revalidatePath("/", "layout");
 }
 
-// Saves the job's form fields from the job page. Fields not on the page are left as they are.
+// Saves the job's details from the job page: the top-of-form fields (title, type, needed by,
+// importance, and the customer and their phone for Customers workspaces) and the job's form fields.
+// Fields not on the page are left as they are.
 export async function saveDetails(id: number, formData: FormData) {
-  const { supabase, ctx } = await requireEditor(["designer"], "requests");
-  const [{ data: t }, { data: fields }] = await Promise.all([
-    supabase.from("tickets").select("type, details").eq("id", id).maybeSingle<{ type: string; details: Record<string, unknown> }>(),
+  const { supabase, ctx, workspace, member } = await requireEditor(["designer"], "requests");
+  const [{ data: t }, { data: fields }, { data: customers }] = await Promise.all([
+    supabase.from("tickets").select("type, details, business_id").eq("id", id).maybeSingle<{ type: string; details: Record<string, unknown>; business_id: string }>(),
     supabase.from("job_fields").select("*").returns<JobField[]>(),
+    workspace.kind === "trade" && formData.has("customer")
+      ? supabase.from("businesses").select("id, name, slug, phone").returns<{ id: string; name: string; slug: string; phone: string | null }[]>()
+      : { data: null },
   ]);
   if (!t) return;
   const typeId = ctx.types.find((x) => x.name === t.type)?.id;
@@ -67,7 +74,37 @@ export async function saveDetails(id: number, formData: FormData) {
     (k) => formData.get(k) != null,
     t.details ?? {}
   );
-  await supabase.from("tickets").update({ ...columns, details }).eq("id", id);
+  const get = (k: string) => String(formData.get(k) ?? "").trim();
+  const core: Record<string, string> = {};
+  if (get("title")) core.title = get("title");
+  if (ctx.types.some((x) => x.name === get("type"))) core.type = get("type");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(get("deadline"))) core.deadline = get("deadline");
+  if ((PRIORITIES as string[]).includes(get("priority"))) core.priority = get("priority");
+
+  // The customer works as on the new job form: an existing name moves the job to them, a new name
+  // becomes a new customer. The phone saves onto whichever customer the job ends up with.
+  let business_id = t.business_id;
+  const name = get("customer");
+  const phone = get("phone");
+  // Adding a customer or changing their phone is Clients work; an employee without that can still move the job.
+  const clientsOk = !member.staff || allows(member.access, "clients", "edit");
+  if (customers && name) {
+    const current = customers.find((b) => b.id === t.business_id);
+    const match = customers.find((b) => !isSelf(b) && b.name.toLowerCase() === name.toLowerCase());
+    if (match) {
+      business_id = match.id;
+      if (clientsOk && formData.has("phone") && phone !== (match.phone ?? "")) await supabase.from("businesses").update({ phone: phone || null }).eq("id", match.id);
+    } else if (clientsOk && name.toLowerCase() !== current?.name.toLowerCase()) {
+      const { data: created } = await supabase
+        .from("businesses")
+        .insert({ name, slug: slugify(name), color: "#8a7a70", phone: phone || null })
+        .select("id")
+        .single<{ id: string }>();
+      if (created) business_id = created.id;
+    }
+  }
+
+  await supabase.from("tickets").update({ ...columns, details, ...core, business_id }).eq("id", id);
   revalidatePath(`/tickets/${id}`);
   revalidatePath("/queue");
 }
