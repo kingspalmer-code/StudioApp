@@ -2,6 +2,7 @@ import Link from "next/link";
 import BizBadge from "@/components/BizBadge";
 import Shell from "@/components/Shell";
 import type { App, AppBackground } from "@/lib/apps";
+import { allows } from "@/lib/access";
 import { asClient, requireMember } from "@/lib/session";
 import NewApp from "./NewApp";
 import { signedUrls } from "@/lib/signed";
@@ -49,6 +50,18 @@ export default async function AppsPage() {
           <b>3D viewer</b>
           <small className="when">Open STL models to turn, zoom and light</small>
         </Link>
+        {(member.role === "designer" || allows(member.access, "requests")) && (
+          <Link href="/apps/job-time" className="gallery-card">
+            <span className="gallery-img app-builtin">
+              <svg viewBox="0 0 64 64" aria-hidden="true">
+                <circle cx="32" cy="35" r="19" />
+                <path d="M32 35V24M32 35l8 5M27 10h10M32 10v6" />
+              </svg>
+            </span>
+            <b>Job time calculator</b>
+            <small className="when">How long a {terms.job} will take, from your past ones</small>
+          </Link>
+        )}
         {list.map((a) => (
           <Link key={a.id} href={`/apps/${a.id}`} className="gallery-card">
             <span className="gallery-img">

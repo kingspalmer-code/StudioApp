@@ -1416,3 +1416,22 @@ button.access-preset[aria-pressed="true"] { background: var(--fill); }
 .file-picks li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .file-picks button { border: 0; background: none; color: var(--label-3); font-size: 18px; cursor: pointer; padding: 0 4px; }
 .file-picks button:hover { color: var(--red); }
+/* Job time calculator (Apps) */
+.jt { max-width: 640px; }
+.jt .group { margin-bottom: 12px; }
+.jt-describe-go, .jt-add-go { justify-content: flex-end; flex-wrap: wrap; }
+.jt-describe-go .when, .jt-add-go .when { flex: 1; min-width: 180px; }
+.jt-result { padding: 18px 16px; text-align: center; }
+.jt-days { font: 700 30px/1.1 var(--font-title); margin: 0; font-variant-numeric: tabular-nums; }
+.jt-range { margin: 4px 0 0; color: var(--label-2); font-size: 15px; }
+.jt-why, .jt-setting { display: block; margin: 10px auto 0; max-width: 46ch; line-height: 1.45; }
+.jt-result .empty { padding: 8px 0; margin: 0; }
+.jt-add { margin: 0 0 4px; }
+.jt-past { flex-wrap: wrap; }
+.jt-past .ctl { display: grid; gap: 2px; }
+.jt-past-title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jt-past-days { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.jt-past.skipped .jt-past-title, .jt-past.skipped .jt-past-days { color: var(--label-3); }
+.jt-past-tools { display: flex; gap: 12px; font-size: 13px; }
+.jt-past-edit { display: flex; gap: 8px; align-items: center; }
+.row .jt-past-edit input { width: 64px; border: .5px solid var(--sep); border-radius: 6px; padding: 4px 6px; }
