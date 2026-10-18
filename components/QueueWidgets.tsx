@@ -176,7 +176,7 @@ function Tally({ delivered, due, late }: WeekStats) {
 
 // Pickle, a little LCD pet like an old Tamagotchi (rules in lib/pet.ts). Delivered jobs (or sent
 // requests) fill its tin with oatcakes; Feed gives it one, and five can be swapped for a golden one. Visiting each
-// day keeps a streak going. It never dies, it just gets peckish.
+// day keeps a streak going and earns a daily oatcake. It never dies, it just gets peckish.
 function Pet({ pet: start, earnHint, business }: { pet: PetView | null; earnHint: string; business?: string }) {
   const tinKey = business ? `${TIN_KEY}_${business}` : TIN_KEY;
   const [pet, setPet] = useState(start);
@@ -217,7 +217,8 @@ function Pet({ pet: start, earnHint, business }: { pet: PetView | null; earnHint
     try { seen = Number(localStorage.getItem(tinKey) ?? "NaN"); } catch {}
     try { localStorage.setItem(tinKey, String(start.tin)); } catch {}
     if (!Number.isNaN(seen) && start.tin > seen) {
-      setNews(`+${start.tin - seen} in the tin!`);
+      // Today's first visit drops a daily oatcake in the tin.
+      setNews(start.gift && start.tin - seen === 1 ? `Day ${start.streak}! +1` : `+${start.tin - seen} in the tin!`);
       // Fresh oatcakes from a finished job: Pickle hops out of the screen and explores the page.
       if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) setOut("explore");
     }
