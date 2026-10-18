@@ -1,7 +1,23 @@
+import AmountInput from "./AmountInput";
+import FilesInput from "./FilesInput";
+import type { LineItem } from "@/lib/documents";
 import type { JobField } from "@/lib/fields";
 
 // One row of a job form, for any kind of field. Works in server and client components.
-export default function FieldInput({ field: f, value, idPrefix = "" }: { field: JobField; value?: unknown; idPrefix?: string }) {
+// Amounts can be broken into line items where itemise is on (the owner's forms), starting from items.
+export default function FieldInput({
+  field: f,
+  value,
+  idPrefix = "",
+  items,
+  itemise = false,
+}: {
+  field: JobField;
+  value?: unknown;
+  idPrefix?: string;
+  items?: LineItem[];
+  itemise?: boolean;
+}) {
   const id = `${idPrefix}${f.key}`;
   const str = value == null ? "" : String(value);
   const common = { id, name: f.key, required: f.required, placeholder: f.hint || undefined };
@@ -21,6 +37,9 @@ export default function FieldInput({ field: f, value, idPrefix = "" }: { field: 
       </label>
     );
 
+  if (f.kind === "money")
+    return <AmountInput id={id} name={f.key} label={f.label} required={f.required} placeholder={f.hint || undefined} defaultValue={str} defaultItems={items} itemise={itemise} />;
+
   let input: React.ReactNode;
   if (f.kind === "select")
     input = (
@@ -30,10 +49,10 @@ export default function FieldInput({ field: f, value, idPrefix = "" }: { field: 
       </select>
     );
   else if (f.kind === "files")
-    input = <input id={id} name="files" type="file" multiple required={f.required} accept="image/*,application/pdf,.ai,.psd,.svg,.eps,.dxf,.zip" />;
+    input = <FilesInput id={id} required={f.required} accept="image/*,application/pdf,.ai,.psd,.svg,.eps,.dxf,.zip" />;
   else {
     const type = { date: "date", link: "url", phone: "tel", email: "email" }[f.kind as string] ?? "text";
-    const inputMode = f.kind === "money" || f.kind === "number" ? "decimal" : undefined;
+    const inputMode = f.kind === "number" ? "decimal" : undefined;
     input = <input {...common} type={type} inputMode={inputMode} defaultValue={str} />;
   }
   return (

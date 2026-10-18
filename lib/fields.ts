@@ -1,3 +1,4 @@
+import { cleanItems, totals, type LineItem } from "./documents";
 import type { Ticket } from "./types";
 
 // What a new job asks for. Each workspace edits its own list in Settings → Job form.
@@ -62,6 +63,13 @@ export function valueOf(t: Ticket, f: JobField): unknown {
   return t.details?.[f.key];
 }
 
+// An amount broken into line items keeps them in details under "<key>_items"; the amount is their sum.
+export const itemsKey = (key: string) => `${key}_items`;
+export function itemsOf(t: Pick<Ticket, "details">, key: string): LineItem[] {
+  const raw = t.details?.[itemsKey(key)];
+  return Array.isArray(raw) ? cleanItems(raw) : [];
+}
+
 export const hasValue = (v: unknown) => v !== null && v !== undefined && v !== "" && v !== false;
 
 const parseAmount = (s: string) => {
@@ -80,6 +88,16 @@ export function readFields(fields: JobField[], get: (key: string) => string, has
     else {
       const raw = get(f.key);
       if (f.kind === "money" || f.kind === "number") v = raw ? parseAmount(raw) : null;
+      if (f.kind === "money") {
+        let items: LineItem[] = [];
+        try {
+          items = cleanItems(JSON.parse(get(`${f.key}__items`) || "[]"));
+        } catch {}
+        if (items.length) {
+          details[itemsKey(f.key)] = items;
+          v = totals(items, null).subtotal;
+        } else delete details[itemsKey(f.key)];
+      }
       else if (f.kind === "date") v = raw || null;
       else v = raw;
     }

@@ -5,7 +5,7 @@ import Shell from "@/components/Shell";
 import StatusChip from "@/components/StatusChip";
 import { addNote, saveDetails, setPinned, setStatus } from "@/app/actions";
 import FieldInput from "@/components/FieldInput";
-import { appliesTo, groupFields, hasValue, showValue, valueOf, type JobField } from "@/lib/fields";
+import { appliesTo, groupFields, hasValue, itemsOf, showValue, valueOf, type JobField } from "@/lib/fields";
 import { PRIORITIES, finalStage, formatDate, isDone, money, reviewStage, startBy, startLabel, statusLabel, whenLabel } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
 import { coreFields, type CoreKey } from "@/lib/core-fields";
@@ -20,7 +20,7 @@ import DraftActions from "./DraftActions";
 import ApproveDraft from "./ApproveDraft";
 import Link from "next/link";
 import { createDocument } from "@/app/documents/actions";
-import { docName, gbp, STATUS_LABEL } from "@/lib/documents";
+import { docName, gbp, round2, STATUS_LABEL } from "@/lib/documents";
 import { asDoc } from "@/lib/docs-server";
 import Deliveries from "@/components/Deliveries";
 import { signDeliveries, type Delivery, type Draft, type DraftFile } from "@/lib/deliveries";
@@ -132,6 +132,9 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
             : f.kind === "phone" ? <a href={`tel:${v}`}>{v}</a>
             : f.kind === "email" ? <a href={`mailto:${v}`}>{v}</a>
             : v}
+          {f.kind === "money" && itemsOf(t, f.key).map((it, i) => (
+            <div className="when" key={i}>{it.qty !== 1 ? `${it.qty} × ` : ""}{it.description || "Item"} · {gbp(round2(it.qty * it.unit_price))}</div>
+          ))}
         </div>
       </div>
     );
@@ -333,7 +336,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                     </div>
                   </div>
                 ))}
-                {editable.map((f) => <FieldInput key={f.key} field={{ ...f, required: false }} value={valueOf(t, f)} idPrefix="edit-" />)}
+                {editable.map((f) => <FieldInput key={f.key} field={{ ...f, required: false }} value={valueOf(t, f)} idPrefix="edit-" items={itemsOf(t, f.key)} itemise />)}
               </div>
               <p className="foot"><Submit className="btn small" type="submit">Save details</Submit></p>
             </form>

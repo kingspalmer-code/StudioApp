@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { addDays, cleanItems, CUSTOM_FONT, docName, gbp, KIND_LABEL, type DocKind, type LineItem } from "@/lib/documents";
 import { asDoc, loadSettings, pdfFor, readSettingsForm } from "@/lib/docs-server";
+import { itemsKey, itemsOf } from "@/lib/fields";
 import { requireEditor } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
 
@@ -61,6 +62,8 @@ export async function createDocument(ticketId: number, kind: DocKind) {
       notes = "";
     }
   }
+  // Otherwise from the lines the job's quote was broken into, or the quoted amount as one line.
+  if (!items.length) items = itemsOf(t, "quote_amount");
   if (!items.length) items = [{ description: t.title, qty: 1, unit_price: Number(t.quote_amount ?? 0) }];
 
   const issued = today();
@@ -135,7 +138,13 @@ export async function setDocStatus(id: number, status: "draft" | "sent" | "accep
   if (error) throw new Error(error.message);
   const doc = asDoc(row);
   if (doc.ticket_id && status === "accepted" && doc.kind === "quote") {
-    await supabase.from("tickets").update({ quote_amount: doc.total }).eq("id", doc.ticket_id);
+    // Without VAT the lines add up to the total, so the job's quote takes the accepted quote's lines
+    // too; with VAT they wouldn't, so any old breakdown goes and the job keeps just the amount.
+    const { data: t } = await supabase.from("tickets").select("details").eq("id", doc.ticket_id).maybeSingle<{ details: Record<string, unknown> | null }>();
+    const details = { ...(t?.details ?? {}) };
+    if (doc.vat_rate == null) details[itemsKey("quote_amount")] = doc.items;
+    else delete details[itemsKey("quote_amount")];
+    await supabase.from("tickets").update({ quote_amount: doc.total, details }).eq("id", doc.ticket_id);
   }
   if (doc.ticket_id && status === "paid" && doc.kind === "invoice") {
     await supabase.from("tickets").update({ paid_amount: doc.total }).eq("id", doc.ticket_id);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import FilesInput from "@/components/FilesInput";
 import FieldInput from "@/components/FieldInput";
 import { groupFields } from "@/lib/fields";
 import { todayISO } from "@/lib/priority";
@@ -104,7 +105,7 @@ export default function RequestLinkForm({ slug, form, name, email }: { slug: str
           <div className="group">
             <div className="row">
               <label htmlFor="files">Photos or files</label>
-              <div className="ctl"><input id="files" name="files" type="file" multiple accept="image/*,application/pdf" /></div>
+              <div className="ctl"><FilesInput id="files" accept="image/*,application/pdf" /></div>
             </div>
           </div>
         </>
