@@ -8,7 +8,7 @@ import BrandForm from "./BrandForm";
 // A business sets its own logo and colour, which theme its portal and its cards in the studio's queue.
 export default async function BrandPage({ searchParams }: { searchParams: Promise<{ business?: string }> }) {
   const { business } = await searchParams;
-  const { member, businesses, shell } = asClient(await requireEditor(["client", "designer"]));
+  const { member, businesses, shell } = asClient(await requireEditor(["client", "designer"], "clients"));
   if (member.role !== "client") redirect("/portal");
   // A client with several businesses picks which one from the portal; otherwise it's their main one.
   const id = business && member.business_ids?.includes(business) ? business : member.business_id;

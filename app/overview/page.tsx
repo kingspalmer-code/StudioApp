@@ -14,7 +14,7 @@ import { loadWidgets } from "@/lib/widgets";
 type Session = Awaited<ReturnType<typeof requireMember>>;
 
 export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ business?: string }> }) {
-  const session = asClient(await requireMember(["manager", "designer", "client"]));
+  const session = asClient(await requireMember(["manager", "designer", "client"], "requests"));
   if (session.member.role === "client") return <ClientOverview session={session} business={(await searchParams).business} />;
   const { supabase, member, businesses, ctx, terms, workspace, shell, viewing } = session;
   // Managers get the widget row too, with an oatcake for Pickle for every request they send.

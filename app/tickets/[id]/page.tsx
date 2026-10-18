@@ -40,7 +40,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   // Everything that only needs the job's number loads at once, alongside the session.
   const db = await createClient();
   const [session, { data: t }, { data: notes }, { data: files }, { data: fields }, { data: docRows }, { data: deliveryRows }, { data: draftRows }, { data: draftFileRows }, { data: events }] = await Promise.all([
-    requireMember(),
+    requireMember(undefined, "requests"),
     db.from("tickets").select("*").eq("id", id).maybeSingle<Ticket>(),
     db.from("ticket_notes").select("*").eq("ticket_id", id).order("created_at").returns<Note[]>(),
     db.from("ticket_files").select("*").eq("ticket_id", id).order("created_at").returns<TicketFile[]>(),

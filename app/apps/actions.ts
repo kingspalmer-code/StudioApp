@@ -7,7 +7,7 @@ import { requireEditor } from "@/lib/session";
 
 // Removes one saved background and its files.
 export async function deleteBackground(id: string) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "clients");
   const { data: bg } = await supabase.from("app_backgrounds").select("*").eq("id", id).maybeSingle<AppBackground>();
   if (!bg) return;
   const { error } = await supabase.from("app_backgrounds").delete().eq("id", id);
@@ -18,7 +18,7 @@ export async function deleteBackground(id: string) {
 
 // Removes an app, every background saved in it and all their files.
 export async function deleteApp(id: string) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "clients");
   const [{ data: app }, { data: bgs }] = await Promise.all([
     supabase.from("apps").select("id, source_path").eq("id", id).maybeSingle<{ id: string; source_path: string | null }>(),
     supabase.from("app_backgrounds").select("image_path, thumb_path, svg_path").eq("app_id", id).returns<AppBackground[]>(),

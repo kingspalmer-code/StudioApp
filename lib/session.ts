@@ -5,15 +5,31 @@ import { cookies } from "next/headers";
 import { createClient, PREVIEW_COOKIE, VIEW_COOKIE } from "./supabase/server";
 import type { Business, JobType, Member, Role, Stage, Workspace } from "./types";
 import { clientsLogIn, isSelf, termsFor } from "./workspace";
+import { accessFor, allows, hasAny, type Area } from "./access";
 
 export const HOME: Record<Role, string> = { designer: "/queue", manager: "/overview", client: "/overview", staff: "/tasks" };
 
 // Loads the signed-in member and their workspace, or sends them to sign in. Pass roles to restrict a page.
 // Every database call goes out at once: the sign-in is checked from the session token itself, so
 // nothing waits on anything else. Cached so a page and its parts share one load per request.
-export async function requireMember(roles?: Role[]) {
+//
+// area names which part of the owner's side a page or action belongs to. An employee the owner let
+// into that area gets the owner's view of it (role "designer"), read-only if they may only look;
+// the database checks the same access (public.can()). Without an area, owner-only pages stay
+// owner-only. Everywhere else an employee is staff, as before.
+// A page that belongs to more than one area (Settings holds quotes too) names them all; the first
+// one the employee may see decides.
+export async function requireMember(roles?: Role[], areas?: Area | Area[]) {
   const session = await loadMember();
-  if (roles && !roles.includes(session.member.role)) redirect(HOME[session.member.role]);
+  const { member } = session;
+  const area = [areas ?? []].flat().find((a) => allows(member.access, a));
+  // Something both sides do (like ticking a task) stays the employee's own unless they may change the area.
+  const look = !area || !allows(member.access, area, "edit");
+  if (member.staff && (!roles || roles.includes("designer")) && area && allows(member.access, area) && !(look && roles?.includes("staff"))) {
+    const owner = { ...member, role: "designer" as Role };
+    return { ...session, member: owner, viewing: session.viewing || look, shell: { ...session.shell, member: owner, readOnly: look } };
+  }
+  if (roles && !roles.includes(member.role)) redirect(HOME[member.role]);
   return session;
 }
 
@@ -31,7 +47,7 @@ const loadMember = cache(async () => {
   const [{ data: row }, { data: businesses }, { data: viewedRows }, { data: stages }, { data: types }, { data: isAdmin }, { data: replies }, { data: mine }, { data: appRows }] = await Promise.all([
     supabase
       .from("members")
-      .select("email, full_name, role, business_id, workspace_id, workspaces(id, name, kind, owner_name, request_slug, requests_open, core_fields)")
+      .select("email, full_name, role, business_id, permissions, workspace_id, workspaces(id, name, kind, owner_name, request_slug, requests_open, core_fields)")
       .eq("email", email)
       .maybeSingle<Member & { workspace_id: string; workspaces: Workspace | null }>(),
     supabase.from("businesses").select("*").order("name").returns<Business[]>(),
@@ -55,6 +71,8 @@ const loadMember = cache(async () => {
   const extra = member.role === "designer" ? [] : ((mine as string[] | null) ?? []).filter((id) => id !== member.business_id);
   member.business_ids = member.business_id ? [member.business_id, ...extra] : extra;
   member.has_apps = Boolean(appRows?.length);
+  member.access = accessFor(member.role, member.permissions);
+  member.staff = member.role === "staff" && hasAny(member.access);
   // Which businesses have apps, so a preview of one client shows Apps only when they have one.
   const appBusinesses = (appRows ?? []).map((a) => a.business_id);
   const viewed = isAdmin && viewId && viewId !== member.workspace_id ? workspace?.find((w) => w.id === viewId) : undefined;
@@ -92,7 +110,7 @@ const loadMember = cache(async () => {
   const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
   const phoneTabs = Array.isArray(user.user_metadata?.phone_tabs) ? list(user.user_metadata.phone_tabs) : undefined;
   const hidden = { phoneTabs, computer: list(user.user_metadata?.hide_computer), order: list(user.user_metadata?.menu_order) };
-  const shell = { member, businesses: clients, workspace: ws, isAdmin: Boolean(isAdmin), viewing, avatar, initials, askHint, askOpens, askSince, helpUnread, track, hidden, preview: undefined as Business | undefined };
+  const shell = { member, businesses: clients, workspace: ws, isAdmin: Boolean(isAdmin), viewing, readOnly: false, avatar, initials, askHint, askOpens, askSince, helpUnread, track, hidden, preview: undefined as Business | undefined };
   return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview, appBusinesses };
 });
 
@@ -107,9 +125,10 @@ export function asClient<S extends Session>(session: S, businessId?: string): S 
   return { ...session, member, shell: { ...session.shell, member, preview } };
 }
 
-// For anything that changes data: an admin viewing someone else's workspace can only look.
-export async function requireEditor(roles?: Role[]) {
-  const session = await requireMember(roles);
+// For anything that changes data: an admin viewing someone else's workspace can only look, and so
+// can an employee who may only look at this area.
+export async function requireEditor(roles?: Role[], area?: Area) {
+  const session = await requireMember(roles, area);
   if (session.viewing) redirect("/queue");
   return session;
 }

@@ -7,7 +7,7 @@ import { addStage, deleteStage, moveStage, saveStage } from "../actions";
 import SectionHead from "../SectionHead";
 
 export default async function StagesSettingsPage() {
-  const { supabase, ctx, terms, shell } = await requireMember(["designer"]);
+  const { supabase, ctx, terms, shell } = await requireMember(["designer"], "settings");
   const { data: used } = await supabase.from("tickets").select("status");
   const inUse = new Set((used ?? []).map((t) => t.status as string));
 

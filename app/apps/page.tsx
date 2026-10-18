@@ -13,7 +13,7 @@ const REQUEST = "App request: I'd like an app that ";
 // to one business. Opening one uses it. Everyone has this page, with a way to ask for a new app
 // through Help.
 export default async function AppsPage() {
-  const { supabase, member, businesses, terms, workspace, shell, viewing } = asClient(await requireMember());
+  const { supabase, member, businesses, terms, workspace, shell, viewing } = asClient(await requireMember(undefined, "clients"));
   const [{ data: apps }, { data: latest }] = await Promise.all([
     supabase.from("apps").select("*").order("created_at").returns<App[]>(),
     supabase.from("app_backgrounds").select("app_id, thumb_path, created_at").order("created_at", { ascending: false }).limit(200).returns<AppBackground[]>(),

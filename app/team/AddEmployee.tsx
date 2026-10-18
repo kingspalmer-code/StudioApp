@@ -19,7 +19,7 @@ export default function AddEmployee({ origin }: { origin: string }) {
           <div className="ctl"><input id="e-email" name="email" type="email" required placeholder="name@example.com" /></div>
         </div>
       </div>
-      <p className="foot">We&apos;ll email them a link to sign in. All they&apos;ll see is the to-do list you set them.</p>
+      <p className="foot">We&apos;ll email them a link to sign in. They start with just the to-do list you set them; give them more under Access.</p>
       {state?.error && <p className="error">{state.error}</p>}
       {state?.ok && <p className="foot" style={{ color: "var(--green)", fontWeight: 600 }}>{state.ok}</p>}
       {state?.email && <div className="foot"><InviteLink url={`${origin}/login?email=${encodeURIComponent(state.email)}`} /></div>}

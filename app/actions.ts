@@ -22,7 +22,7 @@ export async function signOut() {
 }
 
 export async function setStatus(id: number, status: Status) {
-  const { supabase, ctx, member, workspace, terms } = await requireEditor(["designer"]);
+  const { supabase, ctx, member, workspace, terms } = await requireEditor(["designer"], "requests");
   if (!ctx.stages.some((s) => s.key === status)) return;
   // Finishing a job, or sending it to the client to look over, tells the person who asked for it.
   const moment = status === finalStage(ctx) ? "finished" : status === reviewStage(ctx)?.key ? "review" : null;
@@ -46,14 +46,14 @@ export async function setStatus(id: number, status: Status) {
 }
 
 export async function setPinned(id: number, pinned: boolean) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "requests");
   await supabase.from("tickets").update({ pinned }).eq("id", id);
   revalidatePath("/", "layout");
 }
 
 // Saves the job's form fields from the job page. Fields not on the page are left as they are.
 export async function saveDetails(id: number, formData: FormData) {
-  const { supabase, ctx } = await requireEditor(["designer"]);
+  const { supabase, ctx } = await requireEditor(["designer"], "requests");
   const [{ data: t }, { data: fields }] = await Promise.all([
     supabase.from("tickets").select("type, details").eq("id", id).maybeSingle<{ type: string; details: Record<string, unknown> }>(),
     supabase.from("job_fields").select("*").returns<JobField[]>(),
@@ -73,7 +73,7 @@ export async function saveDetails(id: number, formData: FormData) {
 }
 
 export async function deleteTicket(id: number) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "requests");
   const { data: files } = await supabase.from("ticket_files").select("path").eq("ticket_id", id);
   if (files?.length) await supabase.storage.from("inspiration").remove(files.map((f) => f.path));
   await supabase.from("tickets").delete().eq("id", id);
@@ -83,7 +83,7 @@ export async function deleteTicket(id: number) {
 
 // Marks several jobs as at the last stage in one go, from the queue's Select mode.
 export async function deliverTickets(ids: number[]) {
-  const { supabase, ctx, member, workspace, terms } = await requireEditor(["designer"]);
+  const { supabase, ctx, member, workspace, terms } = await requireEditor(["designer"], "requests");
   const final = ctx.stages[ctx.stages.length - 1]?.key;
   if (!final || !ids.length) return;
   const finishing = await notYetFinished(supabase, ids, final);
@@ -94,7 +94,7 @@ export async function deliverTickets(ids: number[]) {
 }
 
 export async function deleteTickets(ids: number[]) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "requests");
   if (!ids.length) return;
   const { data: files } = await supabase.from("ticket_files").select("path").in("ticket_id", ids);
   if (files?.length) await supabase.storage.from("inspiration").remove(files.map((f) => f.path));
@@ -108,7 +108,7 @@ export async function addNote(id: number, formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return;
   const draft_id = Number(formData.get("draft")) || null;
-  const { supabase, member } = await requireEditor(["designer", "client", "manager"]);
+  const { supabase, member } = await requireEditor(["designer", "client", "manager"], "requests");
   const { data } = await supabase
     .from("ticket_notes")
     .insert({ ticket_id: id, body, author_name: member.full_name || member.email, draft_id })
@@ -136,7 +136,7 @@ export async function approveDraft(ticketId: number, draftId: number) {
 export type AddState = { error?: string; ok?: string } | null;
 
 export async function addMember(_prev: AddState, formData: FormData): Promise<AddState> {
-  const { supabase, member, workspace } = await requireEditor(["designer"]);
+  const { supabase, member, workspace } = await requireEditor(["designer"], "clients");
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const full_name = String(formData.get("full_name") ?? "").trim();
   const role = String(formData.get("role") ?? "") as Role;
@@ -160,7 +160,7 @@ export async function addMember(_prev: AddState, formData: FormData): Promise<Ad
 
 // Emails someone already on the People page a fresh sign-in link.
 export async function inviteMember(email: string, _prev: AddState): Promise<AddState> {
-  const { supabase, member, workspace } = await requireEditor(["designer"]);
+  const { supabase, member, workspace } = await requireEditor(["designer"], "clients");
   const { data: found } = await supabase.from("members").select("email").eq("email", email).maybeSingle();
   if (!found) return { error: "They're not on your list." };
   const failed = await emailInvite(email, member.full_name || workspace.owner_name || workspace.name, workspace.name);
@@ -168,7 +168,7 @@ export async function inviteMember(email: string, _prev: AddState): Promise<AddS
 }
 
 export async function removeMember(email: string) {
-  const { supabase, member } = await requireEditor(["designer"]);
+  const { supabase, member } = await requireEditor(["designer"], "clients");
   if (email === member.email) return;
   await supabase.from("members").delete().eq("email", email);
   revalidatePath("/people");
@@ -176,7 +176,7 @@ export async function removeMember(email: string) {
 
 // The other businesses a client can request work for, besides their main one.
 export async function setOtherBusinesses(email: string, formData: FormData) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "clients");
   const { data: found } = await supabase.from("members").select("business_id").eq("email", email).maybeSingle<{ business_id: string | null }>();
   if (!found) return;
   await saveOtherBusinesses(supabase, email, formData.getAll("also").map(String).filter((id) => id && id !== found.business_id));

@@ -8,7 +8,7 @@ import DocEditor from "./DocEditor";
 
 export default async function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { supabase, workspace, shell, viewing } = await requireMember(["designer"]);
+  const { supabase, workspace, shell, viewing } = await requireMember(["designer"], "quotes");
   const { data: row } = await supabase.from("documents").select("*").eq("id", Number(id)).maybeSingle();
   if (!row) notFound();
   const doc = asDoc(row);

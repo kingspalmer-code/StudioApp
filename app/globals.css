@@ -1398,3 +1398,10 @@ a.rail-new, a.app-bar-pill { text-decoration: none; }
 @keyframes rail-jiggle { from { transform: rotate(-1.2deg); } to { transform: rotate(1.2deg); } }
 @keyframes rail-nope { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 @media (prefers-reduced-motion: reduce) { .rail-edit-item { animation: none; } }
+
+/* Team > Access: ready-made sets and None / View / Edit for each part. */
+button.access-preset { width: 100%; border: 0; background: transparent; text-align: left; font: inherit; cursor: pointer; }
+button.access-preset[aria-pressed="true"] { background: var(--fill); }
+.access-row { flex-wrap: wrap; }
+.access-row .seg { flex: none; }
+.access-link { display: inline-block; margin-top: 4px; color: var(--accent, inherit); text-decoration: none; }

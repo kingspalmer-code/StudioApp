@@ -6,7 +6,7 @@ import RequestLink from "../RequestLink";
 import SectionHead from "../SectionHead";
 
 export default async function RequestLinkSettingsPage() {
-  const { workspace, shell } = await requireMember(["designer"]);
+  const { workspace, shell } = await requireMember(["designer"], "settings");
   // Only for working with customers.
   if (workspace.kind !== "trade") redirect("/settings");
   const h = await headers();

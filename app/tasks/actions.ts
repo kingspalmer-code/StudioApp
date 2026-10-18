@@ -28,10 +28,10 @@ const who = (m: { full_name: string; email: string }) => m.full_name.split(" ")[
 
 // Adds a to-do. The owner picks whose list it goes on; an employee can only add to their own.
 export async function addStaffTask(formData: FormData) {
-  const { supabase, member } = await requireEditor(["designer", "staff"]);
+  const { supabase, member } = await requireEditor(["designer", "staff"], "team");
   const title = String(formData.get("title") ?? "").trim().slice(0, 300);
   if (!title) return;
-  const assignee = member.role === "staff" ? member.email : String(formData.get("assignee") ?? "");
+  const assignee = member.role === "staff" ? member.email : String(formData.get("assignee") || member.email);
   const daily = formData.get("daily") === "on";
   const due = daily ? null : String(formData.get("due") ?? "") || null;
   const details = String(formData.get("details") ?? "").trim().slice(0, 2000);
@@ -43,9 +43,14 @@ export async function addStaffTask(formData: FormData) {
 // Ticks a task off, or unticks it. A daily task is ticked for today only. An employee ticking a
 // one-off task asks for sign-off; the owner ticking one signs it off there and then.
 export async function setStaffTaskDone(id: number, daily: boolean, done: boolean, title: string) {
-  const { supabase, member } = await requireEditor(["designer", "staff"]);
+  const { supabase, member } = await requireEditor(["designer", "staff"], "team");
   const day = todayISO();
-  const owner = member.role === "designer";
+  // An employee allowed to change Team signs off other people's tasks, but asks for sign-off on their own.
+  let owner = member.role === "designer";
+  if (owner && member.staff) {
+    const { data: task } = await supabase.from("staff_tasks").select("assignee").eq("id", id).maybeSingle<{ assignee: string }>();
+    owner = task?.assignee !== member.email;
+  }
   if (done) {
     const now = new Date().toISOString();
     await supabase
@@ -65,7 +70,7 @@ export async function setStaffTaskDone(id: number, daily: boolean, done: boolean
 
 // The owner signs off a task the employee says is finished.
 export async function confirmStaffTask(id: number, title: string) {
-  const { supabase, member } = await requireEditor(["designer"]);
+  const { supabase, member } = await requireEditor(["designer"], "team");
   await supabase.from("staff_task_ticks").update({ confirmed_at: new Date().toISOString() }).eq("task_id", id).eq("done", true).is("confirmed_at", null);
   await supabase.from("staff_task_notes").insert({ task_id: id, kind: "confirm" });
   await alertTask(supabase, id, `${who(member)} signed off a task`, title);
@@ -74,7 +79,7 @@ export async function confirmStaffTask(id: number, title: string) {
 
 // The owner sends a task back to do again, saying why.
 export async function reopenStaffTask(id: number, title: string, formData: FormData) {
-  const { supabase, member } = await requireEditor(["designer"]);
+  const { supabase, member } = await requireEditor(["designer"], "team");
   const body = String(formData.get("body") ?? "").trim().slice(0, 2000);
   await supabase.from("staff_task_ticks").update({ done: false, confirmed_at: null }).eq("task_id", id);
   await supabase.from("staff_task_notes").insert({ task_id: id, kind: "reopen", body });
@@ -84,7 +89,7 @@ export async function reopenStaffTask(id: number, title: string, formData: FormD
 
 // A note or reply on a task.
 export async function addTaskNote(id: number, title: string, formData: FormData) {
-  const { supabase, member } = await requireEditor(["designer", "staff"]);
+  const { supabase, member } = await requireEditor(["designer", "staff"], "team");
   const body = String(formData.get("body") ?? "").trim().slice(0, 2000);
   if (!body) return;
   await supabase.from("staff_task_notes").insert({ task_id: id, kind: "note", body });
@@ -94,20 +99,20 @@ export async function addTaskNote(id: number, title: string, formData: FormData)
 
 // The owner's notes on what a task involves.
 export async function saveTaskDetails(id: number, formData: FormData) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "team");
   await supabase.from("staff_tasks").update({ details: String(formData.get("details") ?? "").trim().slice(0, 2000) }).eq("id", id);
   refresh();
 }
 
 export async function setStaffTaskDue(id: number, due: string | null) {
-  const { supabase } = await requireEditor(["designer", "staff"]);
+  const { supabase } = await requireEditor(["designer", "staff"], "team");
   await supabase.from("staff_tasks").update({ due }).eq("id", id);
   refresh();
 }
 
 // Takes a task off the list. Its ticks stay in the database, out of sight.
 export async function removeStaffTask(id: number) {
-  const { supabase } = await requireEditor(["designer", "staff"]);
+  const { supabase } = await requireEditor(["designer", "staff"], "team");
   await supabase.from("staff_tasks").update({ gone: true }).eq("id", id);
   refresh();
 }
@@ -116,7 +121,7 @@ export type EmployeeState = { error?: string; ok?: string; email?: string } | nu
 
 // Adds an employee and emails them a sign-in link. They land on their to-do list.
 export async function addEmployee(_prev: EmployeeState, formData: FormData): Promise<EmployeeState> {
-  const { supabase, member, workspace } = await requireEditor(["designer"]);
+  const { supabase, member, workspace } = await requireEditor(["designer"], "team");
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const full_name = String(formData.get("full_name") ?? "").trim();
   if (!email.includes("@")) return { error: "Enter a valid email address." };
@@ -135,7 +140,7 @@ export async function addEmployee(_prev: EmployeeState, formData: FormData): Pro
 
 // Emails an employee a fresh sign-in link.
 export async function reinviteEmployee(email: string) {
-  const { supabase, member, workspace } = await requireEditor(["designer"]);
+  const { supabase, member, workspace } = await requireEditor(["designer"], "team");
   const { data: found } = await supabase.from("members").select("email").eq("email", email).eq("role", "staff").maybeSingle();
   if (!found) return { error: "They're not on your team." };
   const failed = await emailInvite(email, member.full_name || workspace.owner_name || workspace.name, workspace.name);
@@ -144,7 +149,7 @@ export async function reinviteEmployee(email: string) {
 
 // Takes away an employee's access. Their tasks go with them.
 export async function removeEmployee(email: string) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "team");
   await supabase.from("members").delete().eq("email", email).eq("role", "staff");
   refresh();
 }

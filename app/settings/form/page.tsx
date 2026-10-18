@@ -8,7 +8,7 @@ import { coreFields, type CoreField } from "@/lib/core-fields";
 import Submit from "@/components/Submit";
 
 export default async function JobFormPage() {
-  const { supabase, ctx, terms, shell, workspace } = await requireMember(["designer"]);
+  const { supabase, ctx, terms, shell, workspace } = await requireMember(["designer"], "settings");
   const core = coreFields(workspace.core_fields, { trade: workspace.kind !== "studio", solo: workspace.kind === "solo" });
   const { data } = await supabase.from("job_fields").select("*").order("position").order("id").returns<JobField[]>();
   const fields = data ?? [];

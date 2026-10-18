@@ -4,7 +4,7 @@ import { requireMember } from "@/lib/session";
 // A sample quote in the workspace's style, for the preview in Settings. GET uses what's saved;
 // POST sends the form as it is on screen, so changes show before they're saved.
 async function sample(req: Request, form: FormData | null) {
-  const { supabase, workspace } = await requireMember(["designer"]);
+  const { supabase, workspace } = await requireMember(["designer"], "quotes");
   const saved = await loadSettings(supabase, workspace.id);
   const settings = form ? { ...saved, ...readSettingsForm(form) } : saved;
   let pdf: Buffer;

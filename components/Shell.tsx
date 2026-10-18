@@ -18,6 +18,7 @@ import { OatcakeMark } from "./OatcakeLogo";
 import { termsFor } from "@/lib/workspace";
 import { alwaysOnComputer, onPhoneTab, ordered } from "@/lib/menu";
 import Submit from "@/components/Submit";
+import { allows } from "@/lib/access";
 
 export type NavLink = { href: string; label: string; icon?: string; fixed?: boolean };
 
@@ -43,7 +44,21 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
       { href: "/gallery", label: "Gallery" },
       { href: "/apps", label: "Apps" },
     ];
-  // Employees see the to-do list the owner sets them, and Apps.
+  // Employees see the to-do list the owner sets them, and Apps, plus whatever else the owner let them into on Team.
+  if (member.staff) {
+    const a = member.access;
+    const clients = workspace.kind === "studio" ? [{ href: "/people", label: "People" }] : workspace.kind === "trade" ? [{ href: "/customers", label: "Customers" }] : [];
+    return [
+      { href: "/tasks", label: "To-do" },
+      ...(allows(a, "requests") ? [main, { href: "/overview", label: "Overview" }] : []),
+      ...(allows(a, "requests", "edit") ? [{ href: "/portal", label: `New ${terms.job}` }] : []),
+      ...(allows(a, "clients") ? clients : []),
+      ...(allows(a, "requests") ? [{ href: "/gallery", label: "Gallery" }] : []),
+      { href: "/apps", label: "Apps" },
+      ...(allows(a, "team") ? [{ href: "/team", label: "Team" }] : []),
+      ...(allows(a, "settings") || allows(a, "quotes") ? [{ href: "/settings", label: "Settings" }] : []),
+    ];
+  }
   if (member.role === "staff") return [{ href: "/tasks", label: "To-do" }, { href: "/apps", label: "Apps" }];
   // Who the work is for: businesses (with their staff) on People, customers on Customers, and nobody when working alone.
   const clients =
@@ -74,6 +89,7 @@ export default function Shell({
   businesses,
   workspace,
   viewing = false,
+  readOnly = false,
   avatar = null,
   initials = "",
   askHint = false,
@@ -90,6 +106,8 @@ export default function Shell({
   workspace: Workspace;
   isAdmin?: boolean;
   viewing?: boolean;
+  // An employee who may only look at this part (see requireMember): the page shows, nothing changes.
+  readOnly?: boolean;
   avatar?: string | null;
   initials?: string;
   askHint?: boolean;
@@ -118,7 +136,7 @@ export default function Shell({
   // On phones the first few sit on the tab bar and the rest under More.
   const phoneLinks = links.filter((l, i) => onPhoneTab(l.href, i, hidden.phoneTabs));
   const moreLinks = links.filter((l, i) => !onPhoneTab(l.href, i, hidden.phoneTabs));
-  const canCreate = member.role === "designer" && !viewing;
+  const canCreate = member.role === "designer" && !viewing && (!member.staff || allows(member.access, "requests", "edit"));
   // Clients get New (their request form) and Search over their own requests too.
   const isClient = member.role === "client";
   const newHref = isClient ? "/portal?new=1" : undefined;
@@ -145,7 +163,7 @@ export default function Shell({
           )}
           {rail ? <RailNav links={deskLinks} all={deskAll} hidden={hidden.computer} editable={!viewing && !preview} canCreate={canCreate} clients={businesses} newHref={newHref} /> : <NavLinks links={links} />}
           {(canCreate || isClient) && <SearchButton />}
-          {member.role === "designer" && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake hint={askHint} opens={askOpens} since={askSince} />}
+          {member.role === "designer" && !member.staff && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake hint={askHint} opens={askOpens} since={askSince} />}
           {/* What other people have done on your jobs. Top right of the page, whatever the layout. */}
           {!viewing && !preview && <Bell />}
           {/* Previewing a client: their bell is shown, but it's the client's, so it doesn't open. */}
@@ -170,6 +188,11 @@ export default function Shell({
           <Submit className="btn small" type="submit">Back to my workspace</Submit>
         </form>
       )}
+      {readOnly && !viewing && (
+        <div className="viewing-bar">
+          <span>You can look at this but not change it. {workspace.owner_name || "The owner"} can change that on Team.</span>
+        </div>
+      )}
       {preview && (
         <div className="viewing-bar preview-bar">
           <span>
@@ -191,7 +214,7 @@ export default function Shell({
         </div>
       )}
       <main className={links.length > 1 ? "has-tabbar" : undefined}>
-        {viewing || preview ? (
+        {viewing || preview || readOnly ? (
           <fieldset disabled className="read-only">
             {children}
           </fieldset>
