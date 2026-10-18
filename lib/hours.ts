@@ -1,4 +1,4 @@
-// Hours worked on jobs (migration 038). Logged from the job page or from a to-do on the calendar;
+// Hours worked on jobs (migration 039). Logged from the job page or from a to-do on the calendar;
 // a job's hours add up on its page. A running timer is a log with started_at and no minutes yet.
 
 export type TimeLog = {

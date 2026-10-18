@@ -3,7 +3,7 @@ import { planWhen } from "@/lib/plan";
 
 const TZ = process.env.NEXT_PUBLIC_TIMEZONE || "Europe/London";
 
-// Calendar reminders. The database calls this every five minutes (migration 038) with the alerts
+// Calendar reminders. The database calls this every five minutes (migration 040) with the alerts
 // secret; push_due_reminders marks each due reminder sent and puts it in the bell, and this sends
 // it to the person's phone.
 export async function GET(req: Request) {

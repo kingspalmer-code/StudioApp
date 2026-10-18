@@ -1,4 +1,4 @@
-// The calendar's to-do list (migration 037): to-dos in priority order, each with steps, and every
+// The calendar's to-do list (migration 038): to-dos in priority order, each with steps, and every
 // one with a day showing on the calendar. Shared by the page, its actions and the reminders job.
 
 export type PlanItem = {
