@@ -10,12 +10,14 @@ do $$
 declare
   p record;
   pat constant text := '(?<!SELECT )\m((?:public\.)?(?:view_workspace|edit_workspace|my_role|my_businesses|my_email|my_workspace|is_platform_admin)\(\)|auth\.(?:uid|jwt|email|role)\(\))';
+  -- "x = any(my_businesses())" needs the cast once wrapped, or Postgres reads it as a subquery of arrays.
+  arr constant text := 'ANY \(\(select ((?:public\.)?my_businesses\(\))\)\)';
   nq text;
   nw text;
 begin
   for p in select tablename, policyname, qual, with_check from pg_policies where schemaname = 'public' loop
-    nq := regexp_replace(p.qual, pat, '(select \1)', 'g');
-    nw := regexp_replace(p.with_check, pat, '(select \1)', 'g');
+    nq := regexp_replace(regexp_replace(p.qual, pat, '(select \1)', 'g'), arr, 'ANY ((select \1)::uuid[])', 'g');
+    nw := regexp_replace(regexp_replace(p.with_check, pat, '(select \1)', 'g'), arr, 'ANY ((select \1)::uuid[])', 'g');
     if nq is distinct from p.qual or nw is distinct from p.with_check then
       execute format('alter policy %I on public.%I%s%s', p.policyname, p.tablename,
         case when nq is distinct from p.qual then ' using (' || nq || ')' else '' end,
