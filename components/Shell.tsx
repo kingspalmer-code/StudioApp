@@ -50,6 +50,7 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
     const clients = workspace.kind === "studio" ? [{ href: "/people", label: "People" }] : workspace.kind === "trade" ? [{ href: "/customers", label: "Customers" }] : [];
     return [
       { href: "/tasks", label: "To-do" },
+      { href: "/calendar", label: "Calendar" },
       ...(allows(a, "requests") ? [main, { href: "/overview", label: "Overview" }] : []),
       ...(allows(a, "requests", "edit") ? [{ href: "/portal", label: `New ${terms.job}` }] : []),
       ...(allows(a, "clients") ? clients : []),
@@ -59,7 +60,7 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
       ...(allows(a, "settings") || allows(a, "quotes") ? [{ href: "/settings", label: "Settings" }] : []),
     ];
   }
-  if (member.role === "staff") return [{ href: "/tasks", label: "To-do" }, { href: "/apps", label: "Apps" }];
+  if (member.role === "staff") return [{ href: "/tasks", label: "To-do" }, { href: "/calendar", label: "Calendar" }, { href: "/apps", label: "Apps" }];
   // Who the work is for: businesses (with their staff) on People, customers on Customers, and nobody when working alone.
   const clients =
     workspace.kind === "studio" ? [{ href: "/people", label: "People" }]
@@ -79,6 +80,8 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
     // Tools made for one client each, such as a pattern recolourer, and a way to ask for new ones.
     { href: "/apps", label: "Apps" },
     { href: "/team", label: "Team" },
+    // A to-do list in priority order that fills a calendar, with reminders.
+    { href: "/calendar", label: "Calendar" },
     { href: "/personal", label: "Personal" },
     settings,
   ];
