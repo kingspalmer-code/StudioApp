@@ -30,7 +30,13 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   // Jobs still on the go to link to, plus any finished ones something here is already linked to.
   const linked = new Set(items.map((i) => i.ticket_id));
   const jobList = (jobs ?? []).filter((j) => !j.delivered_at || linked.has(j.id)).map(({ id, title }) => ({ id, title }));
-  const team = (people ?? []).map((p) => ({ email: p.email, name: p.full_name || p.email, owner: p.role === "designer" }));
+  // Whose things to show: yours first, then each employee. Other owner logins only appear once
+  // something is on their list, so a spare login doesn't show up as a second "you".
+  const owners = new Set(items.map((i) => i.owner));
+  const team = (people ?? [])
+    .filter((p) => p.email === member.email || p.role === "staff" || owners.has(p.email))
+    .sort((a, b) => Number(b.email === member.email) - Number(a.email === member.email) || (a.full_name || a.email).localeCompare(b.full_name || b.email))
+    .map((p) => ({ email: p.email, name: p.full_name || p.email.split("@")[0], owner: p.role === "designer" }));
   const today = todayIn();
   const month = m && /^\d{4}-\d{2}$/.test(m) ? m : today.slice(0, 7);
   const jobId = Number(job) || undefined;

@@ -12,6 +12,7 @@ export default function TicketRow({
   showBusiness = true,
   select,
   draft,
+  plan,
 }: {
   t: ListTicket;
   biz?: Business;
@@ -22,6 +23,8 @@ export default function TicketRow({
   select?: { checked: boolean; onToggle: () => void };
   // A draft is waiting on the client's notes.
   draft?: boolean;
+  // A calendar button beside the row that plans the job's steps on the Calendar.
+  plan?: boolean;
 }) {
   const done = isDone(t, ctx);
   const sb = startLabel(startBy(t, ctx));
@@ -56,10 +59,21 @@ export default function TicketRow({
         {body}
       </label>
     );
-  return (
+  const row = (
     <Link href={`/tickets/${t.id}`} className={cls}>
       {body}
       <span className="chev" aria-hidden="true">›</span>
     </Link>
+  );
+  if (!plan) return row;
+  return (
+    <div className={`ticket-line${rank ? " ranked" : ""}`}>
+      {row}
+      <Link href={`/calendar?job=${t.id}`} className="ticket-plan" aria-label={`Add ${t.title} to the calendar`} title="Add to calendar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1ZM4 10h16M8 3v4M16 3v4M12 13v5M9.5 15.5h5" />
+        </svg>
+      </Link>
+    </div>
   );
 }
