@@ -6,7 +6,8 @@ import type { Member } from "./types";
 // Every delivered job puts an oatcake in the studio's tin; managers (on their Overview, migration
 // 031) earn one for every request they send. A business that sends requests has one Pickle shared
 // by all its logins (business_pets, migration 034), which earns an oatcake for every finished job. You feed them from the tin, or save five
-// for a golden oatcake. Coming back each day keeps a streak going. Pickle never dies: hunger and
+// for a golden oatcake. Coming back each day keeps a streak going and earns a daily oatcake (the
+// database awards it, pet_visit in migration 041). Pickle never dies: hunger and
 // mood bottom out at "peckish" and "glum", and one oatcake perks them up.
 export type PetRow = {
   owner_email?: string;
@@ -19,6 +20,7 @@ export type PetRow = {
   last_visit: string | null;
   streak: number;
   best_streak: number;
+  bonus?: number; // daily oatcakes, one for each day's first visit (migration 041)
 };
 
 export type PetView = {
@@ -29,6 +31,7 @@ export type PetView = {
   level: number;
   streak: number;
   glowing: boolean; // had a golden oatcake in the last day
+  gift?: boolean; // this visit earned today's oatcake
   mood: "idle" | "sad";
 };
 
@@ -38,7 +41,7 @@ const XP_PER_LEVEL = 10;
 const DAY = 86_400_000;
 
 export function petView(row: PetRow, delivered: number, now = Date.now()): PetView {
-  const tin = Math.max(0, delivered - row.earned_base - row.fed - row.golden * GOLDEN_COST);
+  const tin = Math.max(0, delivered + (row.bonus ?? 0) - row.earned_base - row.fed - row.golden * GOLDEN_COST);
   const glowing = !!row.last_golden_at && now - Date.parse(row.last_golden_at) < DAY;
   // Full when fed, empties over three days, never below a sliver.
   const sinceFed = row.last_fed_at ? (now - Date.parse(row.last_fed_at)) / DAY : 3;
@@ -100,20 +103,13 @@ export async function feedPet(supabase: SupabaseClient, owner: PetOwner, earned:
   return petView({ ...row, ...change }, earned);
 }
 
-// Called when the queue page loads: hatches Pickle the first time (with a few oatcakes to start)
-// and counts today's visit toward the streak.
+// Called when the queue page loads: counts today's visit toward the streak (the first visit each
+// day also earns an oatcake, awarded by the database), or hatches Pickle the first time with a few
+// oatcakes to start.
 export async function visitPet(supabase: SupabaseClient, delivered: number, base = delivered - STARTER_OATCAKES, owner?: PetOwner): Promise<PetView | null> {
-  const today = todayISO();
-  const { data: row } = await loadPet(supabase, owner);
-  if (!row) {
-    const fresh = { ...(owner ? { business_id: owner.business } : {}), earned_base: base, last_visit: today, streak: 1, best_streak: 1, last_fed_at: new Date().toISOString() };
-    const { data } = await supabase.from(petTable(owner)).insert(fresh).select("*").single<PetRow>();
-    return data ? petView(data, delivered) : null;
-  }
-  if (row.last_visit === today) return petView(row, delivered);
-  const yesterday = new Date(Date.parse(today) - DAY).toISOString().slice(0, 10);
-  const streak = row.last_visit === yesterday ? row.streak + 1 : 1;
-  const next = { ...row, last_visit: today, streak, best_streak: Math.max(row.best_streak, streak) };
-  await savePet(supabase, owner, row, { last_visit: today, streak, best_streak: next.best_streak });
-  return petView(next, delivered);
+  const { data: row } = await supabase.rpc("pet_visit", { p_business: owner?.business ?? null });
+  if (row) return { ...petView(row as PetRow, delivered), gift: !!(row as { gift?: boolean }).gift };
+  const fresh = { ...(owner ? { business_id: owner.business } : {}), earned_base: base, last_visit: todayISO(), streak: 1, best_streak: 1, last_fed_at: new Date().toISOString() };
+  const { data } = await supabase.from(petTable(owner)).insert(fresh).select("*").single<PetRow>();
+  return data ? petView(data, delivered) : null;
 }
