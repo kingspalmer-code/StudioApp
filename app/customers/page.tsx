@@ -21,7 +21,7 @@ function CustomerFields({ b }: { b?: Business }) {
 }
 
 export default async function CustomersPage() {
-  const { supabase, businesses, ctx, terms, workspace, shell } = await requireMember(["designer"]);
+  const { supabase, businesses, ctx, terms, workspace, shell } = await requireMember(["designer"], "clients");
   // Working alone, there are no customers to keep.
   if (workspace.kind === "solo") redirect("/queue");
   const { data } = await supabase.from("tickets").select("business_id, status").returns<Pick<Ticket, "business_id" | "status">[]>();

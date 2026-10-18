@@ -6,7 +6,7 @@ import { addType, deleteType, saveType } from "../actions";
 import SectionHead from "../SectionHead";
 
 export default async function TypesSettingsPage() {
-  const { ctx, terms, shell } = await requireMember(["designer"]);
+  const { ctx, terms, shell } = await requireMember(["designer"], "settings");
 
   return (
     <Shell {...shell}>

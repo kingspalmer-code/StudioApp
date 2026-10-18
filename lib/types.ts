@@ -1,4 +1,6 @@
-// staff: an employee the owner sets tasks for. They only see their own to-do list.
+import type { Access } from "./access";
+
+// staff: an employee the owner sets tasks for. They see their own to-do list, and any areas the owner lets them into.
 export type Role = "designer" | "manager" | "client" | "staff";
 // A stage key. Each workspace defines its own stages; the last one means finished.
 export type Status = string;
@@ -33,6 +35,12 @@ export type Member = {
   business_ids?: string[];
   // Whether there are apps they can open (a client's are only their businesses' ones).
   has_apps?: boolean;
+  // An employee's access to each area, as the owner set it on Team (lib/access.ts). Signed-in member only.
+  permissions?: unknown;
+  access?: Access;
+  // An employee the owner let into at least one area. On those pages they get the owner's view,
+  // shown as Employee (see requireMember); everywhere else they're staff.
+  staff?: boolean;
 };
 
 export type Ticket = {

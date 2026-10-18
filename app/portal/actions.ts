@@ -49,7 +49,7 @@ export async function helpWithBrief(idea: string, type: string): Promise<{ help?
   const text = idea.trim().slice(0, 1500);
   if (text.length < 4) return { error: "Say a few words about what you need first." };
   if (!process.env.ANTHROPIC_API_KEY) return { error: "Brief help isn't switched on yet." };
-  const { supabase, workspace } = await requireEditor(["client", "designer", "manager"]);
+  const { supabase, workspace } = await requireEditor(["client", "designer", "manager"], "requests");
   const { error: limit } = await supabase.rpc("note_brief_help");
   if (limit) return { error: limit.message };
 
@@ -80,7 +80,7 @@ export async function helpWithBrief(idea: string, type: string): Promise<{ help?
 
 // A business changing its own logo and colour (or the studio doing it for them).
 export async function saveBrand(businessId: string, logo: string, accent: string | null): Promise<{ error?: string }> {
-  const { supabase } = await requireEditor(["client", "designer"]);
+  const { supabase } = await requireEditor(["client", "designer"], "clients");
   const { error } = await supabase.rpc("set_business_brand", { p_business: businessId, p_logo: logo, p_accent: accent });
   if (error) return { error: error.message };
   revalidatePath("/", "layout");
@@ -90,7 +90,7 @@ export async function saveBrand(businessId: string, logo: string, accent: string
 // The studio just added a job and picked someone at the business to keep updated: tell them by email
 // and on their phone. Only the person who added it can trigger this, only shortly after, and once.
 export async function tellPickedPerson(ticketId: number) {
-  const { supabase, member, workspace, terms } = await requireEditor(["designer"]);
+  const { supabase, member, workspace, terms } = await requireEditor(["designer"], "requests");
   const { data: t } = await supabase
     .from("tickets")
     .select("created_by, created_at, tell")

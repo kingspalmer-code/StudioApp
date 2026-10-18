@@ -7,7 +7,7 @@ import DocSettingsForm from "./DocSettingsForm";
 
 // Settings → Quotes & invoices: the look and business details every PDF uses.
 export default async function DocumentSettingsPage() {
-  const { supabase, workspace, member, shell, viewing } = await requireMember(["designer"]);
+  const { supabase, workspace, member, shell, viewing } = await requireMember(["designer"], "quotes");
   const settings = await loadSettings(supabase, workspace.id);
   const logo = settings.logo_path ? (await supabase.storage.from("brand").createSignedUrl(settings.logo_path, 3600)).data?.signedUrl ?? null : null;
 

@@ -17,7 +17,7 @@ import Submit from "@/components/Submit";
 
 export default async function PortalPage({ searchParams }: { searchParams: Promise<{ tour?: string; business?: string; follow?: string; new?: string }> }) {
   const { tour, business, follow, new: fresh } = await searchParams;
-  const { supabase, member, businesses, self, ctx, workspace, shell, terms } = asClient(await requireEditor(["client", "designer", "manager"]));
+  const { supabase, member, businesses, self, ctx, workspace, shell, terms } = asClient(await requireEditor(["client", "designer", "manager"], "requests"));
   const previewing = Boolean(shell.preview);
   const trade = workspace.kind !== "studio";
   const solo = workspace.kind === "solo";

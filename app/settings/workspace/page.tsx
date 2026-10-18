@@ -8,7 +8,7 @@ import SectionHead from "../SectionHead";
 import WorkMode from "../WorkMode";
 
 export default async function WorkspaceSettingsPage() {
-  const { supabase, terms, workspace, shell, viewing } = await requireMember(["designer"]);
+  const { supabase, terms, workspace, shell, viewing } = await requireMember(["designer"], "settings");
   // Clients and managers, whose logins pause if the workspace stops taking requests from businesses.
   const { count: loggedIn } = await supabase.from("members").select("email", { count: "exact", head: true }).in("role", ["client", "manager"]);
 

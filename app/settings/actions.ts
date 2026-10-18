@@ -13,14 +13,14 @@ const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const done = () => revalidatePath("/", "layout");
 
 export async function renameWorkspace(formData: FormData) {
-  const { supabase, workspace } = await requireEditor(["designer"]);
+  const { supabase, workspace } = await requireEditor(["designer"], "settings");
   const name = text(formData, "name");
   if (name) await supabase.from("workspaces").update({ name }).eq("id", workspace.id);
   done();
 }
 
 export async function saveStage(id: number, formData: FormData) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "settings");
   const label = text(formData, "label");
   const color = text(formData, "color");
   if (!label) return;
@@ -32,7 +32,7 @@ export async function saveStage(id: number, formData: FormData) {
 }
 
 export async function addStage(formData: FormData) {
-  const { supabase, ctx, workspace } = await requireEditor(["designer"]);
+  const { supabase, ctx, workspace } = await requireEditor(["designer"], "settings");
   const label = text(formData, "label");
   if (!label) return;
   // New stages go just before the last one, which stays the "finished" stage.
@@ -51,7 +51,7 @@ export async function addStage(formData: FormData) {
 
 // Moves a stage up or down by swapping places with its neighbour.
 export async function moveStage(id: number, dir: -1 | 1) {
-  const { supabase, ctx } = await requireEditor(["designer"]);
+  const { supabase, ctx } = await requireEditor(["designer"], "settings");
   const i = ctx.stages.findIndex((s) => s.id === id);
   const j = i + dir;
   if (i < 0 || j < 0 || j >= ctx.stages.length) return;
@@ -62,7 +62,7 @@ export async function moveStage(id: number, dir: -1 | 1) {
 }
 
 export async function deleteStage(id: number) {
-  const { supabase, ctx } = await requireEditor(["designer"]);
+  const { supabase, ctx } = await requireEditor(["designer"], "settings");
   const stage = ctx.stages.find((s) => s.id === id);
   if (!stage || ctx.stages.length <= 2) return;
   const { count } = await supabase.from("tickets").select("id", { count: "exact", head: true }).eq("status", stage.key);
@@ -72,7 +72,7 @@ export async function deleteStage(id: number) {
 }
 
 export async function saveType(id: number, formData: FormData) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "settings");
   const name = text(formData, "name");
   const lead = Math.max(0, Math.min(365, parseInt(text(formData, "lead_days"), 10) || 0));
   if (name) await supabase.from("job_types").update({ name, lead_days: lead }).eq("id", id);
@@ -80,7 +80,7 @@ export async function saveType(id: number, formData: FormData) {
 }
 
 export async function addType(formData: FormData) {
-  const { supabase, ctx, workspace } = await requireEditor(["designer"]);
+  const { supabase, ctx, workspace } = await requireEditor(["designer"], "settings");
   const name = text(formData, "name");
   const lead = Math.max(0, Math.min(365, parseInt(text(formData, "lead_days"), 10) || 3));
   if (!name) return;
@@ -90,14 +90,14 @@ export async function addType(formData: FormData) {
 }
 
 export async function deleteType(id: number) {
-  const { supabase, ctx } = await requireEditor(["designer"]);
+  const { supabase, ctx } = await requireEditor(["designer"], "settings");
   if (ctx.types.length <= 1) return;
   await supabase.from("job_types").delete().eq("id", id);
   done();
 }
 
 export async function saveCustomer(id: string | null, formData: FormData) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "clients");
   const name = text(formData, "name");
   if (!name) return;
   const fields = {
@@ -114,7 +114,7 @@ export async function saveCustomer(id: string | null, formData: FormData) {
 
 // Only customers with no jobs can be removed, so no history is lost.
 export async function deleteCustomer(id: string) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "clients");
   const { count } = await supabase.from("tickets").select("id", { count: "exact", head: true }).eq("business_id", id);
   if (count) return;
   await supabase.from("businesses").delete().eq("id", id);
@@ -129,7 +129,7 @@ const doneForm = () => {
 };
 
 export async function addField(formData: FormData) {
-  const { supabase, workspace } = await requireEditor(["designer"]);
+  const { supabase, workspace } = await requireEditor(["designer"], "settings");
   const label = text(formData, "label");
   const kind = text(formData, "kind");
   if (!label || !KINDS.has(kind)) return;
@@ -145,7 +145,7 @@ export async function addField(formData: FormData) {
 }
 
 export async function saveField(id: number, formData: FormData) {
-  const { supabase, ctx } = await requireEditor(["designer"]);
+  const { supabase, ctx } = await requireEditor(["designer"], "settings");
   const label = text(formData, "label");
   if (!label) return;
   const kind = text(formData, "kind");
@@ -176,7 +176,7 @@ export async function saveField(id: number, formData: FormData) {
 
 // The fields at the top of the form (see lib/core-fields.ts), saved on the workspace.
 async function editCore(change: (s: CoreSettings, mode: { trade: boolean; solo: boolean }) => CoreSettings) {
-  const { supabase, workspace } = await requireEditor(["designer"]);
+  const { supabase, workspace } = await requireEditor(["designer"], "settings");
   const mode = { trade: workspace.kind !== "studio", solo: workspace.kind === "solo" };
   const next = change(readCore(workspace.core_fields), mode);
   await supabase.from("workspaces").update({ core_fields: next }).eq("id", workspace.id);
@@ -214,13 +214,13 @@ export async function moveCoreField(key: string, dir: -1 | 1) {
 }
 
 export async function setFieldHidden(id: number, hidden: boolean) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "settings");
   await supabase.from("job_fields").update({ hidden }).eq("id", id);
   doneForm();
 }
 
 export async function moveField(id: number, dir: -1 | 1) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "settings");
   const { data: fields } = await supabase.from("job_fields").select("id, hidden").order("position").order("id");
   // Moves past switched-off fields so each tap visibly moves it one place on the form.
   const list = fields ?? [];
@@ -237,7 +237,7 @@ export async function moveField(id: number, dir: -1 | 1) {
 }
 
 export async function deleteField(id: number) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "settings");
   await supabase.from("job_fields").delete().eq("id", id).eq("builtin", false);
   doneForm();
 }
@@ -246,7 +246,7 @@ export async function deleteField(id: number) {
 // deleted. Leaving Businesses pauses client and manager logins until it's switched back.
 export async function setWorkMode(kind: WorkspaceKind): Promise<{ error?: string }> {
   if (!MODES.some((m) => m.kind === kind)) return { error: "Pick one of the three." };
-  const { supabase, workspace } = await requireEditor(["designer"]);
+  const { supabase, workspace } = await requireEditor(["designer"], "settings");
   const { error } = await supabase.from("workspaces").update({ kind }).eq("id", workspace.id);
   if (error) return { error: error.message };
   done();
@@ -256,7 +256,7 @@ export async function setWorkMode(kind: WorkspaceKind): Promise<{ error?: string
 // Customers workspaces: turn the public request link on or off. The link's address comes from the
 // workspace name the first time it's turned on, and stays the same after that.
 export async function setRequestsOpen(open: boolean): Promise<{ error?: string }> {
-  const { supabase, workspace } = await requireEditor(["designer"]);
+  const { supabase, workspace } = await requireEditor(["designer"], "settings");
   if (workspace.kind !== "trade") return { error: "Request links are for Customers workspaces." };
   let slug = workspace.request_slug;
   if (!slug && open) {
@@ -277,7 +277,7 @@ export async function setRequestsOpen(open: boolean): Promise<{ error?: string }
 
 // Emails a customer the link to their own page, where they can follow all their jobs.
 export async function emailCustomerLink(id: string): Promise<{ error?: string; sent?: string }> {
-  const { supabase, workspace, member, terms } = await requireEditor(["designer"]);
+  const { supabase, workspace, member, terms } = await requireEditor(["designer"], "clients");
   const { data: c } = await supabase.from("businesses").select("id, name, email, access_token").eq("id", id).maybeSingle<{ id: string; name: string; email: string; access_token: string }>();
   if (!c) return { error: "Couldn't find them." };
   const problem = await sendCustomerLink(c, { name: workspace.name, replyTo: member.email, terms });

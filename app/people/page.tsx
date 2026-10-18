@@ -11,7 +11,7 @@ import Submit from "@/components/Submit";
 const ROLE_LABEL = { designer: "Designer", manager: "Manager", client: "Client", staff: "Employee" };
 
 export default async function PeoplePage() {
-  const { supabase, member, businesses, workspace, shell } = await requireMember(["designer"]);
+  const { supabase, member, businesses, workspace, shell } = await requireMember(["designer"], "clients");
   if (workspace.kind === "solo") redirect("/queue");
   const [{ data }, { data: signedIn }, { data: links }] = await Promise.all([
     supabase.from("members").select("*").order("role").order("email").returns<Member[]>(),

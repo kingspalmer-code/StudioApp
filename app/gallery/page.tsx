@@ -14,7 +14,7 @@ import type { Ticket } from "@/lib/types";
 // On wide screens a piece opens in the panel on the right, like a job beside the queue.
 export default async function GalleryPage({ searchParams }: { searchParams: Promise<{ year?: string; type?: string; business?: string }> }) {
   const { year, type, business } = await searchParams;
-  const { supabase, member, businesses, ctx, terms, workspace, shell } = asClient(await requireMember(["manager", "designer", "client"]));
+  const { supabase, member, businesses, ctx, terms, workspace, shell } = asClient(await requireMember(["manager", "designer", "client"], "requests"));
   const byId = Object.fromEntries(businesses.map((b) => [b.id, b]));
   // The database already limits a client to their businesses; this also scopes a studio preview of one client.
   const client = member.role === "client";

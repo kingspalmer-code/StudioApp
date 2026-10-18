@@ -11,7 +11,7 @@ import { signedUrls } from "@/lib/signed";
 export default async function AppPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const { supabase, member, businesses, shell, viewing } = asClient(await requireMember(["designer", "manager", "client"]));
+  const { supabase, member, businesses, shell, viewing } = asClient(await requireMember(["designer", "manager", "client"], "clients"));
   const [{ data: app }, { data: saved }] = await Promise.all([
     supabase.from("apps").select("*").eq("id", id).maybeSingle<App>(),
     supabase.from("app_backgrounds").select("*").eq("app_id", id).order("created_at", { ascending: false }).returns<AppBackground[]>(),

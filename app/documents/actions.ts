@@ -9,7 +9,7 @@ import { asDoc, loadSettings, pdfFor, readSettingsForm } from "@/lib/docs-server
 import { requireEditor } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
 
-const owner = () => requireEditor(["designer"]);
+const owner = () => requireEditor(["designer"], "quotes");
 const today = () => new Date().toISOString().slice(0, 10);
 
 // Settings → Quotes & invoices ---------------------------------------------------------------

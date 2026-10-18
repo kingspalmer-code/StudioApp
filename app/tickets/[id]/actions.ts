@@ -8,7 +8,7 @@ import { finalStage, reviewStage } from "@/lib/priority";
 import { requireEditor } from "@/lib/session";
 
 async function draftOf(ticketId: number, draftId: number) {
-  const session = await requireEditor(["designer"]);
+  const session = await requireEditor(["designer"], "requests");
   const { supabase } = session;
   const [{ data: draft }, { data: files }] = await Promise.all([
     supabase.from("ticket_drafts").select("*").eq("id", draftId).eq("ticket_id", ticketId).maybeSingle<Draft>(),
@@ -75,7 +75,7 @@ export async function tellAboutDraft(ticketId: number, draftId: number) {
 
 // Who the studio keeps updated on a job: any of the business's clients and any manager.
 export async function setTell(ticketId: number, emails: string[]) {
-  const { supabase } = await requireEditor(["designer"]);
+  const { supabase } = await requireEditor(["designer"], "requests");
   await supabase.from("tickets").update({ tell: [...new Set(emails.map((e) => e.toLowerCase()))] }).eq("id", ticketId);
   revalidatePath(`/tickets/${ticketId}`);
 }

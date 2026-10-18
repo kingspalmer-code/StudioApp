@@ -5,7 +5,7 @@ import MenuButtons from "../MenuButtons";
 import SectionHead from "../SectionHead";
 
 export default async function MenuSettingsPage() {
-  const { workspace, shell, viewing } = await requireMember(["designer"]);
+  const { workspace, shell, viewing } = await requireMember(["designer", "staff"]);
   // These are the owner's own switches, so someone viewing the workspace doesn't get them.
   if (viewing) redirect("/settings");
 

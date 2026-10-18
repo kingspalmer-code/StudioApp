@@ -21,7 +21,7 @@ export default async function QueuePage({
   // The jobs load alongside the session rather than after it; the database only returns what this login may see.
   const db = await createClient();
   const [{ supabase, member, businesses, ctx, terms, workspace, shell, viewing }, { data }] = await Promise.all([
-    requireMember(["designer", "manager"]),
+    requireMember(["designer", "manager"], "requests"),
     db.from("tickets").select(LIST_COLUMNS).returns<ListTicket[]>(),
   ]);
   // Managers see the same queue, read-only: no Select, no delivering or deleting, no tour.

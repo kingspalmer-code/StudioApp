@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import Shell from "@/components/Shell";
+import SplitHost from "@/components/SplitHost";
 import Submit from "@/components/Submit";
+import { PRESETS, accessFor, presetFor } from "@/lib/access";
 import { removeEmployee } from "@/app/tasks/actions";
 import StaffList from "@/app/tasks/StaffList";
 import { requireMember } from "@/lib/session";
@@ -13,11 +15,11 @@ import InviteLink from "./InviteLink";
 // The owner's view of their employees: add someone, send them an invite, and set and check their to-do list.
 export default async function TeamPage({ searchParams }: { searchParams: Promise<{ who?: string; open?: string }> }) {
   const { who, open } = await searchParams;
-  const { supabase, member, shell, viewing } = await requireMember(["designer"]);
+  const { supabase, member, shell, viewing } = await requireMember(["designer"], "team");
   const h = await headers();
   const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host") ?? "oatcake.xyz"}`;
   const [{ data }, { data: signedIn }, { data: unsigned }] = await Promise.all([
-    supabase.from("members").select("email, full_name, role, business_id").eq("role", "staff").order("full_name").returns<Member[]>(),
+    supabase.from("members").select("email, full_name, role, business_id, permissions").eq("role", "staff").order("full_name").returns<Member[]>(),
     supabase.rpc("members_signed_in"),
     // Tasks ticked off and waiting for sign-off, to count against each person.
     supabase
@@ -34,11 +36,14 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
   const current = staff.find((s) => s.email === who) ?? staff[0];
   const list = current ? await loadStaffList(supabase, current.email) : null;
   const name = (m: Member) => m.full_name || m.email;
+  // Only the owner sets access; an employee allowed onto Team sees the lists but not this.
+  const owner = !member.staff && !viewing;
+  const accessLabel = (m: Member) => PRESETS.find((p) => p.key === presetFor(accessFor("staff", m.permissions)))?.label ?? "Custom";
 
   return (
     <Shell {...shell}>
       <h1 className="large">Team</h1>
-      <p className="sub">Add the people who work for you and give them a to-do list. They sign in and see only their list. When they tick a task off, it waits for you to confirm it. You can both leave notes and replies on each task.</p>
+      <p className="sub">Add the people who work for you and give them a to-do list. They sign in and see their list, and anything else you let them into under Access. When they tick a task off, it waits for you to confirm it. You can both leave notes and replies on each task.</p>
       <div className="cols team">
         <div>
           {current && list ? (
@@ -64,28 +69,35 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
           {staff.length > 0 && (
             <>
               <p className="eyebrow">Your team</p>
-              <div className="group">
-                {staff.map((s) => (
-                  <div className="row person-row" key={s.email}>
-                    <div className="ctl">
-                      <div style={{ fontWeight: 600 }}>{name(s)}</div>
-                      <div className="when">
-                        {s.email}{!hasSignedIn.has(s.email) && " · Not signed in yet"}
-                        {waitingFor[s.email] ? <span style={{ color: "var(--orange)", fontWeight: 600 }}> · {waitingFor[s.email]} to sign off</span> : null}
+              <SplitHost under="/team/access" label="Access">
+                <div className="group">
+                  {staff.map((s) => (
+                    <div className="row person-row" key={s.email}>
+                      <div className="ctl">
+                        <div style={{ fontWeight: 600 }}>{name(s)}</div>
+                        <div className="when">
+                          {s.email}{!hasSignedIn.has(s.email) && " · Not signed in yet"}
+                          {waitingFor[s.email] ? <span style={{ color: "var(--orange)", fontWeight: 600 }}> · {waitingFor[s.email]} to sign off</span> : null}
+                        </div>
+                        {owner && (
+                          <Link href={`/team/access/${encodeURIComponent(s.email)}`} className="when access-link">
+                            Access: <b>{accessLabel(s)}</b> ›
+                          </Link>
+                        )}
+                        {owner && <InviteLink url={`${origin}/login?email=${encodeURIComponent(s.email)}`} email={s.email} />}
                       </div>
-                      {!viewing && <InviteLink url={`${origin}/login?email=${encodeURIComponent(s.email)}`} email={s.email} />}
+                      {owner && (
+                        <form action={removeEmployee.bind(null, s.email)}>
+                          <Submit className="link" style={{ color: "var(--red)" }} type="submit">Remove</Submit>
+                        </form>
+                      )}
                     </div>
-                    {!viewing && (
-                      <form action={removeEmployee.bind(null, s.email)}>
-                        <Submit className="link" style={{ color: "var(--red)" }} type="submit">Remove</Submit>
-                      </form>
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </SplitHost>
             </>
           )}
-          {!viewing && <AddEmployee origin={origin} />}
+          {owner && <AddEmployee origin={origin} />}
         </div>
       </div>
     </Shell>
