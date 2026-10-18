@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { saveProfile } from "@/lib/supabase/client";
 
 export default function SetPassword({ hasPassword, skippable }: { hasPassword: boolean; skippable: boolean }) {
   const router = useRouter();
@@ -20,7 +20,7 @@ export default function SetPassword({ hasPassword, skippable }: { hasPassword: b
     if (password.length < 8) return setError("Use at least 8 characters.");
     if (password !== confirm) return setError("The two passwords don't match.");
     setBusy(true);
-    const { error } = await createClient().auth.updateUser({ password, data: { has_password: true } });
+    const { error } = await saveProfile({ password, data: { has_password: true } });
     setBusy(false);
     if (error) return setError(`Your password wasn't saved: ${error.message}`);
     setPassword("");

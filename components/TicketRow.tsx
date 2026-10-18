@@ -1,7 +1,7 @@
 import BizBadge from "./BizBadge";
 import Link from "next/link";
 import { type Ctx, dueLabel, formatDate, isDone, startBy, startLabel } from "@/lib/priority";
-import type { Business, Ticket } from "@/lib/types";
+import type { Business, ListTicket } from "@/lib/types";
 import StatusChip from "./StatusChip";
 
 export default function TicketRow({
@@ -13,7 +13,7 @@ export default function TicketRow({
   select,
   draft,
 }: {
-  t: Ticket;
+  t: ListTicket;
   biz?: Business;
   ctx: Ctx;
   rank?: number;

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { openCreate } from "./CreateMenu";
+import { openCreate } from "./panel-events";
 import { NavIcon } from "./NavIcons";
 
 // The section links as an iPhone-style tab bar along the bottom. Only shown on phones; bigger

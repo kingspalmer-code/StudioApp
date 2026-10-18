@@ -7,13 +7,12 @@ import { createPortal } from "react-dom";
 import { docNumber, gbp, type DocKind } from "@/lib/documents";
 import { createClient } from "@/lib/supabase/client";
 import type { WorkspaceKind } from "@/lib/types";
-import { openCreate } from "./CreateMenu";
+import { openCreate, SEARCH_EVENT, takePending } from "./panel-events";
 
 // Search everything: jobs, quotes, invoices, customers, to-dos and Oatcake's own pages, typed or
 // spoken. Plain words work ("unpaid invoices for Sarah"): kind and status words narrow the
 // results and filler words are ignored. "S" opens it on a keyboard.
-const OPEN_EVENT = "oc-search";
-export const openSearch = () => window.dispatchEvent(new Event(OPEN_EVENT));
+export { openSearch } from "./panel-events";
 
 type Kind = "page" | "job" | "doc" | "client" | "task";
 type Hit = { kind: Kind; key: string; title: string; sub?: string; href?: string; run?: () => void; words: string; tags: string[]; at?: string };
@@ -141,6 +140,7 @@ export default function Search({
 
   useEffect(() => {
     const show = () => {
+      takePending(SEARCH_EVENT);
       setQ("");
       setSel(0);
       setData(null);
@@ -156,10 +156,11 @@ export default function Search({
         show();
       }
     };
-    window.addEventListener(OPEN_EVENT, onEvent);
+    window.addEventListener(SEARCH_EVENT, onEvent);
     window.addEventListener("keydown", key);
+    if (takePending(SEARCH_EVENT)) show();
     return () => {
-      window.removeEventListener(OPEN_EVENT, onEvent);
+      window.removeEventListener(SEARCH_EVENT, onEvent);
       window.removeEventListener("keydown", key);
     };
   }, [open]);

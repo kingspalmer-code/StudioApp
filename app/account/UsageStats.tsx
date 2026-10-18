@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { saveProfile } from "@/lib/supabase/client";
 
 // Lets people turn usage stats off (they're on by default).
 export default function UsageStats({ on }: { on: boolean }) {
@@ -12,8 +12,7 @@ export default function UsageStats({ on }: { on: boolean }) {
   async function change(next: boolean) {
     setValue(next);
     setBusy(true);
-    await createClient().auth.updateUser({ data: { no_tracking: !next } });
-    await createClient().auth.refreshSession();
+    await saveProfile({ data: { no_tracking: !next } });
     setBusy(false);
     router.refresh();
   }

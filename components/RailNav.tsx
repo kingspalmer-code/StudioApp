@@ -5,9 +5,9 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Business } from "@/lib/types";
 import BizBadge from "./BizBadge";
-import { openCreate } from "./CreateMenu";
+import { openCreate } from "./panel-events";
 import { NavIcon } from "./NavIcons";
-import { openSearch } from "./Search";
+import { openSearch } from "./panel-events";
 import SidebarEdit from "./SidebarEdit";
 
 type Link = { href: string; label: string; icon?: string; fixed?: boolean };

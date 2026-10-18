@@ -7,6 +7,7 @@ import TicketRow from "@/components/TicketRow";
 import { businessOatcakes, hatchBase, oatcakesEarned, STARTER_OATCAKES } from "@/lib/pet";
 import { daysFromToday, finalStage, formatDate, isAtRisk, isDone, money, sortQueue, stageColor } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
+import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
 import type { Ticket } from "@/lib/types";
 import { loadWidgets } from "@/lib/widgets";
 
@@ -19,7 +20,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   // Managers get the widget row too, with an oatcake for Pickle for every request they send.
   const manager = member.role === "manager" && !viewing;
   const [{ data }, earned] = await Promise.all([
-    supabase.from("tickets").select("*").returns<Ticket[]>(),
+    supabase.from("tickets").select(LIST_COLUMNS).returns<ListTicket[]>(),
     manager ? oatcakesEarned(supabase, member, ctx) : Promise.resolve(0),
   ]);
   const all = data ?? [];
@@ -136,7 +137,7 @@ async function ClientOverview({ session, business }: { session: Session; busines
   // The business whose Pickle shows: the one picked above, else their main business.
   const petBiz = only?.id ?? member.business_id ?? myBizes[0]?.id;
   const [{ data }, earned] = await Promise.all([
-    supabase.from("tickets").select("*").in("business_id", ids).order("deadline").returns<Ticket[]>(),
+    supabase.from("tickets").select(LIST_COLUMNS).in("business_id", ids).order("deadline").returns<ListTicket[]>(),
     previewing || !petBiz ? Promise.resolve(0) : businessOatcakes(supabase, petBiz, ctx),
   ]);
   const all = data ?? [];
@@ -169,7 +170,7 @@ async function ClientOverview({ session, business }: { session: Session; busines
     .filter((st) => st.key !== final)
     .map((st) => ({ st, items: open.filter((t) => t.status === st.key) }))
     .filter((g) => g.items.length);
-  const row = (t: Ticket) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} showBusiness={several && !only} draft={withDraft.has(t.id)} />;
+  const row = (t: ListTicket) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} showBusiness={several && !only} draft={withDraft.has(t.id)} />;
   const q = (path: string) => (only ? `${path}${path.includes("?") ? "&" : "?"}business=${only.id}` : path);
 
   return (

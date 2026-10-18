@@ -4,6 +4,7 @@ import Shell from "@/components/Shell";
 import { coversFor } from "@/lib/deliveries";
 import { formatDate, isDone } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
+import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
 import type { Ticket } from "@/lib/types";
 
 // Every finished project for this business as a gallery, newest first, to look back on or download again.
@@ -14,7 +15,7 @@ export default async function ArchivePage({ searchParams }: { searchParams: Prom
   // A client with several businesses sees them all, or just the one they picked on the portal.
   const mine = member.business_ids ?? [];
   const ids = business && mine.includes(business) ? [business] : mine;
-  const { data } = await supabase.from("tickets").select("*").in("business_id", ids).returns<Ticket[]>();
+  const { data } = await supabase.from("tickets").select(LIST_COLUMNS).in("business_id", ids).returns<ListTicket[]>();
   const finished = (data ?? [])
     .filter((t) => isDone(t, ctx))
     .map((t) => ({ ...t, when: t.delivered_at ?? t.deadline }))

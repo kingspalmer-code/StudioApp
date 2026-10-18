@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, saveProfile } from "@/lib/supabase/client";
 import { track } from "@/lib/track";
 
 // A short first-login tour of the Jobs page. The page dims, the part being explained lifts out
@@ -119,7 +119,7 @@ export default function Walkthrough({
     try {
       localStorage.setItem(DONE_KEY, "1");
     } catch {}
-    createClient().auth.updateUser({ data: { walkthrough_done: true } });
+    saveProfile({ data: { walkthrough_done: true } });
     if (force) router.replace(home);
   }, [force, router, home]);
 

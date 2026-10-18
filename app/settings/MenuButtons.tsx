@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { saveProfile } from "@/lib/supabase/client";
 import { NavIcon } from "@/components/NavIcons";
 import { alwaysOnComputer } from "@/lib/menu";
 
@@ -19,8 +19,7 @@ export default function MenuButtons({ links, hidden }: { links: { href: string; 
     const next = { ...value, [where]: on ? value[where].filter((h) => h !== href) : [...value[where], href] };
     setValue(next);
     setBusy(true);
-    await createClient().auth.updateUser({ data: { hide_phone: next.phone, hide_computer: next.computer } });
-    await createClient().auth.refreshSession();
+    await saveProfile({ data: { hide_phone: next.phone, hide_computer: next.computer } });
     setBusy(false);
     router.refresh();
   }

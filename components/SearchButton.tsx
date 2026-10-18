@@ -1,7 +1,7 @@
 "use client";
 
 import { SearchIcon } from "./RailNav";
-import { openSearch } from "./Search";
+import { openSearch } from "./panel-events";
 
 // Search in the phone top bar, beside Ask Oatcake. Bigger screens have it in the rail instead.
 export default function SearchButton() {

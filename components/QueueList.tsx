@@ -3,7 +3,7 @@
 import { useState, useTransition, type ReactNode } from "react";
 import { deleteTickets, deliverTickets } from "@/app/actions";
 import { finalStage, statusLabel, type Ctx } from "@/lib/priority";
-import type { Business, Ticket } from "@/lib/types";
+import type { Business, ListTicket } from "@/lib/types";
 import SplitHost from "./SplitHost";
 import TicketRow from "./TicketRow";
 
@@ -20,7 +20,7 @@ export default function QueueList({
   empty,
 }: {
   toolbar: ReactNode;
-  items: Ticket[];
+  items: ListTicket[];
   ranks: Record<number, number>;
   byId: Record<string, Business>;
   ctx: Ctx;

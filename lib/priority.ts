@@ -1,4 +1,4 @@
-import type { JobType, Priority, Stage, Status, Ticket } from "./types";
+import type { JobType, Priority, Stage, ListTicket, Status, Ticket } from "./types";
 
 // A workspace's stages (in order) and job types. Job types carry the working days each kind
 // of job realistically needs, which drives the start-by priority.
@@ -40,7 +40,7 @@ export function startBy(t: Pick<Ticket, "deadline" | "type" | "priority">, ctx: 
   return daysFromToday(t.deadline) - leadDays(ctx, t.type) - PRIORITY_BUMP[t.priority];
 }
 
-export function sortQueue<T extends Ticket>(tickets: T[], ctx: Ctx): T[] {
+export function sortQueue<T extends ListTicket>(tickets: T[], ctx: Ctx): T[] {
   return tickets
     .filter((t) => !isDone(t, ctx))
     .sort(
@@ -83,7 +83,7 @@ export function dueLabel(date: string): string {
   return `Due ${formatDate(date)}`;
 }
 
-export function isAtRisk(t: Ticket, ctx: Ctx): boolean {
+export function isAtRisk(t: ListTicket, ctx: Ctx): boolean {
   return !isDone(t, ctx) && (startBy(t, ctx) < 0 || (t.status === "waiting" && daysFromToday(t.deadline) <= 5));
 }
 
