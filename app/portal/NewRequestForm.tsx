@@ -305,7 +305,7 @@ export default function NewRequestForm({
           <p className="eyebrow">{g.title ?? "Details"}</p>
           <div className="group">
             {g.fields.map((f) => (
-              <FieldInput key={f.key} field={f} value={f.key === "requester_name" && !isDesigner ? defaultName : undefined} />
+              <FieldInput key={f.key} field={f} value={f.key === "requester_name" && !isDesigner ? defaultName : undefined} itemise={isDesigner} />
             ))}
           </div>
         </div>
