@@ -11,3 +11,9 @@ export function ordered<T extends { href: string }>(links: T[], order: string[] 
   };
   return links.map((l, i) => ({ l, i })).sort((a, b) => at(a.l.href) - at(b.l.href) || a.i - b.i).map((x) => x.l);
 }
+
+// The phone tab bar holds the first few buttons; the rest wait under More, so a new account opens
+// with a calm bar instead of every section squeezed along the bottom. Settings > Menu picks which
+// go on the bar (saved as phone_tabs); the first button always stays.
+export const PHONE_TABS = 4;
+export const onPhoneTab = (href: string, i: number, shown?: string[]) => i === 0 || (shown ? shown.includes(href) : i < PHONE_TABS);
