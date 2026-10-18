@@ -106,7 +106,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
         <div>
           <p className="eyebrow">At risk</p>
           <div className="group">
-            {risk.length ? risk.map((t) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} />) : <div className="empty">Nothing at risk right now.</div>}
+            {risk.length ? risk.map((t) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} plan={member.role === "designer" && !viewing} />) : <div className="empty">Nothing at risk right now.</div>}
           </div>
           <p className="foot">Should already have started, or waiting on the client within 5 days of the deadline.</p>
         </div>

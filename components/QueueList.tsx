@@ -91,6 +91,7 @@ export default function QueueList({
                 ctx={ctx}
                 rank={ranks[t.id]}
                 select={selecting ? { checked: picked.has(t.id), onToggle: () => toggle(t.id) } : undefined}
+                plan={canEdit && !selecting}
               />
             ))
           : empty}

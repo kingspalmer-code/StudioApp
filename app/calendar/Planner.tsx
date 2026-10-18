@@ -264,11 +264,11 @@ export default function Planner({
       {running && <Running log={running} item={running.plan_item_id ? byId.get(running.plan_item_id) : undefined} job={running.ticket_id ? jobName[running.ticket_id] : undefined} onOpen={(id) => setEditing(id)} />}
 
       {showWho && (
-        <div className="seg cal-who" role="group" aria-label="Whose">
-          <button type="button" aria-pressed={who === "all"} onClick={() => setWho("all")}>Everyone</button>
+        <div className="seg cal-who" role="group" aria-label="Show whose to-dos">
+          <button type="button" aria-pressed={who === "all"} onClick={() => setWho("all")}>Everyone&apos;s</button>
           {team.map((p) => (
             <button key={p.email} type="button" aria-pressed={who === p.email} onClick={() => setWho(p.email)}>
-              {p.email === me ? "Me" : p.name.split(" ")[0]}
+              {p.email === me ? "Mine" : p.name}
             </button>
           ))}
         </div>
