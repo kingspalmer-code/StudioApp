@@ -6,7 +6,7 @@ import { signOut } from "@/app/actions";
 import { KIND_LABELS } from "@/lib/fields";
 import { STAGE_COLORS, stageColor } from "@/lib/priority";
 import type { Setup } from "@/lib/setup";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, saveProfile } from "@/lib/supabase/client";
 import type { WorkspaceKind } from "@/lib/types";
 import { MODES, termsFor } from "@/lib/workspace";
 import { suggestSetup } from "./actions";
@@ -75,7 +75,7 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
     setError(null);
     const supabase = createClient();
     if (!hasPassword) {
-      const { error: pwError } = await supabase.auth.updateUser({ password, data: { has_password: true, full_name: name.trim() } });
+      const { error: pwError } = await saveProfile({ password, data: { has_password: true, full_name: name.trim() } });
       if (pwError) {
         setBusy(false);
         return setError(`Your password wasn't saved: ${pwError.message}`);

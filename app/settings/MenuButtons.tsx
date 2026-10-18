@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { saveProfile } from "@/lib/supabase/client";
 import { NavIcon } from "@/components/NavIcons";
 import { alwaysOnComputer, onPhoneTab } from "@/lib/menu";
 
@@ -26,8 +26,7 @@ export default function MenuButtons({ links, hidden }: { links: Links; hidden: H
     setPhone(nextPhone);
     setComputer(nextComputer);
     setBusy(true);
-    await createClient().auth.updateUser({ data: { phone_tabs: nextPhone, hide_computer: nextComputer } });
-    await createClient().auth.refreshSession();
+    await saveProfile({ data: { phone_tabs: nextPhone, hide_computer: nextComputer } });
     setBusy(false);
     router.refresh();
   }

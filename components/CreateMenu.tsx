@@ -8,11 +8,11 @@ import { createDocument } from "@/app/documents/actions";
 import { addTask } from "@/app/personal/actions";
 import { createClient } from "@/lib/supabase/client";
 import type { WorkspaceKind } from "@/lib/types";
+import { CREATE_EVENT, takePending } from "./panel-events";
 
 // Create new: one grid of everything you can make in Oatcake. A sheet from the bottom on phones,
 // a panel beside the rail's + on bigger screens. "N" opens it on a keyboard, then a letter picks.
-const OPEN_EVENT = "oc-create";
-export const openCreate = () => window.dispatchEvent(new Event(OPEN_EVENT));
+export { openCreate } from "./panel-events";
 
 type Step = "grid" | "quote" | "invoice" | "task";
 type Job = { id: number; title: string; business_id: string };
@@ -72,6 +72,7 @@ export default function CreateMenu({
 
   useEffect(() => {
     const show = () => {
+      takePending(CREATE_EVENT);
       setStep("grid");
       setOpen(true);
     };
@@ -84,10 +85,11 @@ export default function CreateMenu({
         show();
       }
     };
-    window.addEventListener(OPEN_EVENT, show);
+    window.addEventListener(CREATE_EVENT, show);
     window.addEventListener("keydown", key);
+    if (takePending(CREATE_EVENT)) show();
     return () => {
-      window.removeEventListener(OPEN_EVENT, show);
+      window.removeEventListener(CREATE_EVENT, show);
       window.removeEventListener("keydown", key);
     };
   }, [open]);

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, saveProfile } from "@/lib/supabase/client";
 
 // Your profile picture, shown at the top right. The photo is cropped to a square and shrunk in the
 // browser before it's uploaded, so even a big phone photo uploads quickly.
@@ -36,7 +36,7 @@ export default function ProfilePhoto({ avatar, initials }: { avatar: string | nu
       const { error } = await supabase.storage.from("avatars").upload(path, await squareJpeg(file), { contentType: "image/jpeg" });
       if (error) throw error;
       const url = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
-      const { error: e2 } = await supabase.auth.updateUser({ data: { avatar_url: url, avatar_path: path } });
+      const { error: e2 } = await saveProfile({ data: { avatar_url: url, avatar_path: path } });
       if (e2) throw e2;
       const old = data.user.user_metadata?.avatar_path;
       if (typeof old === "string" && old) await supabase.storage.from("avatars").remove([old]);
@@ -54,7 +54,7 @@ export default function ProfilePhoto({ avatar, initials }: { avatar: string | nu
     const supabase = createClient();
     const { data } = await supabase.auth.getUser();
     const old = data.user?.user_metadata?.avatar_path;
-    await supabase.auth.updateUser({ data: { avatar_url: null, avatar_path: null } });
+    await saveProfile({ data: { avatar_url: null, avatar_path: null } });
     if (typeof old === "string" && old) await supabase.storage.from("avatars").remove([old]);
     await supabase.auth.refreshSession();
     setMsg(null);

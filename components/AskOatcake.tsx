@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, MotionConfig, useAnimate } from "motion/react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { saveProfile } from "@/lib/supabase/client";
 import { track } from "@/lib/track";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -142,13 +142,13 @@ export default function AskOatcake({ hint = false, opens = 0, since = 0 }: { hin
   const counted = useRef(false);
   useEffect(() => {
     // The week of pointers starts the first time someone sees the button.
-    if (hint && !since) createClient().auth.updateUser({ data: { ask_since: Date.now() } });
+    if (hint && !since) saveProfile({ data: { ask_since: Date.now() } });
   }, [hint, since]);
   useEffect(() => {
     // Count the first couple of uses on the account, so the hint stops on every device.
     if (!open || !hint || counted.current) return;
     counted.current = true;
-    createClient().auth.updateUser({ data: { ask_opens: opens + 1 } });
+    saveProfile({ data: { ask_opens: opens + 1 } });
   }, [open, hint, opens]);
 
   useEffect(() => {

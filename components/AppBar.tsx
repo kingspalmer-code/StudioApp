@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { openCreate } from "./CreateMenu";
+import { openCreate } from "./panel-events";
 import { SearchIcon } from "./RailNav";
-import { openSearch } from "./Search";
+import { openSearch } from "./panel-events";
 
 // The top bar in the Mac app (desktop/), beside the window buttons: back and forward, the page
 // you're on, then Search and New. On bigger screens the bell moves up into its right-hand end

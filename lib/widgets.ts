@@ -6,14 +6,14 @@ import { brandFor } from "./brands";
 import { coversFor } from "./deliveries";
 import { visitPet, type PetOwner } from "./pet";
 import { isDone, todayISO, type Ctx } from "./priority";
-import type { Business, Ticket } from "./types";
+import type { Business, ListTicket } from "./types";
 
 // What the widget row (components/QueueWidgets.tsx) shows, worked out from a list of jobs: the
 // studio's whole queue, or a client's own requests. `pet` says what fills Pickle's tin; leave it
 // out (e.g. while previewing a client) and Pickle isn't visited.
 export async function loadWidgets(
   supabase: SupabaseClient,
-  all: Ticket[],
+  all: ListTicket[],
   ctx: Ctx,
   byId: Record<string, Business>,
   pet?: { earned: number; base: number; owner?: PetOwner },

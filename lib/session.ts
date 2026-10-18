@@ -28,9 +28,7 @@ const loadMember = cache(async () => {
   const jar = await cookies();
   const rawView = jar.get(VIEW_COOKIE)?.value ?? "";
   const viewId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawView) ? rawView : null;
-  const [{ data: { user } }, { data: row }, { data: businesses }, { data: viewedRows }, { data: stages }, { data: types }, { data: isAdmin }, { data: replies }, { data: mine }, { data: appRows }] = await Promise.all([
-    // For the profile details (photo, hints); the token's copy can be up to an hour old.
-    supabase.auth.getUser(),
+  const [{ data: row }, { data: businesses }, { data: viewedRows }, { data: stages }, { data: types }, { data: isAdmin }, { data: replies }, { data: mine }, { data: appRows }] = await Promise.all([
     supabase
       .from("members")
       .select("email, full_name, role, business_id, workspace_id, workspaces(id, name, kind, owner_name, request_slug, requests_open, core_fields)")
@@ -47,7 +45,9 @@ const loadMember = cache(async () => {
     // Apps they can open, for the Apps tab in a client's portal.
     supabase.from("apps").select("business_id").returns<{ business_id: string }[]>(),
   ]);
-  if (!user) redirect("/login");
+  // Profile details (photo, hints, menu choices) come from the sign-in token, so pages don't wait on
+  // the sign-in server. Saving them renews the token straight away (saveProfile in lib/supabase/client.ts).
+  const user = { user_metadata: (claims?.claims.user_metadata ?? {}) as Record<string, unknown> };
   // Signed in but no workspace yet: set one up.
   if (!row) redirect("/welcome");
   const { workspaces: ownWorkspace, ...member } = row;

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { openCreate } from "./CreateMenu";
+import { openCreate } from "./panel-events";
 import { NavIcon } from "./NavIcons";
 
 type TabLink = { href: string; label: string; icon?: string };

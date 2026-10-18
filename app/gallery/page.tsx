@@ -5,6 +5,7 @@ import SplitHost from "@/components/SplitHost";
 import { coversFor } from "@/lib/deliveries";
 import { formatDate, isDone } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
+import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
 import type { Ticket } from "@/lib/types";
 
 // Every finished piece of work someone can see, newest first: the studio and managers see every
@@ -17,9 +18,9 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
   const byId = Object.fromEntries(businesses.map((b) => [b.id, b]));
   // The database already limits a client to their businesses; this also scopes a studio preview of one client.
   const client = member.role === "client";
-  let query = supabase.from("tickets").select("*");
+  let query = supabase.from("tickets").select(LIST_COLUMNS);
   if (client) query = query.in("business_id", member.business_ids ?? []);
-  const { data } = await query.returns<Ticket[]>();
+  const { data } = await query.returns<ListTicket[]>();
   const finished = (data ?? [])
     .filter((t) => isDone(t, ctx))
     .map((t) => ({ ...t, when: t.delivered_at ?? t.deadline }))

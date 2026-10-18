@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, saveProfile } from "@/lib/supabase/client";
 import { NavIcon } from "./NavIcons";
 
 type Link = { href: string; label: string; icon?: string; fixed?: boolean };
@@ -85,7 +85,7 @@ export default function SidebarEdit({ all, hidden, skip, onDone }: { all: Link[]
     const computer = [...hidden.filter((h) => !mine.has(h)), ...removed.map((l) => l.href)];
     const order = [...items, ...removed].map((l) => l.href);
     const supabase = createClient();
-    await supabase.auth.updateUser({ data: { hide_computer: computer, menu_order: order } });
+    await saveProfile({ data: { hide_computer: computer, menu_order: order } });
     await supabase.auth.refreshSession();
     router.refresh();
     setBusy(false);

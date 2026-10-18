@@ -66,6 +66,12 @@ export type Ticket = {
   details: Record<string, unknown>;
 };
 
+// What lists of jobs (Queue, Overview, Gallery, a client's requests) load: everything but the long
+// written parts of the brief, which only the job's own page shows. Keeps those pages quick as the
+// number of finished jobs grows.
+export const LIST_COLUMNS = "id, business_id, created_by, follows, tell, requester_name, title, type, deadline, event_date, priority, status, pinned, created_at, updated_at, delivered_at, quote_amount, paid_amount";
+export type ListTicket = Omit<Ticket, "formats" | "brief" | "copy" | "links" | "colours" | "approver" | "site_address" | "details">;
+
 export type Note = {
   id: number;
   ticket_id: number;

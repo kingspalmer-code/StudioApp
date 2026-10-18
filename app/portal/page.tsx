@@ -7,6 +7,7 @@ import type { JobField } from "@/lib/fields";
 import { coreFields } from "@/lib/core-fields";
 import { formatDate, isDone } from "@/lib/priority";
 import { asClient, requireEditor } from "@/lib/session";
+import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
 import type { Ticket } from "@/lib/types";
 import ClientRequests from "./ClientRequests";
 import NewRequestForm from "./NewRequestForm";
@@ -37,7 +38,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
       ? supabase.from("tickets").select("id, title, type, business_id, status, delivered_at").eq("id", Number(follow)).maybeSingle<Pick<Ticket, "id" | "title" | "type" | "business_id" | "status" | "delivered_at">>()
       : Promise.resolve({ data: null }),
     member.role === "client"
-      ? supabase.from("tickets").select("*").in("business_id", ids).order("deadline").returns<Ticket[]>()
+      ? supabase.from("tickets").select(LIST_COLUMNS).in("business_id", ids).order("deadline").returns<ListTicket[]>()
       : Promise.resolve({ data: null as Ticket[] | null }),
   ]);
   const formFields = (fields ?? []).filter((f) => !f.hidden && f.on_form);

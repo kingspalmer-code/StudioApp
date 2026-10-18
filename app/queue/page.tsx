@@ -9,6 +9,7 @@ import Walkthrough from "@/components/Walkthrough";
 import { daysFromToday, finalStage, formatDate, isDone, money, sortQueue, startBy, startLabel } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
+import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
 import type { Ticket } from "@/lib/types";
 
 export default async function QueuePage({
@@ -21,7 +22,7 @@ export default async function QueuePage({
   const db = await createClient();
   const [{ supabase, member, businesses, ctx, terms, workspace, shell, viewing }, { data }] = await Promise.all([
     requireMember(["designer", "manager"]),
-    db.from("tickets").select("*").returns<Ticket[]>(),
+    db.from("tickets").select(LIST_COLUMNS).returns<ListTicket[]>(),
   ]);
   // Managers see the same queue, read-only: no Select, no delivering or deleting, no tour.
   const canEdit = member.role === "designer" && !viewing;
@@ -30,7 +31,7 @@ export default async function QueuePage({
   const queue = sortQueue(all, ctx);
   const byId = Object.fromEntries(businesses.map((b) => [b.id, b]));
   const filterBiz = businesses.find((b) => b.slug === biz);
-  const keep = (t: Ticket) => !filterBiz || t.business_id === filterBiz.id;
+  const keep = (t: ListTicket) => !filterBiz || t.business_id === filterBiz.id;
   const href = (v: string, b: string) => `/queue?view=${v}&biz=${b}`;
 
   // One line of what matters, instead of a row of number tiles. The totals live on Overview.
