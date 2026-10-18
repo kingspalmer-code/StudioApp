@@ -6,10 +6,11 @@ import StatusChip from "@/components/StatusChip";
 import { addNote, saveDetails, setPinned, setStatus } from "@/app/actions";
 import FieldInput from "@/components/FieldInput";
 import { appliesTo, groupFields, hasValue, showValue, valueOf, type JobField } from "@/lib/fields";
-import { finalStage, formatDate, isDone, money, reviewStage, startBy, startLabel, statusLabel, whenLabel } from "@/lib/priority";
+import { PRIORITIES, finalStage, formatDate, isDone, money, reviewStage, startBy, startLabel, statusLabel, whenLabel } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
 import { coreFields, type CoreKey } from "@/lib/core-fields";
 import { createClient } from "@/lib/supabase/server";
+import { isSelf } from "@/lib/workspace";
 import type { Note, Ticket, TicketFile } from "@/lib/types";
 import DeleteTicket from "./DeleteTicket";
 import AddFiles from "./AddFiles";
@@ -58,6 +59,8 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   const core = coreFields(workspace.core_fields, { trade: false, solo: false });
   const coreLabel = (k: CoreKey) => core.find((c) => c.key === k)?.label ?? k;
   const trade = workspace.kind !== "studio";
+  // The top-of-form fields as this workspace's new job form shows them, for Edit details.
+  const top = coreFields(workspace.core_fields, { trade, solo: workspace.kind === "solo" });
 
   // Then what needs the job itself, also all at once.
   const [{ data: links }, [{ data: members }, { data: memberLinks }], delivered, draftFiles, signed] = await Promise.all([
@@ -295,6 +298,48 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           </div>
         ))}
 
+        {isDesigner && !viewing && (
+          <details className="edit-details">
+            <summary className="btn plain small">Edit details</summary>
+            <form action={saveDetails.bind(null, t.id)}>
+              <div className="group">
+                {top.filter((c) => !c.hidden).map((c) => (
+                  <div className="row" key={c.key}>
+                    <label htmlFor={`edit-${c.key}`}>{c.label}</label>
+                    <div className="ctl">
+                      {c.key === "customer" ? (
+                        <>
+                          <input id="edit-customer" name="customer" required list="edit-customers" autoComplete="off" defaultValue={biz?.name ?? ""} placeholder={c.hint || undefined} />
+                          <datalist id="edit-customers">
+                            {businesses.filter((b) => !isSelf(b)).map((b) => <option key={b.id} value={b.name} />)}
+                          </datalist>
+                        </>
+                      ) : c.key === "phone" ? (
+                        <input id="edit-phone" name="phone" type="tel" defaultValue={biz?.phone ?? ""} placeholder={c.hint || undefined} />
+                      ) : c.key === "title" ? (
+                        <input id="edit-title" name="title" required defaultValue={t.title} />
+                      ) : c.key === "type" ? (
+                        <select id="edit-type" name="type" defaultValue={t.type}>
+                          {!ctx.types.some((x) => x.name === t.type) && <option>{t.type}</option>}
+                          {ctx.types.map((x) => <option key={x.id}>{x.name}</option>)}
+                        </select>
+                      ) : c.key === "deadline" ? (
+                        <input id="edit-deadline" name="deadline" type="date" required defaultValue={t.deadline?.slice(0, 10)} />
+                      ) : (
+                        <select id="edit-priority" name="priority" defaultValue={t.priority}>
+                          {PRIORITIES.map((p) => <option key={p}>{p}</option>)}
+                        </select>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {editable.map((f) => <FieldInput key={f.key} field={{ ...f, required: false }} value={valueOf(t, f)} idPrefix="edit-" />)}
+              </div>
+              <p className="foot"><Submit className="btn small" type="submit">Save details</Submit></p>
+            </form>
+          </details>
+        )}
+
         {(signed.length > 0 || canAddFiles) && (
           <>
             <p className="eyebrow" id="files">{filesField?.label ?? "Files"}</p>
@@ -349,18 +394,6 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
             </div>
           </>
         )}
-        {isDesigner && !viewing && editable.length > 0 && (
-          <details className="edit-details">
-            <summary className="btn plain small">Edit details</summary>
-            <form action={saveDetails.bind(null, t.id)}>
-              <div className="group">
-                {editable.map((f) => <FieldInput key={f.key} field={{ ...f, required: false }} value={valueOf(t, f)} idPrefix="edit-" />)}
-              </div>
-              <p className="foot"><Submit className="btn small" type="submit">Save details</Submit></p>
-            </form>
-          </details>
-        )}
-
         {trade && biz && (biz.phone || biz.email || biz.address) && (
           <>
             <p className="eyebrow">{biz.name}</p>
