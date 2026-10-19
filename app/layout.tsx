@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
+import ClearZero from "@/components/ClearZero";
 import NavProgress from "@/components/NavProgress";
 import "./globals.css";
 
@@ -32,6 +33,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* Only shown in the Mac app: the strip behind the window buttons, which also moves the window. */}
         <div className="app-drag" data-tauri-drag-region aria-hidden />
         <NavProgress />
+        <ClearZero />
         {children}
       </body>
     </html>

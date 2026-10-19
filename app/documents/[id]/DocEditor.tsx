@@ -1,6 +1,7 @@
 "use client";
 
 import ConfirmButton from "@/components/ConfirmButton";
+import NumberInput from "@/components/NumberInput";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deleteDocument, draftItems, saveDocument, sendDocument, setDocStatus, type DocDraft } from "@/app/documents/actions";
@@ -128,8 +129,8 @@ export default function DocEditor({
           {d.items.map((it, i) => (
             <div className="row doc-item" key={i}>
               <input className="desc" aria-label={`Item ${i + 1}`} value={it.description} onChange={(e) => setItem(i, { description: e.target.value })} placeholder="What it's for" />
-              <input className="qty" aria-label="Quantity" type="number" min={0} step="any" value={it.qty} onChange={(e) => setItem(i, { qty: Number(e.target.value) })} />
-              <input className="price" aria-label="Price (£)" type="number" step="0.01" value={it.unit_price} onChange={(e) => setItem(i, { unit_price: Number(e.target.value) })} />
+              <NumberInput className="qty" aria-label="Quantity" min={0} step="any" value={it.qty} onValue={(qty) => setItem(i, { qty })} />
+              <NumberInput className="price" aria-label="Price (£)" step="0.01" value={it.unit_price} onValue={(unit_price) => setItem(i, { unit_price })} />
               <span className="amt">{gbp(round2((it.qty || 0) * (it.unit_price || 0)))}</span>
               <button type="button" className="x" aria-label="Remove line" onClick={() => set("items", d.items.filter((_, j) => j !== i))}>×</button>
             </div>
