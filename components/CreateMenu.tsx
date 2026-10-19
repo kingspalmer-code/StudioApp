@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { createDocument } from "@/app/documents/actions";
-import { addTask } from "@/app/personal/actions";
+import { quickAddToDo } from "@/app/calendar/actions";
 import { createClient } from "@/lib/supabase/client";
 import type { WorkspaceKind } from "@/lib/types";
 import { CREATE_EVENT, takePending } from "./panel-events";
@@ -55,7 +55,7 @@ export default function CreateMenu({
     { key: Job[0].toLowerCase(), label: Job, icon: trade ? ICON.job : ICON.request, href: "/portal" },
     { key: "q", label: "Quote", icon: ICON.quote, step: "quote" },
     { key: "i", label: "Invoice", icon: ICON.invoice, step: "invoice" },
-    { key: "t", label: "Task", icon: ICON.task, step: "task" },
+    { key: "t", label: "To-do", icon: ICON.task, step: "task" },
     // Working alone there are no customers to add and nobody to invite.
     ...(solo ? [] : [
       { key: Client[0].toLowerCase(), label: Client, icon: ICON.client, href: "/customers#add" },
@@ -157,22 +157,22 @@ export default function CreateMenu({
   } else if (step === "task") {
     body = (
       <>
-        <h2 className="ct-title">{back}New task</h2>
+        <h2 className="ct-title">{back}New to-do</h2>
         <form
           className="ct-task"
           action={(fd) =>
             start(async () => {
-              await addTask(fd);
+              await quickAddToDo(fd);
               close();
-              flashSaved("Task added to Personal");
+              flashSaved("Added to your To-do");
               router.refresh();
             })
           }
         >
-          <input name="title" placeholder='Try "Call supplier tomorrow !"' required autoComplete="off" aria-label="Task" />
+          <input name="title" placeholder='Try "Call supplier tomorrow !"' required autoComplete="off" aria-label="To-do" />
           <button className="ct-add" type="submit" disabled={pending}>{pending ? "Adding…" : "Add"}</button>
         </form>
-        <p className="ct-foot">Goes to Personal. Say when it&apos;s due, and add ! to flag it.</p>
+        <p className="ct-foot">Goes to your To-do. Say when it&apos;s due, and add ! to put it at the top.</p>
       </>
     );
   } else {

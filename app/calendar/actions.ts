@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { parseQuickAdd } from "@/lib/quickadd";
 import { requireEditor } from "@/lib/session";
 import { PLAN_COLUMNS, type PlanItem } from "@/lib/plan";
 
@@ -77,4 +79,18 @@ export async function removePlanItem(id: number): Promise<Result> {
     supabase.from("plan_items").update({ gone: true }).eq("parent_id", id),
   ]);
   return error ? { error: error.message } : {};
+}
+
+// The + button's Task: typed like "Call supplier tomorrow !". A day puts it on the calendar, and
+// "!" puts it at the top of the list instead of the bottom.
+export async function quickAddToDo(formData: FormData): Promise<Result> {
+  const raw = clean(formData.get("title"), 300);
+  if (!raw) return { error: "Give it a name." };
+  const { title, due, flagged } = parseQuickAdd(raw);
+  const { supabase, member } = await requireEditor(["designer", "staff"]);
+  const { data: ends } = await supabase.from("plan_items").select("rank").eq("owner", member.email).is("parent_id", null).eq("gone", false).order("rank", { ascending: flagged }).limit(1).returns<{ rank: number }[]>();
+  const end = ends?.[0]?.rank ?? 0;
+  const r = await addPlanItem({ title, on_date: due, rank: flagged ? end - 1 : end + 1 });
+  revalidatePath("/calendar");
+  return r;
 }

@@ -3,19 +3,23 @@ import { allows } from "@/lib/access";
 import { TIME_COLUMNS, type TimeLog } from "@/lib/hours";
 import { PLAN_COLUMNS, todayIn, type PlanItem } from "@/lib/plan";
 import { requireMember } from "@/lib/session";
+import { loadStaffList } from "@/lib/staff";
+import StaffList from "@/app/tasks/StaffList";
 import Planner from "./Planner";
 
-// The calendar: a to-do list in priority order on one side, and the month it fills on the other.
-// The owner sees everyone's; an employee sees their own.
-export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ item?: string; job?: string; m?: string }> }) {
-  const { item, job, m } = await searchParams;
-  const { supabase, member, shell, viewing } = await requireMember(["designer", "staff"]);
+// To-do, the one place for to-dos: a list in priority order on one side, and the month it fills on
+// the other. The owner sees everyone's; an employee sees their own, with the tasks the owner set
+// them on Team at the top.
+export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ item?: string; job?: string; m?: string; task?: string }> }) {
+  const { item, job, m, task } = await searchParams;
+  const { supabase, member, workspace, shell, viewing } = await requireMember(["designer", "staff"]);
+  const employee = member.role === "staff";
   const owner = member.role === "designer" && !member.staff;
   const seesJobs = member.role === "designer" || allows(member.access, "requests");
   const seesTeam = owner || allows(member.access, "team");
   // Finished things drop off after a couple of months, so the page stays quick.
   const since = new Date(Date.now() - 60 * 86400000).toISOString();
-  const [{ data: rows }, { data: jobs }, { data: people }, { data: timeRows }] = await Promise.all([
+  const [{ data: rows }, { data: jobs }, { data: people }, { data: timeRows }, set] = await Promise.all([
     supabase.from("plan_items").select(PLAN_COLUMNS).eq("gone", false).or(`done_at.is.null,done_at.gt.${since}`).order("rank").returns<PlanItem[]>(),
     seesJobs
       ? supabase.from("tickets").select("id, title, delivered_at").order("updated_at", { ascending: false }).limit(300).returns<{ id: number; title: string; delivered_at: string | null }[]>()
@@ -25,7 +29,10 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       : Promise.resolve({ data: [] as { email: string; full_name: string; role: string }[] }),
     // Hours logged on to-dos, and any timer that's running.
     supabase.from("time_logs").select(TIME_COLUMNS).eq("gone", false).or("plan_item_id.not.is.null,minutes.is.null").limit(3000).returns<TimeLog[]>(),
+    employee ? loadStaffList(supabase, member.email, workspace.owner_name || "Your manager") : Promise.resolve(null),
   ]);
+  const setBy = workspace.owner_name || workspace.name;
+  const hasSet = set && set.daily.length + set.waiting.length + set.todo.length + set.done.length > 0;
   const items = rows ?? [];
   // Jobs still on the go to link to, plus any finished ones something here is already linked to.
   const linked = new Set(items.map((i) => i.ticket_id));
@@ -54,6 +61,12 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
         openId={Number(item) || undefined}
         newForJob={jobId ? jobList.find((j) => j.id === jobId) : undefined}
         readOnly={viewing}
+        top={set && hasSet ? (
+          <section className="staff-list todo-set" aria-label={`From ${setBy}`}>
+            <h2 className="todo-set-title">From {setBy}</h2>
+            <StaffList list={set} assignee={member.email} me={member.email} owner={false} open={Number(task) || undefined} adding={false} />
+          </section>
+        ) : undefined}
       />
     </Shell>
   );
