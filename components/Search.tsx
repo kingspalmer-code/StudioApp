@@ -49,7 +49,7 @@ const PAGES = (kind: WorkspaceKind, Job: string): Omit<Hit, "kind" | "key">[] =>
   ]),
   { title: "Filing", href: "/filing", words: "filing drawer archive files finished done completed past jobs month cabinet", tags: [] },
   { title: "Apps", href: "/apps", words: "apps applications tools pattern backgrounds mailer colours request new app", tags: [] },
-  { title: "Personal", href: "/personal", words: "personal tasks to-dos todo list projects", tags: [] },
+  { title: "To-do", href: "/calendar", words: "to-do todo to-dos tasks list calendar plan reminders personal hours", tags: [] },
   { title: "Quote and invoice settings", href: "/settings/documents", words: "settings quote invoice style logo vat bank payment terms branding pdf", tags: [] },
   { title: `${Job} form`, href: "/settings/form", words: "settings form fields questions job request", tags: [] },
   { title: "Settings", href: "/settings", words: "settings preferences", tags: [] },
@@ -183,7 +183,7 @@ export default function Search({
       // A client only searches requests for their own businesses (also while the studio previews one).
       client ? tickets.in("business_id", clients.map((c) => c.id)) : tickets,
       client ? none : sb.from("documents").select("id, kind, number, customer_name, title, status, total, updated_at").order("created_at", { ascending: false }).limit(400),
-      client ? none : sb.from("personal_tasks").select("id, title, done").eq("done", false).limit(200),
+      client ? none : sb.from("plan_items").select("id, title").is("done_at", null).eq("gone", false).limit(300),
     ]).then(
       ([t, d, k]) => {
         const jobs: Hit[] = (t.data ?? []).map((j) => ({
@@ -209,7 +209,7 @@ export default function Search({
             at: x.updated_at,
           };
         });
-        const tasks: Hit[] = (k.data ?? []).map((x) => ({ kind: "task", key: `t${x.id}`, title: x.title, href: "/personal", words: x.title.toLowerCase(), tags: [] }));
+        const tasks: Hit[] = (k.data ?? []).map((x) => ({ kind: "task", key: `t${x.id}`, title: x.title, href: `/calendar?item=${x.id}`, words: x.title.toLowerCase(), tags: [] }));
         setData([...actions, ...pages, ...jobs, ...docs, ...clientHits, ...tasks]);
       },
       () => setData([...actions, ...pages, ...clientHits])

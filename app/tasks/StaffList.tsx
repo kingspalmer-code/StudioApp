@@ -27,8 +27,9 @@ export function Progress({ progress }: { progress: List["progress"] }) {
   );
 }
 
-// An employee's list, as they see it on To-do and as the owner sees it on Team.
-export default function StaffList({ list, assignee, me, owner, open }: { list: List; assignee: string; me: string; owner: boolean; open?: number }) {
+// An employee's list, as they see it on To-do and as the owner sees it on Team. On To-do the
+// employee adds their own things to the list below it instead, so adding here is switched off.
+export default function StaffList({ list, assignee, me, owner, open, adding = true }: { list: List; assignee: string; me: string; owner: boolean; open?: number; adding?: boolean }) {
   const { daily, waiting, todo, done, today, progress } = list;
   const row = (t: List["todo"][number]) => (
     <StaffTaskRow key={t.id} task={t} today={today} me={me} owner={owner} canRemove={owner || t.created_by === me} open={t.id === open} />
@@ -36,7 +37,7 @@ export default function StaffList({ list, assignee, me, owner, open }: { list: L
   return (
     <>
       <Progress progress={progress} />
-      <form action={addStaffTask} className="group quick staff-add">
+      {adding && <form action={addStaffTask} className="group quick staff-add">
         <input type="hidden" name="assignee" value={assignee} />
         <div className="row">
           <span className="check ghost" aria-hidden="true" />
@@ -58,7 +59,7 @@ export default function StaffList({ list, assignee, me, owner, open }: { list: L
           </label>
           <Submit className="btn small" type="submit">Add</Submit>
         </div>
-      </form>
+      </form>}
 
       {waiting.length > 0 && (
         <>

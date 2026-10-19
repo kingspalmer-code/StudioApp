@@ -31,6 +31,7 @@ export default function Planner({
   openId,
   newForJob,
   readOnly,
+  top,
 }: {
   initial: PlanItem[];
   initialLogs: TimeLog[];
@@ -42,6 +43,8 @@ export default function Planner({
   openId?: number;
   newForJob?: Job;
   readOnly: boolean;
+  // What sits between the heading and the calendar: an employee's tasks from the owner.
+  top?: React.ReactNode;
 }) {
   const [items, setItems] = useState(initial);
   const [logs, setLogs] = useState(initialLogs);
@@ -253,7 +256,7 @@ export default function Planner({
     <div className={`cal${drag ? " cal-dragging" : ""}`}>
       <header className="cal-head">
         <div>
-          <h1 className="cal-title">Calendar<span>.</span></h1>
+          <h1 className="cal-title">To-do<span>.</span></h1>
           <p className="cal-sub">{todayCount ? `${todayCount} thing${todayCount === 1 ? "" : "s"} on today` : "Nothing on today"} · {open.length} to-do{open.length === 1 ? "" : "s"}</p>
         </div>
         <div className="cal-big" aria-label={`Today is ${dayName(today)}`}>
@@ -262,6 +265,8 @@ export default function Planner({
       </header>
 
       {running && <Running log={running} item={running.plan_item_id ? byId.get(running.plan_item_id) : undefined} job={running.ticket_id ? jobName[running.ticket_id] : undefined} onOpen={(id) => setEditing(id)} />}
+
+      {top}
 
       {showWho && (
         <div className="seg cal-who" role="group" aria-label="Show whose to-dos">
@@ -348,7 +353,7 @@ export default function Planner({
 
         <section className="cal-list" aria-label="To-do list">
           <div className="cal-list-head">
-            <h2>To-do</h2>
+            <h2>In order</h2>
             <span>Most important first. Drag the numbers to reorder, or onto a day to plan it.</span>
           </div>
           {newForJob && !readOnly && (

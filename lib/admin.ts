@@ -75,6 +75,7 @@ const PAGES: Record<string, string> = {
   "/customers": "Customers",
   "/people": "People",
   "/personal": "Personal",
+  "/calendar": "To-do",
   "/tickets/[id]": "A job",
   "/documents/[id]": "A quote or invoice",
   "/settings": "Settings",

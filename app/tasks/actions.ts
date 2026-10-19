@@ -11,7 +11,7 @@ import { requireEditor } from "@/lib/session";
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 function refresh() {
-  revalidatePath("/tasks");
+  revalidatePath("/calendar");
   revalidatePath("/team");
 }
 

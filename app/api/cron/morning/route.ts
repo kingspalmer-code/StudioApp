@@ -25,7 +25,7 @@ export async function GET(req: Request) {
       {
         title: `${parts.join(" and ")} due today or overdue`,
         body: total === 1 ? row.first_title : `Starting with ${row.first_title}.`,
-        url: row.jobs && !row.tasks ? "/queue" : "/personal",
+        url: row.jobs && !row.tasks ? "/queue" : "/calendar",
         tag: "morning",
       },
       "morning"

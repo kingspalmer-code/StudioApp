@@ -5,7 +5,7 @@ import { requireMember } from "@/lib/session";
 export default async function TaskLink({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { supabase, member } = await requireMember(["designer", "staff"]);
-  if (member.role === "staff") redirect(`/tasks?open=${Number(id)}#t${Number(id)}`);
+  if (member.role === "staff") redirect(`/calendar?task=${Number(id)}#t${Number(id)}`);
   const { data } = await supabase.from("staff_tasks").select("assignee").eq("id", Number(id)).maybeSingle<{ assignee: string }>();
   redirect(data ? `/team?who=${encodeURIComponent(data.assignee)}&open=${Number(id)}#t${Number(id)}` : "/team");
 }

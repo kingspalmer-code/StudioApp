@@ -17,3 +17,8 @@ export function ordered<T extends { href: string }>(links: T[], order: string[] 
 // go on the bar (saved as phone_tabs); the first button always stays.
 export const PHONE_TABS = 4;
 export const onPhoneTab = (href: string, i: number, shown?: string[]) => i === 0 || (shown ? shown.includes(href) : i < PHONE_TABS);
+
+// What a new owner's sidebar leaves out until they switch it on (Settings > Menu or Edit sidebar):
+// New job, since the + button at the top does the same, and Gallery, since Filing holds finished
+// work too. Anyone who has already chosen their own buttons keeps their choice.
+export const OWNER_HIDDEN_BY_DEFAULT = ["/portal", "/gallery"];

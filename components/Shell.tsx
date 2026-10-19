@@ -79,6 +79,9 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
   // Managers linked to businesses on the People page can also send requests for them.
   // Every finished job, filed by month in a card drawer. After the first four, so it sits under More on phones.
   const filing = { href: "/filing", label: "Filing" };
+  // The one place for to-dos: a list in priority order beside the calendar it fills. Employees also
+  // find the tasks the owner set them there. (It lives at /calendar so saved menus still find it.)
+  const todo = { href: "/calendar", label: "To-do" };
   if (member.role === "manager")
     return [
       main,
@@ -103,8 +106,7 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
     const a = member.access;
     const clients = workspace.kind === "studio" ? [{ href: "/people", label: "People" }] : workspace.kind === "trade" ? [{ href: "/customers", label: "Customers" }] : [];
     return [
-      { href: "/tasks", label: "To-do" },
-      { href: "/calendar", label: "Calendar" },
+      todo,
       ...(allows(a, "requests") ? [main, { href: "/overview", label: "Overview" }] : []),
       ...(allows(a, "requests", "edit") ? [{ href: "/portal", label: `New ${terms.job}` }] : []),
       ...(allows(a, "clients") ? clients : []),
@@ -114,7 +116,7 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
       ...(allows(a, "settings") || allows(a, "quotes") ? [{ href: "/settings", label: "Settings" }] : []),
     ];
   }
-  if (member.role === "staff") return [{ href: "/tasks", label: "To-do" }, { href: "/calendar", label: "Calendar" }, { href: "/apps", label: "Apps" }];
+  if (member.role === "staff") return [todo, { href: "/apps", label: "Apps" }];
   // Who the work is for: businesses (with their staff) on People, customers on Customers, and nobody when working alone.
   const clients =
     workspace.kind === "studio" ? [{ href: "/people", label: "People" }]
@@ -130,14 +132,12 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
     { href: "/overview", label: "Overview" },
     { href: "/portal", label: `New ${terms.job}` },
     ...clients,
+    todo,
     gallery,
     filing,
     // Tools made for one client each, such as a pattern recolourer, and a way to ask for new ones.
     { href: "/apps", label: "Apps" },
     { href: "/team", label: "Team" },
-    // A to-do list in priority order that fills a calendar, with reminders.
-    { href: "/calendar", label: "Calendar" },
-    { href: "/personal", label: "Personal" },
     settings,
   ];
 }
