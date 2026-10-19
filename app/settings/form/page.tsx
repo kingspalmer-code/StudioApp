@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import FrameChanged from "@/components/FrameChanged";
+import SaveForm from "@/components/SaveForm";
 import { ADDABLE_KINDS, KIND_LABELS, type JobField } from "@/lib/fields";
 import { requireMember } from "@/lib/session";
 import { addField, deleteField, moveCoreField, moveField, saveCoreField, saveField, setCoreHidden, setFieldHidden } from "../actions";
@@ -32,7 +33,7 @@ export default async function JobFormPage() {
         <span className={f.kind === "heading" ? "field-heading" : "field-name"}>{f.label}</span>
         <span className="when">{f.kind === "heading" ? "Section heading" : tags(f)}</span>
       </summary>
-      <form action={saveField.bind(null, f.id)} className="field-form">
+      <SaveForm action={saveField.bind(null, f.id)} saved={f.kind === "heading" ? "Heading saved" : "Field saved"} then="close" className="field-form">
         <label>
           Name
           <input name="label" defaultValue={f.label} required />
@@ -76,7 +77,7 @@ export default async function JobFormPage() {
         <div className="field-actions">
           <Submit className="btn small" type="submit">Save</Submit>
         </div>
-      </form>
+      </SaveForm>
       {!f.builtin && (
         <form action={deleteField.bind(null, f.id)} className="field-actions">
           <Submit className="link" style={{ color: "var(--red)" }} type="submit">
@@ -94,7 +95,7 @@ export default async function JobFormPage() {
         <span className="field-name">{c.label}</span>
         <span className="when">{[c.label !== c.defaultLabel && `Was ${c.defaultLabel}`, c.hidden ? "Hidden" : !c.canHide && "Always asked"].filter(Boolean).join(" · ")}</span>
       </summary>
-      <form action={saveCoreField.bind(null, c.key)} className="field-form">
+      <SaveForm action={saveCoreField.bind(null, c.key)} saved="Field saved" then="close" className="field-form">
         <label>
           Name
           <input name="label" defaultValue={c.label === c.defaultLabel ? "" : c.label} placeholder={c.defaultLabel} maxLength={60} />
@@ -108,7 +109,7 @@ export default async function JobFormPage() {
         <div className="field-actions">
           <Submit className="btn small" type="submit">Save</Submit>
         </div>
-      </form>
+      </SaveForm>
     </details>
   );
 

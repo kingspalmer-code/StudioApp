@@ -1560,6 +1560,25 @@ html.in-app .has-rail > .bar .bell-btn { background: transparent; box-shadow: no
 html.in-app .has-rail > .bar .bell-btn[aria-expanded="true"] { background: var(--accent); }
 
 /* No blur available, or Reduce Transparency is on: solid surfaces, keeping the lit edge. */
+/* "Saved": a short glass note that drops in at the top after a save (components/Saved.tsx). */
+.saved-toast-wrap { position: fixed; top: max(14px, env(safe-area-inset-top, 0px)); left: 0; right: 0; z-index: 90; display: flex; justify-content: center; pointer-events: none; }
+.saved-toast {
+  display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px 9px 12px; border-radius: 999px;
+  font-size: 14px; font-weight: 600; color: var(--label);
+  background: var(--glass-tint), var(--glass-thick);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-edge), 0 0 0 .5px var(--glass-line), var(--glass-shadow);
+  animation: saved-in 2.6s cubic-bezier(.3,1.4,.5,1) both;
+}
+.saved-toast svg { width: 18px; height: 18px; padding: 2px; border-radius: 50%; background: var(--green); fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+@keyframes saved-in {
+  0% { opacity: 0; transform: translateY(-14px) scale(.96); }
+  10%, 85% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+@media (prefers-reduced-motion: reduce) { .saved-toast { animation: saved-fade 2.6s linear both; } }
+@keyframes saved-fade { 0%, 100% { opacity: 0; } 8%, 88% { opacity: 1; } }
+
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   :root { --glass: var(--surface); --glass-thick: var(--surface); }
   .ct-panel, .nt-panel { --glass: #1f1815; --glass-thick: #1f1815; }
@@ -1567,5 +1586,5 @@ html.in-app .has-rail > .bar .bell-btn[aria-expanded="true"] { background: var(-
 @media (prefers-reduced-transparency: reduce) {
   :root { --glass: var(--surface); --glass-thick: var(--surface); }
   .ct-panel, .nt-panel { --glass: #1f1815; --glass-thick: #1f1815; }
-  .bar-search, .bell-btn, .widget-more, .more-panel, .ct-panel, .nt-panel, .widget-menu, .ctx-menu, .tabbar, .sr-panel { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  .bar-search, .bell-btn, .widget-more, .more-panel, .ct-panel, .nt-panel, .widget-menu, .ctx-menu, .tabbar, .sr-panel, .saved-toast { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 }

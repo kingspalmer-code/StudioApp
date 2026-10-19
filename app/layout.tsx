@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import ClearZero from "@/components/ClearZero";
 import NavProgress from "@/components/NavProgress";
+import Saved from "@/components/Saved";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -34,6 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <div className="app-drag" data-tauri-drag-region aria-hidden />
         <NavProgress />
         <ClearZero />
+        <Saved />
         {children}
       </body>
     </html>

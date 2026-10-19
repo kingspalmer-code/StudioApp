@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import OatcakeBiscuit from "./OatcakeBiscuit";
+import { flashSaved } from "./Saved";
 
 // On wide screens a job opens here, on the right, so the queue stays in view beside it. The job's
 // own page loads in a frame (html.embedded hides its sidebar and bars, see app/layout.tsx).
@@ -132,10 +133,16 @@ export default function SplitPanel({
   closeRef.current = close;
 
   // Something was saved in a job open here (components/FrameChanged.tsx): show it in the queue now.
+  // A saved edit that's finished with the job (components/SaveForm.tsx) closes the panel too.
   useEffect(() => {
     const changed = (e: MessageEvent) => {
-      if (e.origin !== window.location.origin || e.data?.type !== "oatcake:changed") return;
+      if (e.origin !== window.location.origin) return;
+      if (e.data?.type !== "oatcake:changed" && e.data?.type !== "oatcake:done") return;
       if (![...refs.current.values()].some((f) => f.contentWindow === e.source)) return;
+      if (e.data.type === "oatcake:done") {
+        flashSaved(String(e.data.text || "Saved"));
+        return closeRef.current();
+      }
       router.refresh();
     };
     window.addEventListener("message", changed);

@@ -6,6 +6,7 @@ import { requireMember } from "@/lib/session";
 import type { Member } from "@/lib/types";
 import AddMember from "./AddMember";
 import InviteButton from "./InviteButton";
+import SaveForm from "@/components/SaveForm";
 import Submit from "@/components/Submit";
 
 const ROLE_LABEL = { designer: "Designer", manager: "Manager", client: "Client", staff: "Employee" };
@@ -57,14 +58,14 @@ export default async function PeoplePage() {
                     {(m.role === "manager" || (m.role === "client" && businesses.length > 1)) && (
                       <details className="also-for">
                         <summary className="link">{m.role === "manager" ? "Can send requests for…" : "Can also request for…"}</summary>
-                        <form action={setOtherBusinesses.bind(null, m.email)}>
+                        <SaveForm action={setOtherBusinesses.bind(null, m.email)} saved="Saved" then="close">
                           {businesses.filter((x) => x.id !== m.business_id).map((x) => (
                             <label key={x.id} className="also-opt">
                               <input type="checkbox" name="also" value={x.id} defaultChecked={also.includes(x.id)} /> {x.name}
                             </label>
                           ))}
                           <Submit className="btn" type="submit">Save</Submit>
-                        </form>
+                        </SaveForm>
                       </details>
                     )}
                   </div>

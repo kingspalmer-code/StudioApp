@@ -19,7 +19,7 @@ export default async function StagesSettingsPage() {
           {ctx.stages.map((s, i) => (
             <div className="row stage-row" key={s.id}>
               <span className="dot" style={{ background: stageColor(s.color), width: 10, height: 10 }} />
-              <SaveWhenChanged action={saveStage.bind(null, s.id)} className="ctl stage-form">
+              <SaveWhenChanged action={saveStage.bind(null, s.id)} className="ctl stage-form" saved="Stage saved">
                 <input name="label" defaultValue={s.label} aria-label="Stage name" required />
                 <select name="color" defaultValue={s.color} aria-label="Colour" className="swatch-select">
                   {STAGE_COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
