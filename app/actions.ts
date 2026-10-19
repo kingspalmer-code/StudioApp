@@ -12,7 +12,7 @@ import { emailInvite } from "@/lib/invite";
 import { alertNewNote } from "@/app/portal/actions";
 import { logEvents, notYetFinished, tellRequesters } from "@/lib/finished";
 import { finalStage, PRIORITIES, reviewStage } from "@/lib/priority";
-import { isSelf, slugify } from "@/lib/workspace";
+import { isMyBusiness, isSelf, MY_BUSINESS, SELF_PREFIX, slugify } from "@/lib/workspace";
 import type { Role, Status } from "@/lib/types";
 
 export async function signOut() {
@@ -88,7 +88,19 @@ export async function saveDetails(id: number, formData: FormData) {
   const phone = get("phone");
   // Adding a customer or changing their phone is Clients work; an employee without that can still move the job.
   const clientsOk = !member.staff || allows(member.access, "clients", "edit");
-  if (customers && name) {
+  if (customers && name && isMyBusiness(name)) {
+    // Moved onto the workspace's own business, made the first time it's needed.
+    const own = customers.find(isSelf);
+    if (own) business_id = own.id;
+    else {
+      const { data: created } = await supabase
+        .from("businesses")
+        .insert({ name: MY_BUSINESS, slug: `${SELF_PREFIX}${Math.random().toString(36).slice(2, 10)}`, color: "#8a7a70" })
+        .select("id")
+        .single<{ id: string }>();
+      if (created) business_id = created.id;
+    }
+  } else if (customers && name) {
     const current = customers.find((b) => b.id === t.business_id);
     const match = customers.find((b) => !isSelf(b) && b.name.toLowerCase() === name.toLowerCase());
     if (match) {

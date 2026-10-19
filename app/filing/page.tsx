@@ -3,6 +3,7 @@ import { coversFor } from "@/lib/deliveries";
 import { monthKey, type FiledMonth } from "@/lib/filing";
 import { isDone, todayISO } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
+import { withMine } from "@/lib/workspace";
 import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
 import FilingDrawer from "./FilingDrawer";
 import "./filing.css";
@@ -13,8 +14,8 @@ import "./filing.css";
 // into its file, with its details, quotes and invoices, images and notes.
 export default async function FilingPage({ searchParams }: { searchParams: Promise<{ file?: string }> }) {
   const { file } = await searchParams;
-  const { supabase, member, businesses, ctx, workspace, shell } = asClient(await requireMember(["manager", "designer", "client"], "requests"));
-  const byId = Object.fromEntries(businesses.map((b) => [b.id, b.name]));
+  const { supabase, member, businesses, self, ctx, workspace, shell } = asClient(await requireMember(["manager", "designer", "client"], "requests"));
+  const byId = Object.fromEntries(withMine(businesses, self, workspace.kind).map((b) => [b.id, b.name]));
   let query = supabase.from("tickets").select(LIST_COLUMNS);
   if (member.role === "client") query = query.in("business_id", member.business_ids ?? []);
   const { data } = await query.returns<ListTicket[]>();

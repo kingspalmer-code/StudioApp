@@ -10,7 +10,7 @@ import { PRIORITIES, finalStage, formatDate, isDone, money, reviewStage, startBy
 import { asClient, requireMember } from "@/lib/session";
 import { coreFields, type CoreKey } from "@/lib/core-fields";
 import { createClient } from "@/lib/supabase/server";
-import { isSelf } from "@/lib/workspace";
+import { isSelf, MY_BUSINESS } from "@/lib/workspace";
 import type { Note, Ticket, TicketFile } from "@/lib/types";
 import DeleteTicket from "./DeleteTicket";
 import AddFiles from "./AddFiles";
@@ -60,7 +60,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   ]);
   if (!t) notFound();
   // While previewing a client, their own jobs show as they see them; anything else shows as usual.
-  const { supabase, member, businesses, ctx, terms, workspace, shell, viewing } = asClient(session, t.business_id);
+  const { supabase, member, businesses, self, ctx, terms, workspace, shell, viewing } = asClient(session, t.business_id);
   // Type and needed-by use the names set in Settings > Job form.
   const core = coreFields(workspace.core_fields, { trade: false, solo: false });
   const coreLabel = (k: CoreKey) => core.find((c) => c.key === k)?.label ?? k;
@@ -97,6 +97,8 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   const docs = member.role === "designer" ? (docRows ?? []).map(asDoc) : [];
 
   const biz = businesses.find((b) => b.id === t.business_id);
+  // A job the workspace does for its own business: no customer to send, quote or invoice.
+  const mine = workspace.kind !== "solo" && Boolean(self) && t.business_id === self?.id;
   const isDesigner = member.role === "designer";
   const done = isDone(t, ctx);
   // Clients keep adding notes after sending a request. A manager can on a request they sent, and
@@ -225,10 +227,12 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
             {biz.name}
           </p>
         )}
+        {mine && <p className="eyebrow" style={{ textTransform: "none", letterSpacing: 0 }}>{MY_BUSINESS}</p>}
         <h1 className="large">{t.title}</h1>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <StatusChip status={t.status} ctx={ctx} />
           <span className={`chip pri-${t.priority}`} style={{ background: "var(--fill)" }}>{t.priority}</span>
+          {mine && <span className="chip in-house">In-house</span>}
           {!done && member.role !== "client" && <span className={`when ${sb.tone}`}>{sb.text}</span>}
           {t.pinned && <span className="when">📌 Pinned</span>}
         </div>
@@ -290,6 +294,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
         <p className="eyebrow">Details</p>
         <div className="group">
           {biz && <div className="row"><span className="k">{terms.Client}</span><div className="ctl">{biz.name}</div></div>}
+          {mine && <div className="row"><span className="k">{terms.Client}</span><div className="ctl">{MY_BUSINESS} <span className="when">(in-house)</span></div></div>}
           <div className="row"><span className="k">{coreLabel("type")}</span><div className="ctl">{t.type}</div></div>
           <div className="row"><span className="k">{coreLabel("deadline")}</span><div className="ctl">{formatDate(t.deadline, true)} <span className="when">({whenLabel(t.deadline)})</span></div></div>
           {groups[0] && !groups[0].title && groups[0].fields.map(show)}
@@ -321,8 +326,9 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                     <div className="ctl">
                       {c.key === "customer" ? (
                         <>
-                          <input id="edit-customer" name="customer" required list="edit-customers" autoComplete="off" defaultValue={biz?.name ?? ""} placeholder={c.hint || undefined} />
+                          <input id="edit-customer" name="customer" required list="edit-customers" autoComplete="off" defaultValue={mine ? MY_BUSINESS : biz?.name ?? ""} placeholder={c.hint || undefined} />
                           <datalist id="edit-customers">
+                            <option value={MY_BUSINESS} />
                             {businesses.filter((b) => !isSelf(b)).map((b) => <option key={b.id} value={b.name} />)}
                           </datalist>
                         </>
@@ -398,7 +404,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
         {isDesigner && (
           <>
             <p className="eyebrow">Quotes &amp; invoices</p>
-            {done && !docs.some((d) => d.kind === "invoice") && !viewing && (
+            {done && !mine && !docs.some((d) => d.kind === "invoice") && !viewing && (
               <form action={createDocument.bind(null, t.id, "invoice")} className="notice doc-nudge">
                 <span>This {terms.job}&apos;s finished. Send the invoice?</span>
                 <Submit className="btn small" type="submit">Create invoice</Submit>
