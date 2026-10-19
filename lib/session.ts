@@ -109,7 +109,7 @@ const loadMember = cache(async () => {
   // picked for the phone tab bar (none saved yet means the default few, see lib/menu.ts).
   const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
   const phoneTabs = Array.isArray(user.user_metadata?.phone_tabs) ? list(user.user_metadata.phone_tabs) : undefined;
-  const hidden = { phoneTabs, computer: list(user.user_metadata?.hide_computer), order: list(user.user_metadata?.menu_order) };
+  const hidden = { phoneTabs, computer: list(user.user_metadata?.hide_computer), order: list(user.user_metadata?.menu_order), pins: list(user.user_metadata?.menu_pins), admin: Array.isArray(user.user_metadata?.admin_menu) ? list(user.user_metadata.admin_menu) : undefined };
   const shell = { member, businesses: clients, workspace: ws, isAdmin: Boolean(isAdmin), viewing, readOnly: false, avatar, initials, askHint, askOpens, askSince, helpUnread, track, hidden, preview: undefined as Business | undefined };
   return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview, appBusinesses };
 });

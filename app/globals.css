@@ -1425,6 +1425,36 @@ a.rail-new, a.app-bar-pill { text-decoration: none; }
 @keyframes rail-nope { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 @media (prefers-reduced-motion: reduce) { .rail-edit-item { animation: none; } }
 
+/* A platform admin's Admin section, under the sections (components/RailNav.tsx). Its heading folds
+   it shut. In Edit sidebar it's a drop zone of its own, and Add a page lists everything else. */
+@media (min-width: 701px) {
+  .rail-scroll { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 0 1 auto; min-height: 0; margin-bottom: auto; padding: 0 12px; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; }
+  html[data-rail="open"] .rail-scroll { align-items: stretch; margin: 0 -12px auto; }
+  .rail-scroll > .rail-nav, .rail-scroll > .rail-edit { margin-bottom: 0; flex: none; }
+  html[data-rail="open"] .rail-scroll > .rail-clients { margin-bottom: 0; flex: none; }
+  .rail-nav.rail-admin { margin-top: 4px; padding-top: 10px; border-top: .5px solid var(--sep); }
+  .rail-admin-head { position: relative; display: grid; place-items: center; width: 44px; height: 30px; border: 0; border-radius: 10px; background: none; color: var(--label-2); cursor: pointer; font: inherit; }
+  .rail-admin-head:hover { background: var(--fill); color: var(--label); }
+  .rail-admin-head svg { width: 18px !important; height: 18px !important; }
+  .rail-admin-head .rail-fold { display: none; }
+  .rail-admin-head[aria-expanded="false"] { color: var(--accent); }
+  html[data-rail="open"] .rail-admin-head { width: auto; display: flex; align-items: center; gap: 12px; padding: 0 12px; }
+  html[data-rail="open"] .rail-admin-head .rail-label { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  html[data-rail="open"] .rail-admin-head .rail-fold { display: block; margin-left: auto; width: 14px !important; height: 14px !important; transition: transform .15s; }
+  .rail-admin-head[aria-expanded="false"] .rail-fold { transform: rotate(-90deg); }
+  .rail-edit { padding: 2px 0; }
+  .rail-edit > * { flex: none; }
+  .rail-edit { user-select: none; -webkit-user-select: none; }
+  .rail-done { position: sticky; bottom: 0; }
+  .rail-admin-edit { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; padding: 10px 0 2px; border-top: .5px solid var(--sep); }
+  .rail-admin-edit .rail-head { padding: 0 0 2px; font-size: 10px; text-align: center; }
+  html[data-rail="open"] .rail-admin-edit .rail-head { padding: 0 12px 2px; font-size: 12px; text-align: left; }
+  .rail-admin-edit .rail-head small { font-weight: 400; letter-spacing: 0; text-transform: none; margin-left: 4px; }
+  .rail-admin-empty { padding: 10px 12px; border-radius: 10px; outline: 1px dashed var(--sep); font-size: 12px; color: var(--label-2); }
+  .rail-add-group { display: flex; flex-direction: column; gap: 2px; }
+  .rail-sub { padding: 6px 12px 2px; font-size: 11px; color: var(--label-2); }
+}
+
 /* Team > Access: ready-made sets and None / View / Edit for each part. */
 button.access-preset { width: 100%; border: 0; background: transparent; text-align: left; font: inherit; cursor: pointer; }
 button.access-preset[aria-pressed="true"] { background: var(--fill); }
