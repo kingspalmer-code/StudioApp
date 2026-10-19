@@ -1169,6 +1169,28 @@ html.embedded .settings-back { display: none; }
 .widget-menu button i { font-style: normal; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--fill); color: var(--label-2); font-size: 12px; }
 .widget-menu button.on i { background: var(--accent); color: var(--accent-ink); }
 .widget-empty { color: var(--label-3); font-size: 13px; margin: auto 0; }
+/* Days active: a dark terminal-style panel with a dot grid, lit green on days you used Oatcake. */
+.dx { flex: 1; min-height: 0; display: flex; align-items: center; gap: 12px; border-radius: 10px; padding: 3px 10px; background: #0b0d0c; box-shadow: inset 0 0 0 1px #2a2f2c; color: #d6dbd8; font: 10px/1.2 ui-monospace, "SF Mono", Menlo, Consolas, monospace; transition: opacity .2s; }
+.dx.loading > * { opacity: .4; }
+.dx-ring { position: relative; width: 46px; height: 46px; flex: none; display: grid; place-items: center; }
+.dx-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.dx-ring circle { fill: none; stroke-width: 5; }
+.dx-track { stroke: #1d2420; }
+.dx-fill { stroke: #7ee8b0; stroke-linecap: round; transition: stroke-dasharray .6s ease-out; }
+.dx-ring b { font-size: 15px; color: #7ee8b0; font-weight: 600; }
+.dx-grid { display: grid; grid-template-rows: repeat(7, 6px); grid-auto-flow: column; gap: 1.5px; flex: none; }
+.dx-grid i { width: 6px; height: 6px; border-radius: 1px; background: radial-gradient(circle, #3a423e 0 1px, transparent 1.5px); }
+.dx-grid i.dx-blank { background: none; }
+.dx-grid i.dx-future { background: radial-gradient(circle, #222825 0 1px, transparent 1.5px); }
+.dx-grid i.dx-on.l1 { background: #2f7a55; }
+.dx-grid i.dx-on.l2 { background: #52c18a; }
+.dx-grid i.dx-on.l3 { background: #8ff5c0; box-shadow: 0 0 4px rgba(143,245,192,.45); }
+.dx-stats { flex: 1; min-width: 0; display: grid; gap: 1px; align-content: center; }
+.dx-stats p { margin: 0; display: flex; justify-content: space-between; gap: 8px; color: #8a938e; white-space: nowrap; }
+.dx-stats p:first-child { color: #d6dbd8; padding-bottom: 2px; margin-bottom: 1px; border-bottom: 1px solid #2a2f2c; }
+.dx-stats em { font-style: normal; color: #7ee8b0; }
+.dx-stats small { color: #555d59; }
+.dx-stats p.best span { color: #d6dbd8; }
 
 .wk { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
 .wk-day { display: flex; flex-direction: column; gap: 4px; min-width: 0; border-radius: 8px; padding: 3px 2px 2px; }
