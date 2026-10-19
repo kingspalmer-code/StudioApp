@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import NumberInput from "@/components/NumberInput";
 import { signOut } from "@/app/actions";
 import { KIND_LABELS } from "@/lib/fields";
 import { STAGE_COLORS, stageColor } from "@/lib/priority";
@@ -228,7 +229,7 @@ function SetupEditor({ setup, onChange, onNext, onBack }: { setup: Setup; onChan
         {setup.job_types.map((t, i) => (
           <div className="row" key={i}>
             <div className="ctl"><input aria-label={`Job type ${i + 1}`} value={t.name} maxLength={50} onChange={(e) => set("job_types", at(setup.job_types, i, { name: e.target.value }))} /></div>
-            <input className="days" type="number" min={0} max={365} aria-label={`Working days for ${t.name}`} value={t.lead_days} onChange={(e) => set("job_types", at(setup.job_types, i, { lead_days: Math.max(0, Math.min(365, Number(e.target.value) || 0)) }))} />
+            <NumberInput className="days" min={0} max={365} aria-label={`Working days for ${t.name}`} value={t.lead_days} onValue={(n) => set("job_types", at(setup.job_types, i, { lead_days: Math.max(0, Math.min(365, n)) }))} />
             <span className="unit">days</span>
             {setup.job_types.length > 1 && <button type="button" className="x" aria-label={`Remove ${t.name}`} onClick={() => set("job_types", without(setup.job_types, i))}>×</button>}
           </div>

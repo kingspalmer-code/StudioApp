@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { gbp, round2, totals, type LineItem } from "@/lib/documents";
+import NumberInput from "@/components/NumberInput";
 
 // An amount on the job form (a quote, a price, what's been paid). It can be typed in as one figure,
 // or broken into lines (qty × price) that add up to it, so nobody has to do the sum by hand.
@@ -54,8 +55,8 @@ export default function AmountInput({
         items.map((it, i) => (
           <div className="row doc-item amount-item" key={i}>
             <input className="desc" aria-label={`${label} line ${i + 1}`} value={it.description} onChange={(e) => setItem(i, { description: e.target.value })} placeholder="What it's for" />
-            <input className="qty" aria-label="Quantity" placeholder="Qty" type="number" min={0} step="any" value={it.qty} onChange={(e) => setItem(i, { qty: Number(e.target.value) })} />
-            <input className="price" aria-label="Price (£)" placeholder="£" type="number" step="0.01" value={it.unit_price} onChange={(e) => setItem(i, { unit_price: Number(e.target.value) })} />
+            <NumberInput className="qty" aria-label="Quantity" placeholder="Qty" min={0} step="any" value={it.qty} onValue={(qty) => setItem(i, { qty })} />
+            <NumberInput className="price" aria-label="Price (£)" placeholder="£" step="0.01" value={it.unit_price} onValue={(unit_price) => setItem(i, { unit_price })} />
             <span className="amt">{gbp(round2((it.qty || 0) * (it.unit_price || 0)))}</span>
             <button
               type="button"
