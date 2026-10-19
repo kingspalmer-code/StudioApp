@@ -22,6 +22,56 @@ import { allows } from "@/lib/access";
 
 export type NavLink = { href: string; label: string; icon?: string; fixed?: boolean };
 
+// Every other page someone can open, grouped the way the app groups them, so Edit sidebar can pin
+// any of them (menu_pins). Only pages this login may open are offered, and a pin to anything not
+// on this list is ignored, so nobody can pin their way into a page they can't see.
+export const ADMIN_PAGES: NavLink[] = [
+  { href: "/admin", label: "Admin overview" },
+  { href: "/admin/people", label: "All people" },
+  { href: "/admin/support", label: "Support" },
+  { href: "/admin/workspaces", label: "Workspaces" },
+];
+
+export function pagesFor(member: Member, workspace: Workspace, viewing: boolean, isAdmin: boolean): { title: string; links: NavLink[] }[] {
+  const terms = termsFor(workspace.kind);
+  const owner = member.role === "designer" && !member.staff;
+  const a = member.access;
+  const settings = owner || (member.staff && (allows(a, "settings") || allows(a, "quotes")));
+  const parts = owner || allows(a, "settings");
+  const icon = "/settings";
+  return [
+    {
+      title: "Settings",
+      links: settings
+        ? [
+            ...(parts ? [{ href: "/settings/workspace", label: "Workspace", icon }] : []),
+            ...(viewing ? [] : [{ href: "/settings/menu", label: "Menu", icon }]),
+            ...(parts && workspace.kind === "trade" ? [{ href: "/settings/request-link", label: "Request link", icon }] : []),
+            ...(parts ? [{ href: "/settings/form", label: `${terms.Job} form`, icon }] : []),
+            ...(owner || allows(a, "quotes") ? [{ href: "/settings/documents", label: "Quotes & invoices", icon }] : []),
+            ...(parts ? [{ href: "/settings/stages", label: "Stages", icon }, { href: "/settings/types", label: `${terms.Job} types`, icon }] : []),
+          ]
+        : [],
+    },
+    {
+      title: "Apps",
+      links: [
+        { href: "/apps/3d-viewer", label: "3D viewer" },
+        ...(owner || allows(a, "requests") ? [{ href: "/apps/job-time", label: "Job time calculator" }] : []),
+      ],
+    },
+    {
+      title: "You",
+      links: [
+        { href: "/account", label: "Account" },
+        ...(viewing ? [] : [{ href: "/notifications", label: "Notifications" }]),
+        { href: "/help", label: "Help" },
+      ],
+    },
+    { title: "Admin", links: isAdmin && !viewing ? ADMIN_PAGES : [] },
+  ].filter((g) => g.links.length > 0);
+}
+
 export function linksFor(member: Member, workspace: Workspace, viewing: boolean): NavLink[] {
   const terms = termsFor(workspace.kind);
   const main = { href: "/queue", label: workspace.kind === "studio" ? "Queue" : terms.Jobs };
@@ -100,6 +150,7 @@ export default function Shell({
   askSince = 0,
   helpUnread = false,
   track = false,
+  isAdmin = false,
   hidden = { computer: [], order: [] },
   preview,
   children,
@@ -119,8 +170,9 @@ export default function Shell({
   helpUnread?: boolean;
   track?: boolean;
   // Menu buttons the owner switched off in Settings > Menu (or dragged out of the sidebar), by href,
-  // the order they dragged the sidebar into, and the ones they picked for the phone tab bar.
-  hidden?: { phoneTabs?: string[]; computer: string[]; order?: string[] };
+  // the order they dragged the sidebar into, and the ones they picked for the phone tab bar. Pins are
+  // other pages added to the sidebar, and admin what a platform admin keeps in their Admin section.
+  hidden?: { phoneTabs?: string[]; computer: string[]; order?: string[]; pins?: string[]; admin?: string[] };
   preview?: Business;
   children: React.ReactNode;
 }) {
@@ -134,11 +186,21 @@ export default function Shell({
   // Settings does too.
   // The sidebar is in the order the owner dragged it into; the ones that always stay are marked so
   // Edit sidebar won't let them be dragged out.
-  const deskAll = ordered(links.map((l, i) => ({ ...l, fixed: alwaysOnComputer(l.href, i) })), hidden.order);
-  const deskLinks = deskAll.filter((l) => l.fixed || !hidden.computer.includes(l.href));
-  // On phones the first few sit on the tab bar and the rest under More.
+  // Pages pinned from further in (a Settings section, an app, an admin page) join the sections.
+  const pages = viewing || preview ? [] : pagesFor(member, workspace, viewing, isAdmin);
+  const known = new Map([...links, ...pages.flatMap((g) => g.links)].map((l) => [l.href, l]));
+  const pick = (hrefs: string[]) => [...new Set(hrefs)].map((h) => known.get(h)).filter((l) => l !== undefined);
+  const pins = pick(hidden.pins ?? []).filter((l) => !links.includes(l));
+  // A platform admin's own Admin section, under the sections: the admin pages to start with, then
+  // whatever they drag in or out of it. Nobody else ever has one.
+  const admin = isAdmin && !viewing && !preview ? pick(hidden.admin ?? ADMIN_PAGES.map((l) => l.href)) : [];
+  const inAdmin = new Set(admin.map((l) => l.href));
+  const deskAll = ordered([...links.map((l, i) => ({ ...l, fixed: alwaysOnComputer(l.href, i) })), ...pins.filter((l) => !inAdmin.has(l.href))], hidden.order);
+  const deskLinks = deskAll.filter((l) => l.fixed || (!hidden.computer.includes(l.href) && !inAdmin.has(l.href)));
+  // On phones the first few sit on the tab bar and the rest under More, with pinned pages and the
+  // Admin section's pages at the end of More.
   const phoneLinks = links.filter((l, i) => onPhoneTab(l.href, i, hidden.phoneTabs));
-  const moreLinks = links.filter((l, i) => !onPhoneTab(l.href, i, hidden.phoneTabs));
+  const moreLinks = [...links.filter((l, i) => !onPhoneTab(l.href, i, hidden.phoneTabs)), ...pins, ...admin.filter((l) => !links.includes(l) && !pins.includes(l))];
   const canCreate = member.role === "designer" && !viewing && (!member.staff || allows(member.access, "requests", "edit"));
   // Clients get New (their request form) and Search over their own requests too.
   const isClient = member.role === "client";
@@ -164,7 +226,7 @@ export default function Shell({
               <OatcakeMark height={22} />
             </Link>
           )}
-          {rail ? <RailNav links={deskLinks} all={deskAll} hidden={hidden.computer} editable={!viewing && !preview} canCreate={canCreate} clients={businesses} newHref={newHref} /> : <NavLinks links={links} />}
+          {rail ? <RailNav links={deskLinks} all={deskAll} hidden={hidden.computer} admin={isAdmin && !viewing && !preview ? admin : undefined} pages={pages} editable={!viewing && !preview} canCreate={canCreate} clients={businesses} newHref={newHref} /> : <NavLinks links={links} />}
           {(canCreate || isClient) && <SearchButton />}
           {member.role === "designer" && !member.staff && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake hint={askHint} opens={askOpens} since={askSince} />}
           {/* What other people have done on your jobs. Top right of the page, whatever the layout. */}

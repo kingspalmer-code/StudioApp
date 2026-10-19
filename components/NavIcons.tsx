@@ -12,8 +12,18 @@ export const NAV_ICONS: Record<string, React.ReactNode> = {
   "/settings": <path d="M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4" />,
   "/calendar": <path d="M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1ZM4 10h16M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01" />,
   "/personal": <path d="M9 11l2.5 2.5L16 9M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />,
+  // Pages that can be pinned from further in (Edit sidebar > Add a page).
+  "/admin": <path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3ZM9 12l2 2 4-4" />,
+  "/admin/support": <path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-7l-4 3v-3H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1ZM8 9h8M8 12h5" />,
+  "/admin/workspaces": <path d="M4 20V8l8-4 8 4v12M4 20h16M9 20v-5h6v5M8 10h.01M12 10h.01M16 10h.01" />,
+  "/account": <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 20a8 8 0 0 1 16 0" />,
+  "/notifications": <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0" />,
+  "/help": <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01" />,
+  "/apps/3d-viewer": <path d="M12 3 20 7.5v9L12 21l-8-4.5v-9L12 3ZM4 7.5l8 4.5 8-4.5M12 12v9" />,
+  "/apps/job-time": <path d="M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM12 13V9M12 13l3 2M10 2h4M12 2v3" />,
 };
 NAV_ICONS["/people"] = NAV_ICONS["/customers"];
+NAV_ICONS["/admin/people"] = NAV_ICONS["/customers"];
 NAV_ICONS["/tasks"] = NAV_ICONS["/team"];
 
 export function NavIcon({ href, strokeWidth = 1.9 }: { href: string; strokeWidth?: number }) {
