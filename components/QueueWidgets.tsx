@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type DragEvent } from "react";
 import { createPortal } from "react-dom";
 import { feedPickle } from "@/app/queue/pet";
 import { GOLDEN_COST, type PetView } from "@/lib/pet";
+import { createClient } from "@/lib/supabase/client";
 
 const pixel = Silkscreen({ weight: "400", subsets: ["latin"] });
 
@@ -17,12 +18,13 @@ export type WeekDay = { date: string; label: string; today: boolean; jobs: { id:
 export type ReelItem = { id: number; title: string; url: string };
 export type WeekStats = { delivered: number; due: number; late: number };
 
-type Key = "pet" | "week" | "reel" | "tally";
+type Key = "pet" | "week" | "reel" | "tally" | "days";
 const ALL: { key: Key; title: string; blurb: string }[] = [
   { key: "pet", title: "Pickle", blurb: "Your pixel pet, fed with oatcakes" },
   { key: "week", title: "Week ahead", blurb: "What's due over the next seven days" },
   { key: "reel", title: "Fresh out the oven", blurb: "Your latest finished work" },
   { key: "tally", title: "This week", blurb: "Delivered so far and what's late" },
+  { key: "days", title: "Days active", blurb: "How many days each month you used Oatcake" },
 ];
 const SHOWN = 2;
 const DEFAULT: Key[] = ["pet", "week"];
@@ -79,6 +81,7 @@ export default function QueueWidgets({ week, reel, pet, tally, earnHint = "Deliv
     week: <Week days={week} />,
     reel: <Reel items={reel} />,
     tally: <Tally {...tally} />,
+    days: <Days />,
   };
 
   return (
@@ -170,6 +173,86 @@ function Tally({ delivered, due, late }: WeekStats) {
       <p><b>{delivered}<small> / {total}</small></b> <span>delivered this week</span></p>
       <div className="meter"><i style={{ width: `${total ? (delivered / total) * 100 : 0}%`, background: "var(--green)" }} /></div>
       <span className={late > 0 ? "tally-late" : undefined}>{late > 0 ? `${late} running late` : "Nothing late"}</span>
+    </div>
+  );
+}
+
+// Days active: one square per day this month, lit green on days you used Oatcake and brighter the
+// longer you were on it, with a ring that closes as the month fills up and the last few months'
+// counts to beat. Read from your own usage stats (my_active_days); today counts as soon as you're here.
+const MONTHS = 3;
+const DAY_MS = 86_400_000;
+function londonToday() {
+  // en-CA gives YYYY-MM-DD.
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Europe/London" });
+}
+function iso(y: number, m: number, d: number) {
+  return new Date(Date.UTC(y, m, d)).toISOString().slice(0, 10);
+}
+function level(ms: number) {
+  return ms >= 60 * 60_000 ? 3 : ms >= 10 * 60_000 ? 2 : 1;
+}
+function Days() {
+  const [days, setDays] = useState<Map<string, number> | null>(null);
+  const [failed, setFailed] = useState(false);
+  const today = londonToday();
+  const [y, m, d] = today.split("-").map(Number);
+  const mi = m - 1;
+  useEffect(() => {
+    createClient()
+      .rpc("my_active_days", { p_from: iso(y, mi - MONTHS, 1) })
+      .then(({ data, error }) => {
+        if (error) return setFailed(true);
+        setDays(new Map((data as { day: string; ms: number }[]).map((r) => [r.day, Number(r.ms)])));
+      });
+  }, [y, mi]);
+
+  if (failed) return <p className="widget-empty">Days you use Oatcake will light up here.</p>;
+  return <DaysView days={days} today={today} />;
+}
+export function DaysView({ days, today }: { days: Map<string, number> | null; today: string }) {
+  const [y, m, d] = today.split("-").map(Number);
+  const mi = m - 1;
+  const used = (k: string) => days?.has(k) || k === today;
+  const inMonth = new Date(Date.UTC(y, mi + 1, 0)).getUTCDate();
+  // Monday-first weeks, one column each.
+  const lead = (new Date(Date.UTC(y, mi, 1)).getUTCDay() + 6) % 7;
+  const cells: { key: string; n: number; lvl: number; future: boolean }[] = [];
+  for (let n = 1; n <= inMonth; n++) {
+    const k = iso(y, mi, n);
+    cells.push({ key: k, n, lvl: used(k) ? level(days?.get(k) ?? 0) : 0, future: n > d });
+  }
+  const count = cells.filter((c) => c.lvl).length;
+  const ring = 2 * Math.PI * 22;
+  const past = Array.from({ length: MONTHS }, (_, i) => {
+    const at = new Date(Date.UTC(y, mi - 1 - i, 1));
+    const len = new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth() + 1, 0)).getUTCDate();
+    let n = 0;
+    for (let t = at.getTime(); t < at.getTime() + len * DAY_MS; t += DAY_MS) if (days?.has(new Date(t).toISOString().slice(0, 10))) n++;
+    return { label: at.toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" }), n, len };
+  });
+  const best = Math.max(...past.map((p) => p.n));
+  return (
+    <div className={`dx${days ? "" : " loading"}`}>
+      <div className="dx-ring" title={`${count} of ${d} days so far this month`}>
+        <svg viewBox="0 0 52 52" aria-hidden="true">
+          <circle cx="26" cy="26" r="22" className="dx-track" />
+          <circle cx="26" cy="26" r="22" className="dx-fill" strokeDasharray={`${(count / inMonth) * ring} ${ring}`} />
+        </svg>
+        <b>{count}</b>
+      </div>
+      <div className="dx-grid" style={{ gridTemplateColumns: `repeat(${Math.ceil((lead + inMonth) / 7)}, 6px)` }} role="img" aria-label={`${count} days active this month`}>
+        {Array.from({ length: lead }, (_, i) => <i key={`b${i}`} className="dx-blank" />)}
+        {cells.map((c) => (
+          <i key={c.key} className={c.future ? "dx-future" : c.lvl ? `dx-on l${c.lvl}` : undefined} title={`${c.n} ${new Date(Date.UTC(y, mi, c.n)).toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" })}${c.lvl ? " · active" : ""}`} />
+        ))}
+      </div>
+      <div className="dx-stats">
+        <p>{new Date(Date.UTC(y, mi, 1)).toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" })}<span>Active: <em>{count}</em></span></p>
+        {past.map((p) => (
+          <p key={p.label} className={p.n && p.n === best ? "best" : undefined}>{p.label}<span>{p.n}<small>/{p.len}</small></span></p>
+        ))}
+      </div>
     </div>
   );
 }
