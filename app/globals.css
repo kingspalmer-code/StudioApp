@@ -1178,14 +1178,17 @@ html.embedded .settings-back { display: none; }
 .dx-track { stroke: #1d2420; }
 .dx-fill { stroke: #7ee8b0; stroke-linecap: round; transition: stroke-dasharray .6s ease-out; }
 .dx-ring b { font-size: 15px; color: #7ee8b0; font-weight: 600; }
-.dx-grid { display: grid; grid-template-rows: repeat(7, 6px); grid-auto-flow: column; gap: 1.5px; flex: none; }
-.dx-grid i { width: 6px; height: 6px; border-radius: 1px; background: radial-gradient(circle, #3a423e 0 1px, transparent 1.5px); }
-.dx-grid i.dx-blank { background: none; }
-.dx-grid i.dx-future { background: radial-gradient(circle, #222825 0 1px, transparent 1.5px); }
-.dx-grid i.dx-on.l1 { background: #2f7a55; }
-.dx-grid i.dx-on.l2 { background: #52c18a; }
-.dx-grid i.dx-on.l3 { background: #8ff5c0; box-shadow: 0 0 4px rgba(143,245,192,.45); }
-.dx-stats { flex: 1; min-width: 0; display: grid; gap: 1px; align-content: center; }
+/* One column per day, squares stacking up from the bottom; they stretch to fill the panel. */
+.dx-grid { flex: 1; min-width: 0; align-self: stretch; margin: 6px 0; }
+.dx-cols { height: 100%; display: grid; grid-template-columns: repeat(var(--days), minmax(0, 1fr)); column-gap: 2px; }
+.dx-day { display: grid; grid-template-rows: repeat(5, minmax(0, 1fr)); row-gap: 2px; }
+.dx-day i { border-radius: 1.5px; background: radial-gradient(circle, #3a423e 0 1px, transparent 1.5px); }
+.dx-day.future i { background: radial-gradient(circle, #222825 0 1px, transparent 1.5px); }
+.dx-day i.on { background: #52c18a; }
+.dx-day i.on.s2, .dx-day i.on.s3 { background: #7ee8b0; }
+.dx-day i.on.s4 { background: #a6ffd2; box-shadow: 0 0 5px rgba(143,245,192,.45); }
+.dx-day.today i:last-child:not(.on) { background: #2f7a55; }
+.dx-stats { flex: none; width: 104px; display: grid; gap: 1px; align-content: center; }
 .dx-stats p { margin: 0; display: flex; justify-content: space-between; gap: 8px; color: #8a938e; white-space: nowrap; }
 .dx-stats p:first-child { color: #d6dbd8; padding-bottom: 2px; margin-bottom: 1px; border-bottom: 1px solid #2a2f2c; }
 .dx-stats em { font-style: normal; color: #7ee8b0; }
