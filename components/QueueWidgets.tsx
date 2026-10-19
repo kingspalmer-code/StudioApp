@@ -177,8 +177,8 @@ function Tally({ delivered, due, late }: WeekStats) {
   );
 }
 
-// Days active: one square per day this month, lit green on days you used Oatcake and brighter the
-// longer you were on it, with a ring that closes as the month fills up and the last few months'
+// Days active: a column of squares for each day this month, lit green on days you used Oatcake and
+// stacking higher the longer you were on it, with a ring that closes as the month fills up and the last few months'
 // counts to beat. Read from your own usage stats (my_active_days); today counts as soon as you're here.
 const MONTHS = 3;
 const DAY_MS = 86_400_000;
@@ -189,8 +189,11 @@ function londonToday() {
 function iso(y: number, m: number, d: number) {
   return new Date(Date.UTC(y, m, d)).toISOString().slice(0, 10);
 }
+// Squares lit in a day's column, by minutes active: any, 10, 30, 60, 120.
+const STACK = 5;
 function level(ms: number) {
-  return ms >= 60 * 60_000 ? 3 : ms >= 10 * 60_000 ? 2 : 1;
+  const min = ms / 60_000;
+  return min >= 120 ? 5 : min >= 60 ? 4 : min >= 30 ? 3 : min >= 10 ? 2 : 1;
 }
 function Days() {
   const [days, setDays] = useState<Map<string, number> | null>(null);
@@ -215,8 +218,6 @@ export function DaysView({ days, today }: { days: Map<string, number> | null; to
   const mi = m - 1;
   const used = (k: string) => days?.has(k) || k === today;
   const inMonth = new Date(Date.UTC(y, mi + 1, 0)).getUTCDate();
-  // Monday-first weeks, one column each.
-  const lead = (new Date(Date.UTC(y, mi, 1)).getUTCDay() + 6) % 7;
   const cells: { key: string; n: number; lvl: number; future: boolean }[] = [];
   for (let n = 1; n <= inMonth; n++) {
     const k = iso(y, mi, n);
@@ -241,11 +242,14 @@ export function DaysView({ days, today }: { days: Map<string, number> | null; to
         </svg>
         <b>{count}</b>
       </div>
-      <div className="dx-grid" style={{ gridTemplateColumns: `repeat(${Math.ceil((lead + inMonth) / 7)}, 6px)` }} role="img" aria-label={`${count} days active this month`}>
-        {Array.from({ length: lead }, (_, i) => <i key={`b${i}`} className="dx-blank" />)}
-        {cells.map((c) => (
-          <i key={c.key} className={c.future ? "dx-future" : c.lvl ? `dx-on l${c.lvl}` : undefined} title={`${c.n} ${new Date(Date.UTC(y, mi, c.n)).toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" })}${c.lvl ? " · active" : ""}`} />
-        ))}
+      <div className="dx-grid" role="img" aria-label={`${count} days active this month`}>
+        <div className="dx-cols" style={{ ["--days" as string]: inMonth }}>
+          {cells.map((c) => (
+            <span key={c.key} className={`dx-day${c.future ? " future" : ""}${c.key === today ? " today" : ""}`} title={`${c.n} ${new Date(Date.UTC(y, mi, c.n)).toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" })}${c.lvl ? " · active" : ""}`}>
+              {Array.from({ length: STACK }, (_, i) => STACK - 1 - i).map((i) => <i key={i} className={i < c.lvl ? `on s${i}` : undefined} />)}
+            </span>
+          ))}
+        </div>
       </div>
       <div className="dx-stats">
         <p>{new Date(Date.UTC(y, mi, 1)).toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" })}<span>Active: <em>{count}</em></span></p>
