@@ -16,6 +16,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, view
 const KEEP_CLASSES = `(function(){var d=document.documentElement,k=[];
 if(window.top!==window.self)k.push('embedded');
 if(d.classList.contains('in-app')||(window.__TAURI_INTERNALS__&&window.top===window.self))k.push('in-app');
+if(d.classList.contains('app-glass')||(window.__OATCAKE_GLASS__&&window.top===window.self))k.push('app-glass');
 if(!k.length)return;
 var put=function(){for(var i=0;i<k.length;i++)if(!d.classList.contains(k[i]))d.classList.add(k[i]);};
 put();new MutationObserver(put).observe(d,{attributes:true,attributeFilter:['class']});})()`;
@@ -35,7 +36,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     >
       <head>
         {/* A job opened beside the queue (components/SplitPanel.tsx) is this site in a frame: drop the sidebar and bars there.
-            in-app is the Mac app (desktop/desktop.js sets it). React strips every attribute off <html> when it re-renders
+            in-app is the Mac app and app-glass its frosted window (desktop/desktop.js sets both). React strips every attribute off <html> when it re-renders
             the whole page (after a hydration error, say), so both classes are put back whenever they go missing. */}
         <script dangerouslySetInnerHTML={{ __html: KEEP_CLASSES }} />
       </head>

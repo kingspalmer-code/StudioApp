@@ -1657,3 +1657,19 @@ html.in-app .has-rail > .bar .bell-btn[aria-expanded="true"] { background: var(-
   .ct-panel, .nt-panel { --glass: #1f1815; --glass-thick: #1f1815; }
   .bar-search, .bell-btn, .widget-more, .more-panel, .ct-panel, .nt-panel, .widget-menu, .ctx-menu, .tabbar, .sr-panel, .saved-toast { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 }
+
+/* Liquid Glass window in the Mac app (desktop/ sets html.app-glass): the window itself is
+   see-through and macOS frosts the wallpaper behind it. The sidebar and the strip above it stay
+   nearly clear, the page behind the cards gets a warm tint so headings read, and cards, lists,
+   forms and the job panel stay solid on top. */
+html.app-glass { --win-tint: color-mix(in srgb, var(--bg) 55%, transparent); --side-tint: color-mix(in srgb, var(--surface-2) 22%, transparent); }
+html.app-glass, html.app-glass body { background: transparent; }
+html.app-glass body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: var(--win-tint); pointer-events: none; }
+html.app-glass .app-drag { background: transparent; border-bottom-color: transparent; }
+@media (min-width: 701px) {
+  html.app-glass body:has(.has-rail)::before { left: var(--rail-w); border-left: .5px solid var(--sep); }
+  html.app-glass .has-rail > .bar { background: var(--side-tint); border-right: 0; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  html.app-glass { --win-tint: var(--bg); --side-tint: var(--surface-2); }
+}

@@ -1,4 +1,6 @@
 use tauri::webview::{DownloadEvent, NewWindowResponse};
+#[cfg(target_os = "macos")]
+use tauri::window::{Effect, EffectState, EffectsBuilder};
 use tauri::{Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_opener::OpenerExt;
@@ -82,7 +84,18 @@ pub fn run() {
                 .title_bar_style(tauri::TitleBarStyle::Overlay)
                 .hidden_title(true)
                 // Centred in the site's 40px top bar (--app-bar in globals.css).
-                .traffic_light_position(tauri::LogicalPosition::new(16.0, 20.0));
+                .traffic_light_position(tauri::LogicalPosition::new(16.0, 20.0))
+                // Liquid Glass: the window is see-through and macOS frosts the wallpaper behind it,
+                // like Finder's sidebar. The site tints the sidebar and background over it and keeps
+                // cards solid (html.app-glass in globals.css). It goes flat when the window is in the
+                // background, and solid when Reduce Transparency is on.
+                .transparent(true)
+                .effects(
+                    EffectsBuilder::new()
+                        .effect(Effect::Sidebar)
+                        .state(EffectState::FollowsWindowActiveState)
+                        .build(),
+                );
             window.build()?;
             Ok(())
         })
