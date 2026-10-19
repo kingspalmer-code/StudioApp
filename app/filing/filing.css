@@ -1,0 +1,158 @@
+/* Filing drawer. Line-drawn after Kingsley's references: dark ink on paper in light mode, cream
+   lines on dark in dark mode. Cards and the folder are solid; nothing here is glass. */
+.fd {
+  --ink: var(--label); --paper: var(--surface); --lw: 1.5px;
+  --folder: #e7d3ae; --folder-edge: color-mix(in srgb, var(--ink) 70%, var(--folder));
+  max-width: 960px; margin: 0 auto;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fd { --folder: #3d2f28; } }
+:root[data-theme="dark"] .fd { --folder: #3d2f28; }
+
+.fd-head { margin: 4px 0 6px; }
+.fd-title { font: 700 40px/1 var(--font-title); letter-spacing: -.02em; margin: 0; }
+.fd-sub { color: var(--label-2); margin: 10px 0 0; max-width: 62ch; font-size: 14px; }
+
+/* The drawer: a well of cards with walls either side, and the front panel below. */
+.fd-drawer { margin: 22px 0 0; }
+.fd-well { position: relative; padding: 34px 14px 0; border-inline: var(--lw) solid var(--ink); margin: 0 18px; }
+.fd-card {
+  --in: 0px; --x: 30%;
+  position: relative; display: block; box-sizing: border-box; width: calc(100% - 2 * var(--in)); margin: 0 var(--in) -14px;
+  height: 44px; padding: 0; text-align: left; font: inherit; color: var(--ink); cursor: pointer;
+  background: var(--paper); border: var(--lw) solid var(--ink); border-bottom: 0; border-radius: 10px 10px 0 0;
+  transition: margin .3s ease, width .3s ease; -webkit-tap-highlight-color: transparent;
+}
+.fd-card:focus-visible { outline: none; }
+.fd-card:focus-visible .fd-tab-in { text-decoration: underline; text-underline-offset: 3px; }
+.fd-edge { height: 22px; cursor: default; }
+.fd-divider.fd-open { height: 128px; margin-bottom: -10px; }
+
+/* Tabs rise above the card's top edge, with slanted shoulders. */
+.fd-tab { position: absolute; bottom: 100%; left: var(--x); width: 28%; min-width: 150px; height: 24px; display: flex; transform: translateY(var(--lw)); }
+.fd-slant { flex: none; display: block; overflow: visible; }
+.fd-slant-r { transform: scaleX(-1); }
+.fd-slant-fill { fill: var(--paper); }
+.fd-slant-line { fill: none; stroke: var(--ink); stroke-width: var(--lw); }
+.fd-tab-in {
+  flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 1px 4px 0; background: var(--paper); border-top: var(--lw) solid var(--ink);
+  font-size: 13px; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.fd-tab-in b { font-weight: 500; flex: none; }
+.fd-tab-in span { overflow: hidden; text-overflow: ellipsis; }
+.fd-job .fd-tab-in span { text-align: right; }
+.fd-divider .fd-tab { width: 22%; min-width: 120px; }
+.fd-divider .fd-slant-fill, .fd-divider .fd-slant-line { fill: var(--ink); stroke: var(--ink); }
+.fd-divider .fd-slant-line { fill: none; }
+.fd-divider .fd-tab-in { background: var(--ink); color: var(--paper); font-weight: 600; letter-spacing: .02em; }
+.fd-divider .fd-tab-in b { font-weight: 700; }
+.fd-divider .fd-tab-in small { font-size: 11px; font-weight: 500; opacity: .7; }
+
+/* What the open month's divider says on its face. */
+.fd-face { position: absolute; inset: 22px 18px auto; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.fd-face strong { font: 700 24px/1.1 var(--font-title); letter-spacing: -.01em; }
+.fd-face span { color: var(--label-2); font-size: 13px; max-width: 40ch; }
+
+/* A job card's strip shows who it was for and when, under the tab of the card in front. */
+.fd-peek { position: absolute; left: 12px; top: 7px; display: flex; gap: 8px; font-size: 11px; color: var(--label-3); white-space: nowrap; max-width: calc(var(--x) - 20px); overflow: hidden; }
+.fd-peek span:first-child { overflow: hidden; text-overflow: ellipsis; }
+
+/* The drawer's front: a lip, then a panel narrowing to the floor, with a label and a pull. */
+.fd-front { position: relative; height: 128px; margin-top: 0; display: grid; place-items: center; align-content: center; gap: 16px; }
+.fd-front::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 14px; border: var(--lw) solid var(--ink); background: var(--paper); z-index: 1; }
+.fd-front-line { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.fd-front-line path { fill: var(--paper); stroke: var(--ink); stroke-width: var(--lw); }
+.fd-label {
+  position: relative; z-index: 1; margin-top: 12px; padding: 5px 14px; border: var(--lw) solid var(--ink); border-radius: 7px;
+  background: var(--oat-fill); color: var(--ink); font-size: 14px; font-weight: 500; transform: rotate(-.6deg); max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fd-pull { position: relative; z-index: 1; width: 92px; height: 12px; border: var(--lw) solid var(--ink); border-top: 0; border-radius: 0 0 10px 10px; }
+
+/* The file, out of the drawer. */
+html.fd-locked, html.fd-locked body { overflow: hidden; }
+.fd-layer {
+  position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 28px 16px;
+  background: color-mix(in srgb, #17110f 46%, transparent); perspective: 1400px;
+}
+.fd-folder {
+  --ink: var(--label); --paper: var(--surface); --lw: 1.5px; --folder: #e7d3ae;
+  position: relative; width: min(760px, 100%); max-height: calc(100dvh - 80px); margin-top: 26px; display: flex; flex-direction: column;
+  background: var(--folder); border: var(--lw) solid var(--ink); border-radius: 0 14px 14px 14px; box-shadow: 0 30px 80px rgba(0,0,0,.35);
+  transform-origin: 50% 100%; color: var(--ink);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fd-folder { --folder: #3d2f28; } }
+:root[data-theme="dark"] .fd-folder { --folder: #3d2f28; }
+.fd-folder-tab {
+  position: absolute; left: -1.5px; bottom: 100%; height: 30px; min-width: 200px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 0 16px; background: var(--folder); border: var(--lw) solid var(--ink); border-bottom: 0; border-radius: 12px 12px 0 0;
+  font-size: 13px; font-variant-numeric: tabular-nums; transform: translateY(var(--lw));
+}
+.fd-folder-tab b { font-weight: 700; }
+.fd-close { position: absolute; top: 12px; right: 12px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; border: var(--lw) solid var(--ink); background: var(--paper); color: var(--ink); display: grid; place-items: center; cursor: pointer; }
+.fd-folder-in { overflow-y: auto; overscroll-behavior: contain; padding: 18px 18px 22px; display: flex; flex-direction: column; gap: 14px; border-radius: inherit; }
+
+.fd-sheet { background: var(--paper); border: var(--lw) solid var(--ink); border-radius: 6px; padding: 16px 18px; }
+.fd-sheet:nth-child(odd) { transform: rotate(-.25deg); }
+.fd-sheet:nth-child(even) { transform: rotate(.2deg); }
+.fd-sheet h3 { margin: 0 0 10px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--label-2); }
+.fd-cover { padding-right: 56px; }
+.fd-cover h2 { margin: 4px 0 12px; font: 700 28px/1.1 var(--font-title); letter-spacing: -.01em; text-wrap: balance; }
+.fd-kicker { margin: 0; font-size: 13px; color: var(--label-2); }
+.fd-facts { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 0; }
+.fd-facts div { display: flex; flex-direction: column; gap: 2px; }
+.fd-facts dt { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--label-3); }
+.fd-facts dd { margin: 0; font-size: 14px; font-weight: 500; }
+
+/* Ruled like an index card. */
+.fd-ruled { background-image: repeating-linear-gradient(to bottom, transparent 0 27px, color-mix(in srgb, var(--blue) 22%, transparent) 27px 28px); background-position: 0 40px; background-repeat: no-repeat; background-size: 100% calc(100% - 40px); background-color: var(--paper); }
+.fd-details { margin: 0; display: grid; grid-template-columns: minmax(110px, 30%) 1fr; }
+.fd-details div { display: contents; }
+.fd-details dt, .fd-details dd { margin: 0; padding: 5px 0; line-height: 18px; font-size: 14px; }
+.fd-details dt { color: var(--label-2); padding-right: 12px; }
+.fd-details dd { white-space: pre-wrap; overflow-wrap: anywhere; }
+.fd-details .fd-long dt { grid-column: 1 / -1; padding-bottom: 0; }
+.fd-details .fd-long dd { grid-column: 1 / -1; }
+.fd-note-by { margin: 0; font-size: 12px; color: var(--label-2); line-height: 28px; }
+.fd-note { margin: 0 0 0; white-space: pre-wrap; line-height: 28px; font-size: 14px; overflow-wrap: anywhere; }
+
+.fd-lines { list-style: none; margin: 0; padding: 0; }
+.fd-lines li + li { border-top: 1px dashed color-mix(in srgb, var(--ink) 30%, transparent); }
+.fd-lines a { display: grid; grid-template-columns: minmax(0, auto) 1fr auto; align-items: baseline; gap: 12px; padding: 9px 0; color: var(--ink); }
+.fd-lines b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-lines span { color: var(--label-2); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-lines em { font-style: normal; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--accent); }
+
+/* Finished work as prints laid on the sheet. */
+.fd-prints { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; padding: 4px 2px 6px; }
+.fd-print { display: block; padding: 7px 7px 22px; background: #fffdf9; border: 1px solid color-mix(in srgb, #2a201c 18%, transparent); box-shadow: 0 2px 6px rgba(0,0,0,.14); transform: rotate(var(--r)); transition: transform .2s ease; }
+.fd-print:hover { transform: rotate(0deg) translateY(-3px) scale(1.03); }
+.fd-print img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: #eee6da; }
+.fd-print span { display: grid; place-items: center; aspect-ratio: 1; font-size: 12px; color: #6b5c55; text-align: center; overflow-wrap: anywhere; }
+
+.fd-empty { margin: 0; color: var(--label-2); font-size: 14px; }
+.fd-loading { display: flex; flex-direction: column; gap: 10px; }
+.fd-loading span { height: 12px; border-radius: 6px; background: var(--fill); width: 70%; animation: fd-pulse 1.1s ease-in-out infinite alternate; }
+.fd-loading span:nth-child(2) { width: 50%; }
+.fd-loading span:nth-child(3) { width: 60%; }
+@keyframes fd-pulse { to { opacity: .4; } }
+.fd-job-link { align-self: flex-start; padding: 9px 16px; border: var(--lw) solid var(--ink); border-radius: 10px; background: var(--paper); color: var(--ink); font-weight: 600; }
+.fd-job-link::after { content: " →"; }
+
+@media (max-width: 640px) {
+  .fd-title { font-size: 34px; }
+  .fd-well { margin: 0 8px; padding: 34px 6px 0; }
+  .fd-tab { width: 56%; min-width: 0; }
+  .fd-job .fd-tab { left: calc(var(--x) * 1.57 - 48%); }
+  .fd-divider .fd-tab { width: 46%; min-width: 0; left: calc(var(--x) * .72); }
+  .fd-peek { display: none; }
+  .fd-front { height: 104px; }
+  .fd-layer { padding: 0; place-items: end center; }
+  .fd-folder { width: 100%; max-height: calc(100dvh - 60px); border-radius: 0 14px 0 0; border-bottom: 0; }
+  .fd-folder-in { padding: 14px 12px calc(22px + env(safe-area-inset-bottom, 0px)); }
+  .fd-cover h2 { font-size: 24px; }
+  .fd-prints { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fd-card, .fd-print { transition: none; }
+  .fd-sheet:nth-child(n) { transform: none; }
+}

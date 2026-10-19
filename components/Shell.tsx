@@ -27,12 +27,15 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
   const main = { href: "/queue", label: workspace.kind === "studio" ? "Queue" : terms.Jobs };
   // Managers can look at the queue, every job in it and the gallery of finished work; nothing there lets them change anything.
   // Managers linked to businesses on the People page can also send requests for them.
+  // Every finished job, filed by month in a card drawer. After the first four, so it sits under More on phones.
+  const filing = { href: "/filing", label: "Filing" };
   if (member.role === "manager")
     return [
       main,
       { href: "/overview", label: "Overview" },
       { href: "/gallery", label: "Gallery" },
       { href: "/apps", label: "Apps" },
+      filing,
       ...(member.business_ids?.length && !viewing ? [{ href: "/portal", label: "New request" }] : []),
     ];
   // Clients get a sidebar like the studio's: their Overview (with the widgets) first, then their
@@ -43,6 +46,7 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
       { href: "/portal", label: "Requests", icon: "requests" },
       { href: "/gallery", label: "Gallery" },
       { href: "/apps", label: "Apps" },
+      filing,
     ];
   // Employees see the to-do list the owner sets them, and Apps, plus whatever else the owner let them into on Team.
   if (member.staff) {
@@ -54,7 +58,7 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
       ...(allows(a, "requests") ? [main, { href: "/overview", label: "Overview" }] : []),
       ...(allows(a, "requests", "edit") ? [{ href: "/portal", label: `New ${terms.job}` }] : []),
       ...(allows(a, "clients") ? clients : []),
-      ...(allows(a, "requests") ? [{ href: "/gallery", label: "Gallery" }] : []),
+      ...(allows(a, "requests") ? [{ href: "/gallery", label: "Gallery" }, filing] : []),
       { href: "/apps", label: "Apps" },
       ...(allows(a, "team") ? [{ href: "/team", label: "Team" }] : []),
       ...(allows(a, "settings") || allows(a, "quotes") ? [{ href: "/settings", label: "Settings" }] : []),
@@ -70,13 +74,14 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
   const gallery = { href: "/gallery", label: "Gallery" };
   // Settings is a section of its own, last, so it's always a click away (it used to hide behind your account).
   const settings = { href: "/settings", label: "Settings" };
-  if (viewing) return [main, { href: "/overview", label: "Overview" }, ...clients, gallery, { href: "/apps", label: "Apps" }, settings];
+  if (viewing) return [main, { href: "/overview", label: "Overview" }, ...clients, gallery, filing, { href: "/apps", label: "Apps" }, settings];
   return [
     main,
     { href: "/overview", label: "Overview" },
     { href: "/portal", label: `New ${terms.job}` },
     ...clients,
     gallery,
+    filing,
     // Tools made for one client each, such as a pattern recolourer, and a way to ask for new ones.
     { href: "/apps", label: "Apps" },
     { href: "/team", label: "Team" },
