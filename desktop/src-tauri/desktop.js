@@ -3,8 +3,10 @@
 // one as a Mac notification.
 (function () {
   if (window.top !== window || !/(^|\.)oatcake\.xyz$/.test(location.hostname)) return;
-  // Tells the site it's inside the app, so it makes room for the window buttons (see globals.css).
-  var markApp = function () { document.documentElement.classList.add("in-app"); };
+  // Tells the site it's inside the app, so it makes room for the window buttons, and that the
+  // window is frosted glass, so it lets the sidebar and background show through (see globals.css).
+  window.__OATCAKE_GLASS__ = true;
+  var markApp = function () { document.documentElement.classList.add("in-app", "app-glass"); };
   if (document.documentElement) markApp();
   else document.addEventListener("DOMContentLoaded", markApp);
 
@@ -48,7 +50,19 @@
     }
   }
 
+  // The frost follows the Mac's light or dark mode unless Oatcake is set to one (data-theme on <html>).
+  var theme;
+  function syncTheme() {
+    var t = document.documentElement.getAttribute("data-theme");
+    t = t === "light" || t === "dark" ? t : null;
+    if (t === theme) return;
+    theme = t;
+    invoke("plugin:window|set_theme", { value: t }).catch(function () {});
+  }
+
   async function start() {
+    syncTheme();
+    new MutationObserver(syncTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     try {
       var granted = await invoke("plugin:notification|is_permission_granted");
       if (!granted) await invoke("plugin:notification|request_permission");

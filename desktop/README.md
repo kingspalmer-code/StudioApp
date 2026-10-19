@@ -9,6 +9,8 @@ What it adds over a browser tab:
   arrive; quit with Cmd+Q.
 - **Mac notifications for new client requests.** Macs can't receive web push inside an app like this,
   so `src-tauri/desktop.js` asks `/api/desktop/alerts` once a minute while the app is open.
+- **Liquid Glass window.** The window is see-through and frosted (macOS vibrancy) so the wallpaper glows
+  through the sidebar and page background; cards stay solid. The site styles it under `html.app-glass`.
 - **Drag and drop from Finder** onto the new request form and deliveries.
 - **Downloads** (quote PDFs and so on) go straight to the Downloads folder.
 - Links to other sites open in the default browser. If the Mac is offline, the app waits and opens

@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "oatcake",
-  "description": "Lets oatcake.xyz, shown in the app window, send Mac notifications and move the window by its top strip.",
+  "description": "Lets oatcake.xyz, shown in the app window, send Mac notifications, move the window by its top strip, and match the frosted window to its light or dark setting.",
   "windows": ["main"],
   "remote": { "urls": ["https://oatcake.xyz/*", "https://*.oatcake.xyz/*"] },
   "permissions": [
@@ -9,6 +9,7 @@
     "notification:allow-is-permission-granted",
     "notification:allow-request-permission",
     "core:window:allow-start-dragging",
-    "core:window:allow-internal-toggle-maximize"
+    "core:window:allow-internal-toggle-maximize",
+    "core:window:allow-set-theme"
   ]
 }
