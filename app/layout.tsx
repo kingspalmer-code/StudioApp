@@ -13,6 +13,13 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
 
+const KEEP_CLASSES = `(function(){var d=document.documentElement,k=[];
+if(window.top!==window.self)k.push('embedded');
+if(d.classList.contains('in-app')||(window.__TAURI_INTERNALS__&&window.top===window.self))k.push('in-app');
+if(!k.length)return;
+var put=function(){for(var i=0;i<k.length;i++)if(!d.classList.contains(k[i]))d.classList.add(k[i]);};
+put();new MutationObserver(put).observe(d,{attributes:true,attributeFilter:['class']});})()`;
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const jar = await cookies();
   const theme = jar.get("theme")?.value;
@@ -27,8 +34,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       style={rail > 68 ? ({ "--rail-w": `${rail}px` } as React.CSSProperties) : undefined}
     >
       <head>
-        {/* A job opened beside the queue (components/SplitPanel.tsx) is this site in a frame: drop the sidebar and bars there. */}
-        <script dangerouslySetInnerHTML={{ __html: "if(window.top!==window.self)document.documentElement.classList.add('embedded')" }} />
+        {/* A job opened beside the queue (components/SplitPanel.tsx) is this site in a frame: drop the sidebar and bars there.
+            in-app is the Mac app (desktop/desktop.js sets it). React strips every attribute off <html> when it re-renders
+            the whole page (after a hydration error, say), so both classes are put back whenever they go missing. */}
+        <script dangerouslySetInnerHTML={{ __html: KEEP_CLASSES }} />
       </head>
       <body>
         {/* Only shown in the Mac app: the strip behind the window buttons, which also moves the window. */}
