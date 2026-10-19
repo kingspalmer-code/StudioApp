@@ -8,6 +8,7 @@ import { loadWidgets } from "@/lib/widgets";
 import Walkthrough from "@/components/Walkthrough";
 import { daysFromToday, finalStage, formatDate, isDone, money, sortQueue, startBy, startLabel } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
+import { withMine } from "@/lib/workspace";
 import { createClient } from "@/lib/supabase/server";
 import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
 import type { Ticket } from "@/lib/types";
@@ -20,7 +21,7 @@ export default async function QueuePage({
   const { view = "list", biz = "all", tour } = await searchParams;
   // The jobs load alongside the session rather than after it; the database only returns what this login may see.
   const db = await createClient();
-  const [{ supabase, member, businesses, ctx, terms, workspace, shell, viewing }, { data }] = await Promise.all([
+  const [{ supabase, member, businesses, self, ctx, terms, workspace, shell, viewing }, { data }] = await Promise.all([
     requireMember(["designer", "manager"], "requests"),
     db.from("tickets").select(LIST_COLUMNS).returns<ListTicket[]>(),
   ]);
@@ -29,7 +30,7 @@ export default async function QueuePage({
   const trade = workspace.kind !== "studio";
   const all = data ?? [];
   const queue = sortQueue(all, ctx);
-  const byId = Object.fromEntries(businesses.map((b) => [b.id, b]));
+  const byId = Object.fromEntries(withMine(businesses, self, workspace.kind).map((b) => [b.id, b]));
   const filterBiz = businesses.find((b) => b.slug === biz);
   const keep = (t: ListTicket) => !filterBiz || t.business_id === filterBiz.id;
   const href = (v: string, b: string) => `/queue?view=${v}&biz=${b}`;

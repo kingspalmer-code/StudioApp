@@ -31,3 +31,12 @@ export const clientsLogIn = (kind: WorkspaceKind) => kind === "studio";
 // solo workspace has a hidden one with a "self-" slug. It never shows as a client anywhere.
 export const SELF_PREFIX = "self-";
 export const isSelf = (b?: Pick<Business, "slug"> | null) => Boolean(b?.slug?.startsWith(SELF_PREFIX));
+// With customers or businesses, the same hidden business holds jobs done for the workspace itself
+// (new business cards, a van to letter): picked as "My business" in the customer box and shown In-house.
+export const MY_BUSINESS = "My business";
+export const isMyBusiness = (name: string) => name.trim().toLowerCase() === MY_BUSINESS.toLowerCase();
+
+// The customers plus the workspace's own business, named "My business", for showing job rows.
+// Solo workspaces leave it out: every project is theirs, so there's no name to show.
+export const withMine = <B extends Business>(list: B[], self: B | undefined, kind: WorkspaceKind): B[] =>
+  self && kind !== "solo" ? [...list, { ...self, name: MY_BUSINESS }] : list;

@@ -8,11 +8,11 @@ import JobCalculator, { type Finished, type Timing } from "./JobCalculator";
 // The job time calculator: built into Apps for the studio. Pick a type and a size and it estimates
 // how long the job will take from the workspace's own finished jobs, plus any past jobs typed in.
 export default async function JobTimePage() {
-  const { supabase, ctx, member, terms, shell, viewing } = await requireMember(["designer"], "requests");
+  const { supabase, ctx, member, terms, shell, viewing, self, workspace } = await requireMember(["designer"], "requests");
   const [{ data: jobs }, { data: fields }, { data: timings }] = await Promise.all([
     supabase
       .from("tickets")
-      .select("id, title, type, created_at, delivered_at, details")
+      .select("id, business_id, title, type, created_at, delivered_at, details")
       .not("delivered_at", "is", null)
       .order("delivered_at", { ascending: false })
       .limit(1500)
@@ -30,6 +30,7 @@ export default async function JobTimePage() {
       <JobCalculator
         types={ctx.types.map((t) => ({ id: t.id, name: t.name, lead_days: t.lead_days }))}
         jobs={jobs ?? []}
+        mineId={workspace.kind !== "solo" ? self?.id : undefined}
         fields={fields ?? []}
         timings={timings ?? []}
         canEdit={canEdit}

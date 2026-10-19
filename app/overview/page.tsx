@@ -7,6 +7,7 @@ import TicketRow from "@/components/TicketRow";
 import { businessOatcakes, hatchBase, oatcakesEarned, STARTER_OATCAKES } from "@/lib/pet";
 import { daysFromToday, finalStage, formatDate, isAtRisk, isDone, money, sortQueue, stageColor } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
+import { withMine } from "@/lib/workspace";
 import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
 import type { Ticket } from "@/lib/types";
 import { loadWidgets } from "@/lib/widgets";
@@ -16,7 +17,7 @@ type Session = Awaited<ReturnType<typeof requireMember>>;
 export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ business?: string }> }) {
   const session = asClient(await requireMember(["manager", "designer", "client"], "requests"));
   if (session.member.role === "client") return <ClientOverview session={session} business={(await searchParams).business} />;
-  const { supabase, member, businesses, ctx, terms, workspace, shell, viewing } = session;
+  const { supabase, member, businesses, self, ctx, terms, workspace, shell, viewing } = session;
   // Managers get the widget row too, with an oatcake for Pickle for every request they send.
   const manager = member.role === "manager" && !viewing;
   const [{ data }, earned] = await Promise.all([
@@ -29,7 +30,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
     .filter((t) => isDone(t, ctx))
     .sort((a, b) => (b.delivered_at ?? "").localeCompare(a.delivered_at ?? ""));
   const risk = open.filter((t) => isAtRisk(t, ctx));
-  const byId = Object.fromEntries(businesses.map((b) => [b.id, b]));
+  const byId = Object.fromEntries(withMine(businesses, self, workspace.kind).map((b) => [b.id, b]));
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);

@@ -10,7 +10,7 @@ import FieldInput from "@/components/FieldInput";
 import { appliesTo, groupFields, readFields, type JobField } from "@/lib/fields";
 import { coreFields, type CoreField } from "@/lib/core-fields";
 import type { Business, JobType } from "@/lib/types";
-import { SELF_PREFIX, slugify } from "@/lib/workspace";
+import { isMyBusiness, MY_BUSINESS, SELF_PREFIX, slugify } from "@/lib/workspace";
 import TellPicker, { type TellPerson } from "@/components/TellPicker";
 
 const MAX_FILE_MB = 25;
@@ -61,6 +61,9 @@ export default function NewRequestForm({
   const [biz, setBiz] = useState(businesses[0]?.id ?? "");
   const [tell, setTell] = useState<string[]>([]);
   const self = useRef(selfId);
+  // A job for the workspace's own business, picked as "My business" instead of a customer.
+  const [mine, setMine] = useState(false);
+  const customerRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -102,7 +105,7 @@ export default function NewRequestForm({
   const job = solo ? "Project" : trade ? "Job" : "Request";
   const tight = deadline && daysFromToday(deadline) < lead;
   // The business's own clients, and any manager (managers can see every job).
-  const canTell = isDesigner && !trade ? people.filter((p) => p.manager || p.businesses.includes(biz)) : [];
+  const canTell = isDesigner && !trade && !mine ? people.filter((p) => p.manager || p.businesses.includes(biz)) : [];
   const picked = canTell.filter((p) => tell.includes(p.email));
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -122,11 +125,11 @@ export default function NewRequestForm({
 
     const supabase = createClient();
     let business_id = get("business_id");
-    if (solo) {
+    if (solo || (isDesigner && (mine || (trade && isMyBusiness(get("customer")))))) {
       if (!self.current) {
         const { data: created, error: selfError } = await supabase
           .from("businesses")
-          .insert({ name: "My projects", slug: `${SELF_PREFIX}${Math.random().toString(36).slice(2, 10)}`, color: "#8a7a70" })
+          .insert({ name: solo ? "My projects" : MY_BUSINESS, slug: `${SELF_PREFIX}${Math.random().toString(36).slice(2, 10)}`, color: "#8a7a70" })
           .select("id")
           .single();
         if (selfError || !created) {
@@ -209,6 +212,7 @@ export default function NewRequestForm({
     setDeadline("");
     setTell([]);
     setBiz(businesses[0]?.id ?? "");
+    setMine(false);
     setExtra([]);
     setDone(message);
   }
@@ -247,10 +251,11 @@ export default function NewRequestForm({
           <div className="row">
             <label htmlFor="business_id">{isDesigner ? "Business" : "For"}</label>
             <div className="ctl">
-              <select id="business_id" name="business_id" required value={biz} onChange={(e) => { setBiz(e.target.value); setTell([]); }}>
+              <select id="business_id" name="business_id" required value={mine ? "self" : biz} onChange={(e) => { const own = e.target.value === "self"; setMine(own); if (!own) setBiz(e.target.value); setTell([]); }}>
                 {businesses.map((b) => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
+                {isDesigner && <option value="self">{MY_BUSINESS} (in-house)</option>}
               </select>
             </div>
           </div>
@@ -262,16 +267,20 @@ export default function NewRequestForm({
             <div className="ctl"><TellPicker people={canTell} value={tell} onChange={setTell} /></div>
           </div>
         )}
-        {core.filter((c) => !c.hidden).map((c) => (
+        {core.filter((c) => !c.hidden && !(mine && c.key === "phone")).map((c) => (
           <div className="row" key={c.key}>
             <label htmlFor={c.key}>{c.label}</label>
             <div className="ctl">
               {c.key === "customer" ? (
                 <>
-                  <input id="customer" name="customer" required list="customers" autoComplete="off" placeholder={c.hint || undefined} />
+                  <input id="customer" name="customer" ref={customerRef} required list="customers" autoComplete="off" placeholder={c.hint || undefined} onChange={(e) => setMine(isMyBusiness(e.target.value))} />
                   <datalist id="customers">
+                    {isDesigner && <option value={MY_BUSINESS} />}
                     {businesses.map((b) => <option key={b.id} value={b.name} />)}
                   </datalist>
+                  {isDesigner && (mine
+                    ? <div className="when">In-house: a job for your own business. No customer is added.</div>
+                    : <button type="button" className="link when" onClick={() => { if (customerRef.current) customerRef.current.value = MY_BUSINESS; setMine(true); }}>It&apos;s for my business</button>)}
                 </>
               ) : c.key === "phone" ? (
                 <input id="phone" name="phone" type="tel" placeholder={c.hint || undefined} />

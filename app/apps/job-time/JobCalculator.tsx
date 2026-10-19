@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { dayWord, estimate, workingDays, type Sample } from "@/lib/estimate";
 import { addTiming, correctJob, readDescription, removeTiming, setTypeDays } from "./actions";
 
-export type Finished = { id: number; title: string; type: string; created_at: string; delivered_at: string; details: Record<string, unknown> | null };
+export type Finished = { id: number; business_id: string; title: string; type: string; created_at: string; delivered_at: string; details: Record<string, unknown> | null };
 export type Timing = { id: number; ticket_id: number | null; type: string; size: number | null; days: number | null; skip: boolean; note: string; created_at: string };
 type Type = { id: number; name: string; lead_days: number };
 type Field = { key: string; label: string; type_ids: number[] };
@@ -16,9 +16,11 @@ const SIZE_KEY = (typeId: number) => `oatcake:job-time:size:${typeId}`;
 const fmtDate = (s: string) => new Date(s).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 const fmtNum = (n: number) => n.toLocaleString("en-GB", { maximumFractionDigits: 2 });
 
-export default function JobCalculator({ types, jobs, fields, timings, canEdit, canSetType, ai, jobWord }: {
+export default function JobCalculator({ types, jobs: allJobs, mineId, fields, timings, canEdit, canSetType, ai, jobWord }: {
   types: Type[];
   jobs: Finished[];
+  // The workspace's own business: its in-house jobs are left out of the sums unless switched on.
+  mineId?: string;
   fields: Field[];
   timings: Timing[];
   canEdit: boolean;
@@ -33,6 +35,9 @@ export default function JobCalculator({ types, jobs, fields, timings, canEdit, c
   const [size, setSize] = useState("");
   const [pending, start] = useTransition();
   const [problem, setProblem] = useState("");
+  const [countMine, setCountMine] = useState(false);
+  const hasMine = Boolean(mineId) && allJobs.some((j) => j.business_id === mineId);
+  const jobs = useMemo(() => (countMine ? allJobs : allJobs.filter((j) => j.business_id !== mineId)), [allJobs, countMine, mineId]);
 
   // The size field picked for each type is remembered on this computer.
   useEffect(() => {
@@ -182,6 +187,11 @@ export default function JobCalculator({ types, jobs, fields, timings, canEdit, c
         <p className="foot">None yet.</p>
       )}
       <p className="foot">Finished {jobWord}s count from the day they were added to the day they were finished. Leave out any that don't show the real time, or change their days.</p>
+      {hasMine && (
+        <label className="foot jt-mine">
+          <input type="checkbox" checked={countMine} onChange={(e) => setCountMine(e.target.checked)} /> Count in-house {jobWord}s for my business too
+        </label>
+      )}
     </div>
   );
 }
