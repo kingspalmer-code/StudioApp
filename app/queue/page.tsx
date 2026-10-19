@@ -97,7 +97,12 @@ export default async function QueuePage({
           job={terms.job}
           jobs={terms.jobs}
           canEdit={canEdit}
-          empty={<div className="empty">Nothing open{filterBiz ? ` for ${filterBiz.name}` : ""}. New {terms.jobs} appear here as soon as they're added.</div>}
+          empty={
+            <div className="empty">
+              {all.length || filterBiz ? <>Nothing open{filterBiz ? ` for ${filterBiz.name}` : ""}. New {terms.jobs} appear here as soon as they&apos;re added.</> : <>No {terms.jobs} yet. Add your first one and it lands here, in the order to start it.</>}
+              {canEdit && <div><Link href="/portal" className="btn">Add a {terms.job}</Link></div>}
+            </div>
+          }
         />
       ) : (
         <>

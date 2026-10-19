@@ -124,6 +124,7 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--label-2); margin-top: 6px; }
 .kv b { color: var(--label); font-weight: 600; text-align: right; }
 .empty { padding: 28px 16px; text-align: center; color: var(--label-2); }
+.empty .btn { margin-top: 14px; }
 .copy { white-space: pre-wrap; overflow-wrap: anywhere; }
 .files { display: flex; gap: 8px; flex-wrap: wrap; }
 .files a { border-radius: 8px; padding: 6px 10px; font-size: 13px; background: var(--fill); }
@@ -187,7 +188,7 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 .smart-tile[aria-current="page"] span:last-child { color: var(--accent-ink); }
 .row.proj { color: var(--label); }
 .row.proj[aria-current="page"] { background: var(--surface-2); font-weight: 600; }
-.swatch-select { border: 0; background: var(--fill); border-radius: 6px; padding: 3px 6px; font-size: 12px; }
+.row select.swatch-select, .swatch-select { width: auto; flex: none; border: 0; background: var(--fill); border-radius: 6px; padding: 3px 6px; font-size: 12px; }
 .quick { margin-top: 12px; }
 .task { display: flex; gap: 12px; align-items: center; padding: 10px 16px; position: relative; min-height: 48px; }
 .task + .task::before { content: ""; position: absolute; top: 0; left: 50px; right: 0; border-top: .5px solid var(--sep); }
@@ -1227,6 +1228,9 @@ html.embedded .settings-back { display: none; }
 .lcd-name { position: absolute; left: 4px; top: 3px; font-size: 11px; text-transform: none; }
 .lcd-name small { font-size: 8.5px; opacity: .7; margin-left: 3px; }
 .lcd-says { position: absolute; right: 4px; top: 4px; font-size: 8.5px; }
+/* A narrow screen: what Pickle says drops under the name instead of running into it. */
+.lcd-stage { container-type: inline-size; }
+@container (max-width: 210px) { .lcd-says { left: 4px; right: auto; top: 18px; } }
 .lcd-walk { position: absolute; bottom: 2px; left: 30%; width: 60px; height: 72px; display: grid; place-items: end center; }
 .lcd-blob { width: 60px; height: auto; }
 .lcd-blob.baby { width: 34px; }
@@ -1525,6 +1529,15 @@ button.access-preset[aria-pressed="true"] { background: var(--fill); }
 .ticket-plan { flex: none; width: 46px; display: grid; place-items: center; color: var(--label-3); }
 .ticket-plan svg { width: 20px; height: 20px; }
 .ticket-plan:hover, .ticket-plan:focus-visible { color: #ff5a1f; background: var(--surface-2); }
+/* Phones: the title gets the room. The order already says what's next, so the rank number and the
+   chevron step aside, and a long title wraps onto a second line instead of cutting off after a word. */
+@media (max-width: 600px) {
+  .ticket .rank, .ticket .chev { display: none; }
+  .ticket { gap: 10px; padding: 11px 12px; }
+  .ticket .t { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
+  .ticket + .ticket::before, .ticket + .ticket.ranked::before, .ticket-line + .ticket-line::before, .ticket-line + .ticket-line.ranked::before { left: 60px; }
+  .ticket-plan { width: 40px; }
+}
 
 /* Liquid glass: the chrome that floats over the page (phone tab bar, the Create and More sheets,
    the round header buttons, notifications, menus) is frosted, tinted with the oat palette, and lit
