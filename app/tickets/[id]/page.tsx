@@ -24,6 +24,7 @@ import { docName, gbp, round2, STATUS_LABEL } from "@/lib/documents";
 import { asDoc } from "@/lib/docs-server";
 import Deliveries from "@/components/Deliveries";
 import { signDeliveries, type Delivery, type Draft, type DraftFile } from "@/lib/deliveries";
+import SaveForm from "@/components/SaveForm";
 import Submit from "@/components/Submit";
 import FrameChanged from "@/components/FrameChanged";
 import { signedUrls } from "@/lib/signed";
@@ -311,7 +312,8 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
         {isDesigner && !viewing && (
           <details className="edit-details">
             <summary className="btn plain small">Edit details</summary>
-            <form action={saveDetails.bind(null, t.id)}>
+            {/* Saving is the end of the edit, so it goes back to wherever you opened the job from. */}
+            <SaveForm action={saveDetails.bind(null, t.id)} saved={`${terms.Job} saved`} then="back" fallback="/">
               <div className="group">
                 {top.filter((c) => !c.hidden).map((c) => (
                   <div className="row" key={c.key}>
@@ -346,7 +348,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                 {editable.map((f) => <FieldInput key={f.key} field={{ ...f, required: false }} value={valueOf(t, f)} idPrefix="edit-" items={itemsOf(t, f.key)} itemise />)}
               </div>
               <p className="foot"><Submit className="btn small" type="submit">Save details</Submit></p>
-            </form>
+            </SaveForm>
           </details>
         )}
 

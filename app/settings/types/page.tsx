@@ -15,7 +15,7 @@ export default async function TypesSettingsPage() {
         <div className="group">
           {ctx.types.map((t) => (
             <div className="row" key={t.id}>
-              <SaveWhenChanged action={saveType.bind(null, t.id)} className="ctl stage-form">
+              <SaveWhenChanged action={saveType.bind(null, t.id)} className="ctl stage-form" saved="Type saved">
                 <input name="name" defaultValue={t.name} aria-label="Type name" required />
                 <input name="lead_days" type="number" min={0} max={365} defaultValue={t.lead_days} aria-label="Working days needed" className="days" />
                 <span className="when">days</span>

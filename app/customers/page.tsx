@@ -6,6 +6,7 @@ import { isDone } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
 import type { Business, Ticket } from "@/lib/types";
 import { deleteCustomer, saveCustomer } from "../settings/actions";
+import SaveForm from "@/components/SaveForm";
 import Submit from "@/components/Submit";
 
 function CustomerFields({ b }: { b?: Business }) {
@@ -50,7 +51,7 @@ export default async function CustomersPage() {
                     </div>
                     <span className="chev" aria-hidden="true">›</span>
                   </summary>
-                  <form action={saveCustomer.bind(null, b.id)} className="cust-edit">
+                  <SaveForm action={saveCustomer.bind(null, b.id)} saved={`${terms.Client} saved`} then="close" className="cust-edit">
                     <CustomerFields b={b} />
                     <div style={{ display: "flex", gap: 16, margin: "10px 4px 4px" }}>
                       <Submit className="link" type="submit">Save</Submit>
@@ -58,7 +59,7 @@ export default async function CustomersPage() {
                         <Submit className="link" style={{ color: "var(--red)" }} formAction={deleteCustomer.bind(null, b.id)}>Delete</Submit>
                       )}
                     </div>
-                  </form>
+                  </SaveForm>
                   {workspace.kind === "trade" && b.email && <div className="group" style={{ marginTop: 8 }}><SendCustomerLink id={b.id} name={b.name} /></div>}
                 </details>
               );
@@ -66,11 +67,11 @@ export default async function CustomersPage() {
             {!businesses.length && <div className="empty">No {terms.clients} yet. Add one here, or just type a new name when you add a {terms.job}.</div>}
           </div>
         </div>
-        <form action={saveCustomer.bind(null, null)} id="add">
+        <SaveForm action={saveCustomer.bind(null, null)} saved={`${terms.Client} added`} id="add">
           <p className="eyebrow">Add a {terms.client}</p>
           <CustomerFields />
           <Submit className="btn wide" style={{ marginTop: 14 }}>Add {terms.client}</Submit>
-        </form>
+        </SaveForm>
       </div>
     </Shell>
   );

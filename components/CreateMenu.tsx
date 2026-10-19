@@ -9,6 +9,7 @@ import { addTask } from "@/app/personal/actions";
 import { createClient } from "@/lib/supabase/client";
 import type { WorkspaceKind } from "@/lib/types";
 import { CREATE_EVENT, takePending } from "./panel-events";
+import { flashSaved } from "./Saved";
 
 // Create new: one grid of everything you can make in Oatcake. A sheet from the bottom on phones,
 // a panel beside the rail's + on bigger screens. "N" opens it on a keyboard, then a letter picks.
@@ -163,6 +164,7 @@ export default function CreateMenu({
             start(async () => {
               await addTask(fd);
               close();
+              flashSaved("Task added to Personal");
               router.refresh();
             })
           }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Shell from "@/components/Shell";
+import SaveForm from "@/components/SaveForm";
 import Submit from "@/components/Submit";
 import { requireMember } from "@/lib/session";
 import { modeTitle } from "@/lib/workspace";
@@ -18,7 +19,7 @@ export default async function WorkspaceSettingsPage() {
         <SectionHead title="Workspace" />
 
         <p className="eyebrow">Name</p>
-        <form action={renameWorkspace}>
+        <SaveForm action={renameWorkspace} saved="Name saved">
           <div className="group">
             <div className="row">
               <label htmlFor="ws-name">Name</label>
@@ -26,7 +27,7 @@ export default async function WorkspaceSettingsPage() {
               <Submit className="link" type="submit">Save</Submit>
             </div>
           </div>
-        </form>
+        </SaveForm>
         {workspace.kind !== "solo" && (
           <p className="foot">
             {terms.Clients} and their contact details are on the <Link href="/customers">{terms.Clients} page</Link>.
