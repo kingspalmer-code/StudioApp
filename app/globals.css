@@ -1673,3 +1673,5 @@ html.app-glass .app-drag { background: transparent; border-bottom-color: transpa
 @media (prefers-reduced-transparency: reduce) {
   html.app-glass { --win-tint: var(--bg); --side-tint: var(--surface-2); }
 }
+.tell-chips .tell-biz { color: var(--label-2); font-weight: 400; }
+.tell-chips button[aria-pressed="true"] .tell-biz { color: inherit; opacity: .75; }
