@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { PRIORITIES, daysFromToday, todayISO } from "@/lib/priority";
 import FieldInput from "@/components/FieldInput";
 import { appliesTo, groupFields, readFields, type JobField } from "@/lib/fields";
-import { coreFields, type CoreField } from "@/lib/core-fields";
+import { coreFields, isContact, type CoreField } from "@/lib/core-fields";
 import type { Business, JobType } from "@/lib/types";
 import { isMyBusiness, MY_BUSINESS, SELF_PREFIX, slugify } from "@/lib/workspace";
 import TellPicker, { type TellPerson } from "@/components/TellPicker";
@@ -148,7 +148,7 @@ export default function NewRequestForm({
       else {
         const { data: created, error: custError } = await supabase
           .from("businesses")
-          .insert({ name, slug: slugify(name), color: "#8a7a70", phone: get("phone") })
+          .insert({ name, slug: slugify(name), color: "#8a7a70", phone: get("phone") || null, email: get("cust_email") || null, address: get("cust_address") || null })
           .select("id")
           .single();
         if (custError || !created) {
@@ -267,7 +267,7 @@ export default function NewRequestForm({
             <div className="ctl"><TellPicker people={canTell} value={tell} onChange={setTell} /></div>
           </div>
         )}
-        {core.filter((c) => !c.hidden && !(mine && c.key === "phone")).map((c) => (
+        {core.filter((c) => !c.hidden && !(mine && isContact(c.key))).map((c) => (
           <div className="row" key={c.key}>
             <label htmlFor={c.key}>{c.label}</label>
             <div className="ctl">
@@ -284,6 +284,10 @@ export default function NewRequestForm({
                 </>
               ) : c.key === "phone" ? (
                 <input id="phone" name="phone" type="tel" placeholder={c.hint || undefined} />
+              ) : c.key === "email" ? (
+                <input id="email" name="cust_email" type="email" placeholder={c.hint || undefined} />
+              ) : c.key === "address" ? (
+                <input id="address" name="cust_address" placeholder={c.hint || undefined} />
               ) : c.key === "title" ? (
                 <input id="title" name="title" required placeholder={c.hint || undefined} />
               ) : c.key === "type" ? (

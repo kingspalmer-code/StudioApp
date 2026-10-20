@@ -203,7 +203,7 @@ export async function setCoreHidden(key: string, hidden: boolean) {
 export async function moveCoreField(key: string, dir: -1 | 1) {
   if (!isCore(key)) return;
   await editCore((s, mode) => {
-    // Move among the fields this workspace shows; customer and phone, when not shown, stay first.
+    // Move among the fields this workspace shows; customer and contact details, when not shown, stay first.
     const shown = coreFields(s, mode).map((f) => f.key);
     const i = shown.indexOf(key);
     const j = i + dir;

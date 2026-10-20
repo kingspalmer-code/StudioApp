@@ -8,6 +8,7 @@ import { allows } from "@/lib/access";
 import { requireEditor } from "@/lib/session";
 import { createClient, PREVIEW_COOKIE } from "@/lib/supabase/server";
 import { appliesTo, readFields, type JobField } from "@/lib/fields";
+import { CONTACT_KEYS, type ContactKey } from "@/lib/core-fields";
 import { emailInvite } from "@/lib/invite";
 import { alertNewNote } from "@/app/portal/actions";
 import { logEvents, notYetFinished, tellRequesters } from "@/lib/finished";
@@ -62,7 +63,7 @@ export async function saveDetails(id: number, formData: FormData) {
     supabase.from("tickets").select("type, details, business_id").eq("id", id).maybeSingle<{ type: string; details: Record<string, unknown>; business_id: string }>(),
     supabase.from("job_fields").select("*").returns<JobField[]>(),
     workspace.kind === "trade" && formData.has("customer")
-      ? supabase.from("businesses").select("id, name, slug, phone").returns<{ id: string; name: string; slug: string; phone: string | null }[]>()
+      ? supabase.from("businesses").select("id, name, slug, phone, email, address").returns<({ id: string; name: string; slug: string } & Record<ContactKey, string | null>)[]>()
       : { data: null },
   ]);
   if (!t) return;
@@ -82,11 +83,15 @@ export async function saveDetails(id: number, formData: FormData) {
   if ((PRIORITIES as string[]).includes(get("priority"))) core.priority = get("priority");
 
   // The customer works as on the new job form: an existing name moves the job to them, a new name
-  // becomes a new customer. The phone saves onto whichever customer the job ends up with.
+  // becomes a new customer. The contact details on the form save onto whichever customer the job ends up with.
   let business_id = t.business_id;
   const name = get("customer");
-  const phone = get("phone");
-  // Adding a customer or changing their phone is Clients work; an employee without that can still move the job.
+  const contact: Partial<Record<ContactKey, string | null>> = {};
+  for (const k of CONTACT_KEYS) {
+    const field = k === "phone" ? k : `cust_${k}`;
+    if (formData.has(field)) contact[k] = get(field) || null;
+  }
+  // Adding a customer or changing their details is Clients work; an employee without that can still move the job.
   const clientsOk = !member.staff || allows(member.access, "clients", "edit");
   if (customers && name && isMyBusiness(name)) {
     // Moved onto the workspace's own business, made the first time it's needed.
@@ -105,11 +110,12 @@ export async function saveDetails(id: number, formData: FormData) {
     const match = customers.find((b) => !isSelf(b) && b.name.toLowerCase() === name.toLowerCase());
     if (match) {
       business_id = match.id;
-      if (clientsOk && formData.has("phone") && phone !== (match.phone ?? "")) await supabase.from("businesses").update({ phone: phone || null }).eq("id", match.id);
+      const changed = Object.fromEntries(Object.entries(contact).filter(([k, v]) => v !== match[k as ContactKey]));
+      if (clientsOk && Object.keys(changed).length) await supabase.from("businesses").update(changed).eq("id", match.id);
     } else if (clientsOk && name.toLowerCase() !== current?.name.toLowerCase()) {
       const { data: created } = await supabase
         .from("businesses")
-        .insert({ name, slug: slugify(name), color: "#8a7a70", phone: phone || null })
+        .insert({ name, slug: slugify(name), color: "#8a7a70", ...contact })
         .select("id")
         .single<{ id: string }>();
       if (created) business_id = created.id;
