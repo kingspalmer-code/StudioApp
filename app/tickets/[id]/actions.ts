@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { logEvents, notYetFinished, tellDraft, tellRequesters } from "@/lib/finished";
+import { logEvents, notYetFinished, tellDraft, tellRequesters, tellShared } from "@/lib/finished";
 import type { Draft, DraftFile } from "@/lib/deliveries";
 import { finalStage, reviewStage } from "@/lib/priority";
 import { requireEditor } from "@/lib/session";
@@ -75,7 +75,12 @@ export async function tellAboutDraft(ticketId: number, draftId: number) {
 
 // Who the studio keeps updated on a job: any of the business's clients and any manager.
 export async function setTell(ticketId: number, emails: string[]) {
-  const { supabase } = await requireEditor(["designer"], "requests");
-  await supabase.from("tickets").update({ tell: [...new Set(emails.map((e) => e.toLowerCase()))] }).eq("id", ticketId);
+  const { supabase, member, workspace, terms } = await requireEditor(["designer"], "requests");
+  const { data: before } = await supabase.from("tickets").select("tell").eq("id", ticketId).maybeSingle<{ tell: string[] }>();
+  const tell = [...new Set(emails.map((e) => e.toLowerCase()))];
+  const { error } = await supabase.from("tickets").update({ tell }).eq("id", ticketId);
+  // Anyone newly picked hears it's been shared with them.
+  const added = tell.filter((e) => !(before?.tell ?? []).includes(e));
+  if (!error && added.length) after(() => tellShared(supabase, ticketId, added, { name: workspace.name, replyTo: member.email, terms, kind: workspace.kind }).catch(() => {}));
   revalidatePath(`/tickets/${ticketId}`);
 }

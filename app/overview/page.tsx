@@ -137,10 +137,17 @@ async function ClientOverview({ session, business }: { session: Session; busines
 
   // The business whose Pickle shows: the one picked above, else their main business.
   const petBiz = only?.id ?? member.business_id ?? myBizes[0]?.id;
-  const [{ data }, earned] = await Promise.all([
+  const [{ data }, earned, { data: sharedRows }] = await Promise.all([
     supabase.from("tickets").select(LIST_COLUMNS).in("business_id", ids).order("deadline").returns<ListTicket[]>(),
     previewing || !petBiz ? Promise.resolve(0) : businessOatcakes(supabase, petBiz, ctx),
+    // Other businesses' jobs the studio has shared with them, kept apart from their own.
+    previewing || only
+      ? Promise.resolve({ data: [] as ListTicket[] })
+      : supabase.from("tickets").select(LIST_COLUMNS).contains("tell", [member.email]).order("deadline").returns<ListTicket[]>(),
   ]);
+  const own = new Set(myBizes.map((b) => b.id));
+  const shared = (sharedRows ?? []).filter((t) => !own.has(t.business_id));
+  const allBiz = Object.fromEntries(businesses.map((b) => [b.id, b]));
   const all = data ?? [];
   const open = all.filter((t) => !isDone(t, ctx));
   const done = all
@@ -216,6 +223,13 @@ async function ClientOverview({ session, business }: { session: Session; busines
               <div className="group">
                 <div className="empty">{all.length ? "Nothing in progress right now." : "No requests yet. Send your first one and it shows here."}</div>
               </div>
+            </>
+          )}
+
+          {shared.length > 0 && (
+            <>
+              <p className="eyebrow">Shared with you · {shared.length}</p>
+              <div className="group">{shared.map((t) => <TicketRow key={t.id} t={t} biz={allBiz[t.business_id]} ctx={ctx} showBusiness />)}</div>
             </>
           )}
 

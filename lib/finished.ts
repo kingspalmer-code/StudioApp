@@ -74,7 +74,8 @@ async function linkedPeople(supabase: SupabaseClient, emails: string[]) {
       .map((p) => [p.email, { ...p, businesses: new Set([p.business_id, ...(extra ?? []).filter((x) => x.email === p.email).map((x) => x.business_id)].filter((b) => b !== null)) }])
   );
 }
-const canSee = (p: Person & { businesses: Set<string> }, businessId: string) => p.role === "manager" || p.businesses.has(businessId);
+// A client picked to keep updated on another business's job sees that job too.
+const canSee = (p: Person & { businesses: Set<string> }, job: { business_id: string; tell: string[] }) => p.role === "manager" || p.businesses.has(job.business_id) || job.tell.includes(p.email);
 
 export async function tellRequesters(supabase: SupabaseClient, ids: number[], studio: Studio, moment: Moment = "finished") {
   if (!ids.length) return;
@@ -98,7 +99,7 @@ export async function tellRequesters(supabase: SupabaseClient, ids: number[], st
 
   for (const j of finished) {
     // Whoever sent it, plus anyone the studio picked to keep updated on it.
-    const told = [...new Set([j.created_by, ...j.tell])].map((e) => people.get(e)).filter((p): p is NonNullable<typeof p> => p !== undefined && canSee(p, j.business_id));
+    const told = [...new Set([j.created_by, ...j.tell])].map((e) => people.get(e)).filter((p): p is NonNullable<typeof p> => p !== undefined && canSee(p, j));
     if (!told.length) continue;
     // Sent once per move; finishing it again after reopening it tells them again.
     if (pushReady() && !(await firstTime(moment, `${j.id}:${moment === "finished" ? j.delivered_at : j.updated_at}`))) continue;
@@ -138,7 +139,7 @@ export async function tellPicked(supabase: SupabaseClient, id: number, studio: S
     .eq("id", id)
     .maybeSingle<{ id: number; title: string; type: string; deadline: string; tell: string[]; business_id: string }>();
   if (!j?.tell.length) return;
-  const told = [...(await linkedPeople(supabase, j.tell)).values()].filter((p) => canSee(p, j.business_id));
+  const told = [...(await linkedPeople(supabase, j.tell)).values()].filter((p) => canSee(p, j));
   if (!told.length) return;
   if (pushReady() && !(await firstTime("new_job", String(j.id)))) return;
   const { data: biz } = await supabase.from("businesses").select("name").eq("id", j.business_id).maybeSingle<{ name: string }>();
@@ -153,6 +154,32 @@ export async function tellPicked(supabase: SupabaseClient, id: number, studio: S
   ]);
 }
 
+// The studio picked more people to keep updated on a job that's already going: tell just them, with a
+// link to it. Sent once per person per job.
+export async function tellShared(supabase: SupabaseClient, id: number, emails: string[], studio: Studio) {
+  if (!emails.length) return;
+  const { data: j } = await supabase
+    .from("tickets")
+    .select("id, title, tell, business_id")
+    .eq("id", id)
+    .maybeSingle<{ id: number; title: string; tell: string[]; business_id: string }>();
+  if (!j) return;
+  const picked = [...(await linkedPeople(supabase, emails.filter((e) => j.tell.includes(e)))).values()].filter((p) => canSee(p, j));
+  const told: typeof picked = [];
+  for (const p of picked) if (!pushReady() || (await firstTime("shared", `${j.id}:${p.email}`))) told.push(p);
+  if (!told.length) return;
+  const { data: biz } = await supabase.from("businesses").select("name").eq("id", j.business_id).maybeSingle<{ name: string }>();
+  const { job } = studio.terms;
+  const forBiz = biz?.name ? ` for ${biz.name}` : "";
+  const line = `${studio.name} has shared the ${job} "${j.title}"${forBiz} with you.`;
+  const next = "You can see it in Oatcake and leave notes, and you'll hear when there's a draft to look at and when it's finished.";
+  const link = `${await origin()}/tickets/${j.id}`;
+  await Promise.all([
+    ...told.map((who) => email(who.email, `Shared with you: ${j.title}`, [hello(who), line, next], link, "Open in Oatcake", studio.name, studio.replyTo)),
+    sendAlert(told.map((who) => who.email), { title: `Shared with you: ${j.title}`, body: `${studio.name} shared it${forBiz}.`, url: `/tickets/${j.id}`, tag: `ticket-${j.id}-shared` }),
+  ]);
+}
+
 // The studio shared a draft: email the person who asked for the job and anyone picked to keep
 // updated, with the draft's message, its images and links, and alert their phones. Sent once per draft.
 export async function tellDraft(supabase: SupabaseClient, ticketId: number, draftId: number, studio: Studio) {
@@ -164,7 +191,7 @@ export async function tellDraft(supabase: SupabaseClient, ticketId: number, draf
   const round = (drafts ?? []).findIndex((d) => d.id === draftId) + 1;
   if (!j || !round) return;
   const people = await linkedPeople(supabase, [j.created_by, ...j.tell]);
-  const told = [...people.values()].filter((p) => canSee(p, j.business_id));
+  const told = [...people.values()].filter((p) => canSee(p, j));
   if (!told.length) return;
   if (pushReady() && !(await firstTime("draft", String(draftId)))) return;
 
@@ -202,7 +229,7 @@ export async function peopleToTell(supabase: SupabaseClient, ids: number[]): Pro
     .returns<Pick<Job, "id" | "created_by" | "tell" | "business_id">[]>();
   const people = await linkedPeople(supabase, (jobs ?? []).flatMap((j) => [j.created_by, ...j.tell]));
   for (const j of jobs ?? []) {
-    const told = [...new Set([j.created_by, ...j.tell])].map((e) => people.get(e)).filter((p): p is NonNullable<typeof p> => p !== undefined && canSee(p, j.business_id));
+    const told = [...new Set([j.created_by, ...j.tell])].map((e) => people.get(e)).filter((p): p is NonNullable<typeof p> => p !== undefined && canSee(p, j));
     out.set(j.id, told.map((p) => p.full_name || p.email));
   }
   return out;
