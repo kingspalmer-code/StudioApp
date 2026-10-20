@@ -5,7 +5,7 @@ import SaveForm from "@/components/SaveForm";
 import { ADDABLE_KINDS, KIND_LABELS, type JobField } from "@/lib/fields";
 import { requireMember } from "@/lib/session";
 import { addField, deleteField, moveCoreField, moveField, saveCoreField, saveField, setCoreHidden, setFieldHidden } from "../actions";
-import { coreFields, type CoreField } from "@/lib/core-fields";
+import { coreFields, isContact, type CoreField } from "@/lib/core-fields";
 import Submit from "@/components/Submit";
 
 export default async function JobFormPage() {
@@ -139,7 +139,10 @@ export default async function JobFormPage() {
             </div>
           ))}
         </div>
-        <p className="foot">Every {terms.job} needs these, so only {core.filter((c) => c.canHide).map((c) => c.defaultLabel.toLowerCase()).join(" and ")} can be hidden. A hidden importance means Standard.</p>
+        <p className="foot">
+          Every {terms.job} needs these, so only {core.filter((c) => c.canHide).map((c) => c.defaultLabel.toLowerCase()).join(", ").replace(/, ([^,]*)$/, " and $1")} can be hidden. A hidden importance means Standard.
+          {core.some((c) => isContact(c.key)) && ` Show the contact details you want to ask for (phone, email, address). Rename them to suit, say "Mobile" or "Work email". They save onto the ${terms.client}.`}
+        </p>
 
         <p className="eyebrow">On the form</p>
         <div className="group">

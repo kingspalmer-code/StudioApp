@@ -340,6 +340,10 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                         </>
                       ) : c.key === "phone" ? (
                         <input id="edit-phone" name="phone" type="tel" defaultValue={biz?.phone ?? ""} placeholder={c.hint || undefined} />
+                      ) : c.key === "email" ? (
+                        <input id="edit-email" name="cust_email" type="email" defaultValue={biz?.email ?? ""} placeholder={c.hint || undefined} />
+                      ) : c.key === "address" ? (
+                        <input id="edit-address" name="cust_address" defaultValue={biz?.address ?? ""} placeholder={c.hint || undefined} />
                       ) : c.key === "title" ? (
                         <input id="edit-title" name="title" required defaultValue={t.title} />
                       ) : c.key === "type" ? (
