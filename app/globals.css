@@ -1669,6 +1669,10 @@ html.app-glass .app-drag { background: transparent; border-bottom-color: transpa
 @media (min-width: 701px) {
   html.app-glass body:has(.has-rail)::before { left: var(--rail-w); border-left: .5px solid var(--sep); }
   html.app-glass .has-rail > .bar { background: var(--side-tint); border-right: 0; }
+  /* Like Finder: the sidebar runs up under the window buttons, and back, forward and the page
+     title sit over the page, never across the sidebar's edge. */
+  html.app-glass body:has(.has-rail) .app-drag { background: linear-gradient(to right, var(--side-tint) var(--rail-w), transparent var(--rail-w)); }
+  html.app-glass body:has(.has-rail) .app-bar { padding-left: max(84px, calc(var(--rail-w) + 10px)); }
 }
 @media (prefers-reduced-transparency: reduce) {
   html.app-glass { --win-tint: var(--bg); --side-tint: var(--surface-2); }
