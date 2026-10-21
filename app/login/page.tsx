@@ -1,3 +1,4 @@
+import Link from "next/link";
 import FilmGrain from "@/components/FilmGrain";
 import OatcakeLogo from "@/components/OatcakeLogo";
 import LoginForm from "./LoginForm";
@@ -23,6 +24,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
                 : null
           }
         />
+        <p className="login-about">
+          Oatcake is a job tracker for small creative businesses and their clients: requests, drafts, to-dos, quotes and invoices in one place.{" "}
+          <Link href="/privacy">Privacy</Link>
+        </p>
       </LoginIntro>
     </div>
   );

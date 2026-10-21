@@ -1679,3 +1679,12 @@ html.app-glass .app-drag { background: transparent; border-bottom-color: transpa
 }
 .tell-chips .tell-biz { color: var(--label-2); font-weight: 400; }
 .tell-chips button[aria-pressed="true"] .tell-biz { color: inherit; opacity: .75; }
+
+/* Privacy and other plain public pages */
+.legal { max-width: 680px; margin: 0 auto; padding: 40px 16px 64px; line-height: 1.6; }
+.legal h2 { font-size: 18px; margin: 28px 0 8px; }
+.legal ul { padding-left: 20px; }
+.legal li { margin: 6px 0; }
+.legal code { font-size: .9em; }
+.login-about { text-align: center; margin: 36px auto 0; max-width: 360px; font-size: 12px; line-height: 1.5; color: color-mix(in srgb, var(--oat-cream) 45%, transparent); }
+.login-about a { color: inherit; text-decoration: underline; }
