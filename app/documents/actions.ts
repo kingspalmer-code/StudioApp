@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { addDays, cleanItems, CUSTOM_FONT, docName, gbp, KIND_LABEL, type DocKind, type LineItem } from "@/lib/documents";
-import { asDoc, loadSettings, pdfFor, readSettingsForm } from "@/lib/docs-server";
+import { asDoc, jobEmail, loadSettings, pdfFor, readSettingsForm } from "@/lib/docs-server";
 import { itemsKey, itemsOf } from "@/lib/fields";
 import { gmailReady, revoke, sendViaGmail, unseal } from "@/lib/gmail";
 import { requireEditor } from "@/lib/session";
@@ -44,7 +44,7 @@ export async function createDocument(ticketId: number, kind: DocKind) {
   const { supabase, workspace, businesses } = await owner();
   const { data: t } = await supabase.from("tickets").select("*").eq("id", ticketId).maybeSingle<Ticket>();
   if (!t) throw new Error("Job not found");
-  const settings = await loadSettings(supabase, workspace.id);
+  const [settings, email] = await Promise.all([loadSettings(supabase, workspace.id), jobEmail(supabase, ticketId)]);
   const biz = businesses.find((b) => b.id === t.business_id);
 
   // An invoice starts from the job's quote, if there is one; otherwise from the quoted amount.
@@ -75,7 +75,7 @@ export async function createDocument(ticketId: number, kind: DocKind) {
       ticket_id: ticketId,
       kind,
       customer_name: biz?.name ?? "",
-      customer_email: biz?.email ?? "",
+      customer_email: email,
       customer_address: biz?.address || t.site_address || "",
       title: t.title,
       items,

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Shell from "@/components/Shell";
 import { docName, STATUS_LABEL } from "@/lib/documents";
-import { asDoc, loadSettings } from "@/lib/docs-server";
+import { asDoc, jobEmail, loadSettings } from "@/lib/docs-server";
 import { requireMember } from "@/lib/session";
 import DocEditor from "./DocEditor";
 
@@ -12,7 +12,15 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
   const { data: row } = await supabase.from("documents").select("*").eq("id", Number(id)).maybeSingle();
   if (!row) notFound();
   const doc = asDoc(row);
-  const settings = await loadSettings(supabase, workspace.id);
+  // Made before the job had an email? Pick it up from the job now, so it's ready to send.
+  const [settings, email] = await Promise.all([
+    loadSettings(supabase, workspace.id),
+    !doc.customer_email && doc.ticket_id && !viewing ? jobEmail(supabase, doc.ticket_id) : "",
+  ]);
+  if (email) {
+    await supabase.from("documents").update({ customer_email: email }).eq("id", doc.id);
+    doc.customer_email = email;
+  }
   const setUp = Boolean(settings.business_name);
 
   return (
