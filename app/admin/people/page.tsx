@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Shell from "@/components/Shell";
-import { duration, list, nextStep, requireAdmin, since, STEPS, type Person } from "@/lib/admin";
+import { duration, lastNudges, list, nextStep, requireAdmin, since, STEPS, type Person } from "@/lib/admin";
 import AdminNav from "../AdminNav";
 
 const ROLE: Record<string, string> = { designer: "Owner", manager: "Manager", client: "Client", staff: "Employee" };
@@ -8,9 +8,10 @@ const ROLE: Record<string, string> = { designer: "Owner", manager: "Manager", cl
 // Everyone who has signed up, newest first, with how far they've got and how much they use Oatcake.
 export default async function AdminPeople() {
   const { supabase, shell } = await requireAdmin();
-  const [people, { data: sum }] = await Promise.all([
+  const [people, { data: sum }, nudged] = await Promise.all([
     list<Person>(supabase.rpc("admin_people")),
     supabase.rpc("admin_summary").single<{ unread_help: number }>(),
+    lastNudges(supabase),
   ]);
 
   return (
@@ -31,6 +32,7 @@ export default async function AdminPeople() {
                   {p.workspace ? `${p.workspace} · ${ROLE[p.role ?? ""] ?? ""}` : "No workspace yet"}
                   {p.is_admin ? " · Admin" : ""}
                   {p.open_help ? ` · ${p.open_help} help open` : ""}
+                  {nudged[p.user_id] ? ` · nudged ${since(nudged[p.user_id])}` : ""}
                 </small>
               </span>
               <span>
