@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { requireMember } from "./session";
 
@@ -105,4 +106,37 @@ export const PROBLEM: Record<string, string> = {
 // The admin functions return lists; this unwraps one with its row type.
 export async function list<T>(q: PromiseLike<{ data: unknown }>): Promise<T[]> {
   return ((await q).data as T[] | null) ?? [];
+}
+
+// When each person was last nudged (a help conversation Oatcake started, see migration 046).
+export async function lastNudges(supabase: SupabaseClient) {
+  const { data } = await supabase.from("support_tickets").select("user_id, created_at").eq("page", "nudge").order("created_at", { ascending: false }).returns<{ user_id: string; created_at: string }[]>();
+  const last: Record<string, string> = {};
+  for (const r of data ?? []) last[r.user_id] ??= r.created_at;
+  return last;
+}
+
+// What a nudge says to start with, written around where they've got to. It can be changed before it goes.
+export function nudgeMessage(p: Person, from: string) {
+  const first = (p.name || "").trim().split(/\s+/)[0];
+  const where = !p.workspace_id
+    ? "get your workspace set up"
+    : p.jobs === 0
+      ? "add your first job and customer"
+      : p.docs === 0
+        ? "make your first quote or invoice"
+        : "pick up where you left off";
+  const intro = p.jobs > 0 && p.docs > 0 ? "I noticed you haven't been on Oatcake for a little while, so I wanted to check in." : "I noticed you haven't had a chance to get going yet, so I wanted to check in.";
+  return {
+    subject: "Getting set up on Oatcake",
+    body: `Hi ${first || "there"},
+
+Thanks for signing up to Oatcake. ${intro}
+
+If it would help, I'm happy to jump on a quick call to ${where} and show you around. It only takes about 20 minutes.
+
+Just let me know a time that suits you.
+
+${from}`,
+  };
 }

@@ -103,6 +103,43 @@ export async function notifyPerson(t: { id: number; email: string }, body: strin
   await send(t.email, "Oatcake replied to your message", "Oatcake replied to your message:", body, `${await origin()}/help/${t.id}`, "View and reply", INBOX);
 }
 
+// A nudge from an Oatcake admin to someone who hasn't got going yet. It comes from them by name and
+// replies go straight to their inbox. A booking link, if given, is the button; otherwise it opens Oatcake.
+export async function sendNudge(n: { id: number; to: string; subject: string; body: string; fromName: string; replyTo: string; booking?: string; hasWorkspace: boolean }) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return "Email isn't set up (RESEND_API_KEY is missing), so it wasn't sent.";
+  const site = await origin();
+  const link = n.booking || (n.hasWorkspace ? `${site}/help/${n.id}` : site);
+  const label = n.booking ? "Pick a time for a call" : n.hasWorkspace ? "Reply in Oatcake" : "Open Oatcake";
+  const html = `<div style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#2a201c;max-width:520px">
+<p style="margin:0 0 22px">${esc(n.body).replace(/\n/g, "<br>")}</p>
+<a href="${esc(link)}" style="display:inline-block;background:#382A25;color:#f3e9dc;text-decoration:none;font-weight:600;padding:10px 18px;border-radius:10px">${esc(label)}</a>
+<p style="margin:18px 0 0;color:#6b5d55;font-size:13px">Or just reply to this email.</p>
+</div>`;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: `${n.fromName.replace(/[<>"]/g, "")} at Oatcake <support@oatcake.xyz>`,
+        to: [n.to],
+        reply_to: n.replyTo,
+        subject: n.subject,
+        html,
+        text: `${n.body}\n\n${label}: ${link}\n\nOr just reply to this email.`,
+      }),
+    });
+    if (!res.ok) {
+      console.error("nudge email", res.status, await res.text());
+      return "The email didn't go. Try again in a minute.";
+    }
+  } catch (e) {
+    console.error("nudge email", e);
+    return "The email didn't go. Try again in a minute.";
+  }
+  return null;
+}
+
 // Signed links for attached screenshots (the bucket is private).
 export async function attachmentUrls(supabase: SupabaseClient, messages: SupportMessage[]) {
   const paths = messages.map((m) => m.attachment).filter((p): p is string => Boolean(p));

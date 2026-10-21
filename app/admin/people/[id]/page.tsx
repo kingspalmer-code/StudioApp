@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Shell from "@/components/Shell";
-import { duration, list, pageName, PROBLEM, requireAdmin, since, STEPS, type Person } from "@/lib/admin";
+import { duration, lastNudges, list, nudgeMessage, pageName, PROBLEM, requireAdmin, since, STEPS, type Person } from "@/lib/admin";
 import { STATUS_TEXT, type SupportTicket } from "@/lib/support";
+import { nudgePerson } from "../../actions";
 import AdminNav from "../../AdminNav";
+import NudgeForm from "../../NudgeForm";
 
 type Row = { kind: string; name: string; path: string; ms: number; meta: { text?: string; step?: number }; created_at: string };
 
@@ -25,15 +27,17 @@ function describe(r: Row) {
 // One person: their set-up progress, help messages, and a timeline of what they've done lately.
 export default async function AdminPerson({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { supabase, shell } = await requireAdmin();
-  const [people, { data: rows }, { data: tickets }, { data: sum }] = await Promise.all([
+  const { supabase, shell, member } = await requireAdmin();
+  const [people, { data: rows }, { data: tickets }, { data: sum }, nudged] = await Promise.all([
     list<Person>(supabase.rpc("admin_people")),
     supabase.from("activity").select("kind, name, path, ms, meta, created_at").eq("user_id", id).neq("kind", "time").order("created_at", { ascending: false }).limit(300).returns<Row[]>(),
     supabase.from("support_tickets").select("*").eq("user_id", id).order("updated_at", { ascending: false }).returns<SupportTicket[]>(),
     supabase.rpc("admin_summary").single<{ unread_help: number }>(),
+    lastNudges(supabase),
   ]);
   const p = people.find((x) => x.user_id === id);
   if (!p) notFound();
+  const draft = nudgeMessage(p, member.full_name?.split(" ")[0] || "");
 
   // Group the timeline by day, and fold repeated visits to the same page together.
   const groups: { day: string; items: (Row & { count: number })[] }[] = [];
@@ -53,7 +57,17 @@ export default async function AdminPerson({ params }: { params: Promise<{ id: st
       <h1 className="large">{p.name || p.email}</h1>
       <p className="sub">
         <a href={`mailto:${p.email}`}>{p.email}</a> · {p.workspace ?? "No workspace yet"} · signed up {since(p.signed_up)}
+        {nudged[id] ? ` · nudged ${since(nudged[id])}` : ""}
       </p>
+      {!p.is_admin && (
+        <NudgeForm
+          action={nudgePerson.bind(null, id)}
+          name={(p.name || "").split(" ")[0] || "them"}
+          subject={draft.subject}
+          body={draft.body}
+          lastNudged={nudged[id] ? since(nudged[id]) : null}
+        />
+      )}
 
       <div className="stats admin-stats">
         <div className="stat"><b>{since(p.last_seen ?? p.last_sign_in)}</b><span>Last seen</span></div>
