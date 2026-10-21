@@ -45,7 +45,7 @@ export default async function DocumentSettingsPage({ searchParams }: { searchPar
           workspaceId={workspace.id}
           readOnly={viewing}
         />
-        <MailConnect ready={gmailReady()} email={account?.email ?? null} result={mail} readOnly={viewing || !allows(member.access, "quotes", "edit")} />
+        <MailConnect ready={gmailReady()} email={account?.email ?? null} sendAs={settings.email} result={mail} readOnly={viewing || !allows(member.access, "quotes", "edit")} />
       </div>
     </Shell>
   );

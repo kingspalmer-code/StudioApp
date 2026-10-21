@@ -292,9 +292,12 @@ ${esc(body).replace(/\n/g, "<br>")}
   let via: string | undefined;
   let note: string | undefined;
   if (account) {
+    // The Email in Settings can be one of their Gmail "Send mail as" addresses (say a work alias).
+    // Gmail sends from it if it's set up there, and quietly uses the main address if it isn't.
+    const sendAs = settings.email && settings.email !== account.email ? settings.email : account.email;
     const sent = await sendViaGmail(account.refresh_token, {
       fromName: from,
-      from: account.email,
+      from: sendAs,
       to: address,
       replyTo: replyTo || undefined,
       subject,
@@ -302,7 +305,7 @@ ${esc(body).replace(/\n/g, "<br>")}
       html,
       attachment: { filename, content: Buffer.from(pdf) },
     });
-    if (sent.ok) via = account.email;
+    if (sent.ok) via = sendAs;
     else {
       console.error("sendDocument gmail", sent.detail);
       if (!key) return { error: sent.reconnect ? "Gmail needs reconnecting in Settings > Quotes & invoices. Nothing was sent." : "Gmail didn't send it. Try again in a moment." };
