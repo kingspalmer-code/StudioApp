@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { addDays, cleanItems, CUSTOM_FONT, docName, gbp, KIND_LABEL, type DocKind, type LineItem } from "@/lib/documents";
-import { asDoc, jobEmail, loadSettings, pdfFor, readSettingsForm } from "@/lib/docs-server";
-import { itemsKey, itemsOf } from "@/lib/fields";
+import { asDoc, jobDefaults, loadSettings, pdfFor, readSettingsForm } from "@/lib/docs-server";
+import { itemsKey } from "@/lib/fields";
 import { gmailReady, revoke, sendViaGmail, unseal } from "@/lib/gmail";
 import { requireEditor } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
@@ -41,31 +41,9 @@ export async function setBrandFile(kind: "logo" | "font", path: string) {
 
 // Making and editing documents -----------------------------------------------------------------
 export async function createDocument(ticketId: number, kind: DocKind) {
-  const { supabase, workspace, businesses } = await owner();
-  const { data: t } = await supabase.from("tickets").select("*").eq("id", ticketId).maybeSingle<Ticket>();
-  if (!t) throw new Error("Job not found");
-  const [settings, email] = await Promise.all([loadSettings(supabase, workspace.id), jobEmail(supabase, ticketId)]);
-  const biz = businesses.find((b) => b.id === t.business_id);
-
-  // An invoice starts from the job's quote, if there is one; otherwise from the quoted amount.
-  let items: LineItem[] = [];
-  let notes = "";
-  if (kind === "invoice") {
-    const { data: quotes } = await supabase
-      .from("documents")
-      .select("items, notes, status")
-      .eq("ticket_id", ticketId)
-      .eq("kind", "quote")
-      .order("created_at", { ascending: false });
-    const best = quotes?.find((q) => q.status === "accepted") ?? quotes?.[0];
-    if (best) {
-      items = cleanItems(best.items);
-      notes = "";
-    }
-  }
-  // Otherwise from the lines the job's quote was broken into, or the quoted amount as one line.
-  if (!items.length) items = itemsOf(t, "quote_amount");
-  if (!items.length) items = [{ description: t.title, qty: 1, unit_price: Number(t.quote_amount ?? 0) }];
+  const { supabase, workspace } = await owner();
+  const [settings, job] = await Promise.all([loadSettings(supabase, workspace.id), jobDefaults(supabase, ticketId, kind)]);
+  if (!job) throw new Error("Job not found");
 
   const issued = today();
   const { data, error } = await supabase
@@ -74,12 +52,8 @@ export async function createDocument(ticketId: number, kind: DocKind) {
       workspace_id: workspace.id,
       ticket_id: ticketId,
       kind,
-      customer_name: biz?.name ?? "",
-      customer_email: email,
-      customer_address: biz?.address || t.site_address || "",
-      title: t.title,
-      items,
-      notes,
+      ...job,
+      notes: "",
       issued_on: issued,
       due_on: addDays(issued, kind === "quote" ? settings.quote_days : settings.payment_days),
       vat_rate: settings.vat_registered ? settings.vat_rate : null,
@@ -88,6 +62,13 @@ export async function createDocument(ticketId: number, kind: DocKind) {
     .single();
   if (error) throw new Error(error.message);
   redirect(`/documents/${data.id}`);
+}
+
+// The job's details again, for a quote or invoice made before they were filled in on the job.
+export async function fromJob(id: number) {
+  const { supabase } = await owner();
+  const { data: row } = await supabase.from("documents").select("ticket_id, kind").eq("id", id).maybeSingle<{ ticket_id: number | null; kind: DocKind }>();
+  return row?.ticket_id ? jobDefaults(supabase, row.ticket_id, row.kind) : null;
 }
 
 export type DocDraft = {

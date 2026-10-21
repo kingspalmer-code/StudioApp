@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { cleanItems, CUSTOM_FONT, DEFAULT_SETTINGS, FONTS, type Doc, type DocSettings } from "./documents";
+import { cleanItems, CUSTOM_FONT, DEFAULT_SETTINGS, FONTS, type Doc, type DocKind, type DocSettings } from "./documents";
+import { itemsOf, valueOf, type JobField } from "./fields";
 import { renderDocPdf } from "./pdf";
+import type { Ticket } from "./types";
 
 // Server-side helpers for quotes and invoices. Every read goes through the signed-in person's
 // Supabase client, so the database decides what they're allowed to see.
@@ -104,16 +106,43 @@ export function sampleDoc(settings: DocSettings): Doc {
   });
 }
 
-// Where a job's quotes and invoices go: an Email field filled in on the job itself, otherwise the
-// customer's email (the Email under Customer at the top of the job form saves onto the customer).
-export async function jobEmail(supabase: SupabaseClient, ticketId: number): Promise<string> {
-  const [{ data: t }, { data: fields }] = await Promise.all([
-    supabase.from("tickets").select("details, business_id").eq("id", ticketId).maybeSingle<{ details: Record<string, unknown> | null; business_id: string }>(),
-    supabase.from("job_fields").select("key").eq("kind", "email").order("position").returns<{ key: string }[]>(),
+// What a quote or invoice made from a job starts with: who it's for, where it goes and what's on it.
+// Email: an Email field filled in on the job itself, else the customer's email (the Email under
+// Customer at the top of the job form saves onto the customer). Address: the customer's, else the
+// first address on the job. Lines: an invoice follows the accepted quote; otherwise the lines an
+// amount on the job was broken into, then the latest quote, then the quoted amount as one line.
+export async function jobDefaults(supabase: SupabaseClient, ticketId: number, kind: DocKind) {
+  const [{ data: t }, { data: fields }, { data: quotes }] = await Promise.all([
+    supabase.from("tickets").select("*").eq("id", ticketId).maybeSingle<Ticket>(),
+    supabase.from("job_fields").select("*").in("kind", ["email", "address", "money"]).order("position").returns<JobField[]>(),
+    supabase.from("documents").select("items, status").eq("ticket_id", ticketId).eq("kind", "quote").order("created_at", { ascending: false }),
   ]);
-  if (!t) return "";
-  const ok = (v: unknown) => (typeof v === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? v.trim().toLowerCase() : "");
-  for (const f of fields ?? []) if (ok(t.details?.[f.key])) return ok(t.details?.[f.key]);
-  const { data: biz } = await supabase.from("businesses").select("email").eq("id", t.business_id).maybeSingle<{ email: string | null }>();
-  return ok(biz?.email);
+  if (!t) return null;
+  const { data: biz } = await supabase.from("businesses").select("name, email, address").eq("id", t.business_id).maybeSingle<{ name: string; email: string | null; address: string | null }>();
+  const text = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+  const isEmail = (v: unknown) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text(v));
+  const of = (k: JobField["kind"]) => (fields ?? []).filter((f) => f.kind === k).map((f) => valueOf(t, f));
+  const email = [...of("email"), biz?.email].find(isEmail);
+  const address = [biz?.address, ...of("address"), t.site_address].map(text).find(Boolean) ?? "";
+  // The person who asked, if there is one, alongside the customer: "Dylan Stott, The Brewery Tap".
+  const who = text(t.requester_name);
+  const name = text(biz?.name);
+  const customer = who && !name.toLowerCase().includes(who.toLowerCase()) ? [who, name].filter(Boolean).join(", ") : name;
+
+  const money = [{ key: "quote_amount" }, ...(fields ?? []).filter((f) => f.kind === "money" && f.key !== "quote_amount")];
+  const fromJob = money.map((f) => itemsOf(t, f.key)).find((x) => x.length) ?? [];
+  const accepted = quotes?.find((q) => q.status === "accepted");
+  const latest = quotes?.map((q) => cleanItems(q.items)).find((x) => x.some((i) => i.unit_price));
+  let items = kind === "invoice" && accepted ? cleanItems(accepted.items) : [];
+  if (!items.length) items = fromJob;
+  if (!items.length && kind === "invoice" && latest) items = latest;
+  if (!items.length) items = [{ description: t.title, qty: 1, unit_price: Number(t.quote_amount ?? 0) }];
+
+  return {
+    customer_name: customer.slice(0, 120),
+    customer_email: email ? text(email).toLowerCase() : "",
+    customer_address: address.slice(0, 400),
+    title: t.title,
+    items,
+  };
 }
