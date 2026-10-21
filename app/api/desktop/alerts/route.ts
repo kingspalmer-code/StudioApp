@@ -26,13 +26,13 @@ export async function GET(req: Request) {
     .neq("created_by", email)
     .order("created_at")
     .limit(10)
-    .returns<{ id: number; title: string; type: string; deadline: string; requester_name: string; created_by: string; businesses: { name: string } | null }[]>();
+    .returns<{ id: number; title: string; type: string; deadline: string | null; requester_name: string; created_by: string; businesses: { name: string } | null }[]>();
 
   const alerts = (tickets ?? []).map((t) => {
     const who = t.requester_name || t.created_by;
     return {
       title: `New request from ${t.businesses?.name || who}`,
-      body: `${t.title} (${t.type}), needed by ${formatDate(t.deadline)}. Sent by ${who}.`,
+      body: `${t.title} (${t.type})${t.deadline ? `, needed by ${formatDate(t.deadline)}` : ""}. Sent by ${who}.`,
       url: `/tickets/${t.id}`,
     };
   });

@@ -6,7 +6,7 @@ import QueueWidgets from "@/components/QueueWidgets";
 import { STARTER_OATCAKES } from "@/lib/pet";
 import { loadWidgets } from "@/lib/widgets";
 import Walkthrough from "@/components/Walkthrough";
-import { daysFromToday, finalStage, formatDate, isDone, money, sortQueue, startBy, startLabel } from "@/lib/priority";
+import { dueOf, dueWithin, finalStage, formatDate, isDone, money, sortQueue, startBy, startLabel } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
 import { withMine } from "@/lib/workspace";
 import { createClient } from "@/lib/supabase/server";
@@ -36,8 +36,8 @@ export default async function QueuePage({
   const href = (v: string, b: string) => `/queue?view=${v}&biz=${b}`;
 
   // One line of what matters, instead of a row of number tiles. The totals live on Overview.
-  const startNow = queue.filter((t) => startBy(t, ctx) <= 0).length;
-  const dueSoon = queue.filter((t) => { const d = daysFromToday(t.deadline); return d >= 0 && d <= 7; }).length;
+  const startNow = queue.filter((t) => dueOf(t, ctx) && startBy(t, ctx) <= 0).length;
+  const dueSoon = queue.filter((t) => dueWithin(t, ctx, 7)).length;
   const waiting = trade ? 0 : all.filter((t) => t.status === "waiting").length;
   const summary = [
     startNow ? { n: startNow, text: "to start now", color: "var(--red)" } : null,
@@ -83,7 +83,9 @@ export default async function QueuePage({
               </span>
             ))
           : queue.length
-            ? "Nothing urgent. Everything open, in the order to start it."
+            ? ctx.noDates
+              ? "Everything open: pinned first, then by importance, oldest first."
+              : "Nothing urgent. Everything open, in the order to start it."
             : null}
       </p>
 
@@ -121,7 +123,7 @@ export default async function QueuePage({
                 <h3><span>{st.label}</span><span>{items.length}</span></h3>
                 {items.map((t) => {
                   const b = byId[t.business_id];
-                  const sb = startLabel(startBy(t, ctx));
+                  const sb = dueOf(t, ctx) ? startLabel(startBy(t, ctx)) : null;
                   return (
                     <Link href={`/tickets/${t.id}`} className="card" key={t.id}>
                       <span className="m">
@@ -135,10 +137,10 @@ export default async function QueuePage({
                       <span className="m">
                         <span>{trade && t.quote_amount != null ? money(t.quote_amount) : t.type}</span>
                         {st.key === final ? (
-                          <span className="when">{formatDate(t.delivered_at ?? t.deadline)}</span>
-                        ) : (
+                          <span className="when">{formatDate(t.delivered_at ?? t.deadline ?? t.updated_at)}</span>
+                        ) : sb ? (
                           <span className={`when ${sb.tone}`}>{sb.text}</span>
-                        )}
+                        ) : null}
                       </span>
                     </Link>
                   );

@@ -47,7 +47,7 @@ export async function openFile(id: number): Promise<JobFile | null> {
     biz: businesses.find((b) => b.id === t.business_id)?.name ?? "",
     status: statusLabel(ctx, t.status),
     started: year(t.created_at),
-    finished: year(t.delivered_at ?? t.deadline),
+    finished: year(t.delivered_at ?? t.deadline ?? t.updated_at),
     details: groupFields(withValues).map((g) => ({
       title: g.title,
       rows: g.fields.map((f) => ({ label: f.label, value: showValue(f, valueOf(t, f)), long: f.kind === "longtext" })),

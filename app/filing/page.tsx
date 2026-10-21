@@ -21,7 +21,7 @@ export default async function FilingPage({ searchParams }: { searchParams: Promi
   const { data } = await query.returns<ListTicket[]>();
   const finished = (data ?? [])
     .filter((t) => isDone(t, ctx))
-    .map((t) => ({ ...t, when: t.delivered_at ?? t.deadline }))
+    .map((t) => ({ ...t, when: t.delivered_at ?? t.deadline ?? t.updated_at }))
     .sort((a, b) => b.when.localeCompare(a.when) || b.id - a.id);
   const covers = await coversFor(supabase, finished.map((t) => t.id));
   // Money only shows to the studio.

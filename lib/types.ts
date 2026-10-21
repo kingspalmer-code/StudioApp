@@ -59,7 +59,8 @@ export type Ticket = {
   copy: string;
   links: string;
   colours: string;
-  deadline: string;
+  // Empty when the workspace works without dates (Needed by hidden on the job form).
+  deadline: string | null;
   event_date: string | null;
   priority: Priority;
   approver: string;

@@ -2,7 +2,8 @@ import type { JobType, Priority, Stage, ListTicket, Status, Ticket } from "./typ
 
 // A workspace's stages (in order) and job types. Job types carry the working days each kind
 // of job realistically needs, which drives the start-by priority.
-export type Ctx = { stages: Stage[]; types: JobType[] };
+// noDates: the workspace hid Needed by, so jobs have no due date and nothing goes by one.
+export type Ctx = { stages: Stage[]; types: JobType[]; noDates?: boolean };
 
 export const PRIORITIES: Priority[] = ["Standard", "High", "Urgent"];
 const PRIORITY_BUMP: Record<Priority, number> = { Standard: 0, High: 1, Urgent: 2 };
@@ -35,17 +36,36 @@ export function daysFromToday(date: string): number {
   return Math.round((Date.parse(date) - Date.parse(todayISO())) / DAY);
 }
 
-// Days until this job should start: needed-by minus lead time, brought forward for High/Urgent.
-export function startBy(t: Pick<Ticket, "deadline" | "type" | "priority">, ctx: Ctx): number {
-  return daysFromToday(t.deadline) - leadDays(ctx, t.type) - PRIORITY_BUMP[t.priority];
+// The job's needed-by date, unless it has none or the workspace works without dates.
+export const dueOf = (t: Pick<Ticket, "deadline">, ctx: Ctx): string | null => (ctx.noDates ? null : t.deadline || null);
+
+// Due between today and `days` from now.
+export function dueWithin(t: Pick<Ticket, "deadline">, ctx: Ctx, days: number): boolean {
+  const due = dueOf(t, ctx);
+  if (!due) return false;
+  const n = daysFromToday(due);
+  return n >= 0 && n <= days;
 }
 
+// A far-off start for jobs with no date, so they queue after dated ones, still Urgent before Standard.
+const NO_DATE = 9999;
+
+// Days until this job should start: needed-by minus lead time, brought forward for High/Urgent.
+export function startBy(t: Pick<Ticket, "deadline" | "type" | "priority">, ctx: Ctx): number {
+  const due = dueOf(t, ctx);
+  return (due ? daysFromToday(due) - leadDays(ctx, t.type) : NO_DATE) - PRIORITY_BUMP[t.priority];
+}
+
+// Without dates: pinned, then importance, then oldest first.
 export function sortQueue<T extends ListTicket>(tickets: T[], ctx: Ctx): T[] {
   return tickets
     .filter((t) => !isDone(t, ctx))
     .sort(
       (a, b) =>
-        Number(b.pinned) - Number(a.pinned) || startBy(a, ctx) - startBy(b, ctx) || a.deadline.localeCompare(b.deadline)
+        Number(b.pinned) - Number(a.pinned) ||
+        startBy(a, ctx) - startBy(b, ctx) ||
+        (dueOf(a, ctx) ?? "").localeCompare(dueOf(b, ctx) ?? "") ||
+        a.created_at.localeCompare(b.created_at)
     );
 }
 
@@ -84,7 +104,8 @@ export function dueLabel(date: string): string {
 }
 
 export function isAtRisk(t: ListTicket, ctx: Ctx): boolean {
-  return !isDone(t, ctx) && (startBy(t, ctx) < 0 || (t.status === "waiting" && daysFromToday(t.deadline) <= 5));
+  const due = dueOf(t, ctx);
+  return !!due && !isDone(t, ctx) && (startBy(t, ctx) < 0 || (t.status === "waiting" && daysFromToday(due) <= 5));
 }
 
 export function money(n: number | null | undefined): string {

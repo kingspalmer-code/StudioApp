@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { daysFromToday, formatDate, isAtRisk, isDone, money, sortQueue, startBy, startLabel, statusLabel } from "@/lib/priority";
+import { daysFromToday, dueOf, formatDate, isAtRisk, isDone, money, sortQueue, startBy, startLabel, statusLabel } from "@/lib/priority";
 import { requireMember } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
 
@@ -19,19 +19,20 @@ const GUIDE = `How Oatcake is laid out (use these paths for links):
 - To-do (/calendar): the one place for to-dos. A list in priority order (drag the numbers to reorder) beside a month calendar; drag a to-do onto a day to plan it. To-dos can have steps, a time, a reminder, a job they belong to, and logged hours. The + button's Task adds one: type "tomorrow", a weekday or "next week" to set a date, and "!" to put it at the top. Employees see their own to-dos here, with the tasks you set them on Team at the top.
 - A job's page (open it from Jobs): change its stage, pin it to the top, edit details, add notes, and make quotes and invoices with "+ New quote" or "+ New invoice". When a job is finished it offers to create the invoice.
 - A quote or invoice: edit the customer, line items, VAT and notes; "Draft with Oatcake" fills in line items; "Preview PDF", "Email to customer" (sends the PDF, replies come back to you), "Mark accepted" or "Mark paid".
-- Settings (/settings; tap your photo or initials at the top right, then Settings): rename the workspace; job types and how many days each takes; stages (add, rename, reorder, colour, delete); the job form (/settings/form) to add, rename, reorder or hide fields; quote and invoice style (/settings/documents) for logo, font, colour, business details, VAT, bank details, payment terms and footer.
+- Settings (/settings; tap your photo or initials at the top right, then Settings): rename the workspace; job types and how many days each takes; stages (add, rename, reorder, colour, delete); the job form (/settings/form) to add, rename, reorder or hide fields (hiding Needed by turns due dates off: jobs then queue pinned first, by importance, oldest first); quote and invoice style (/settings/documents) for logo, font, colour, business details, VAT, bank details, payment terms and footer.
 - Account (/account; tap your photo or initials at the top right): password, light or dark appearance, sign out, and "Show me around again" to replay the walkthrough. Also "Help & support" (/help) to message the Oatcake team.
 - Help (/help): message the Oatcake team about a problem or idea, with a screenshot if useful. Replies show there and by email.`;
 
 function line(t: Ticket, biz: string, ctx: Parameters<typeof sortQueue>[1]) {
   const done = isDone(t, ctx);
+  const due = dueOf(t, ctx);
   const parts = [
     `#${t.id} ${t.title}`,
     `customer: ${biz}`,
     `type: ${t.type}`,
     `stage: ${statusLabel(ctx, t.status)}`,
-    done ? `delivered ${formatDate(t.delivered_at ?? t.deadline)}` : `due ${formatDate(t.deadline)} (${daysFromToday(t.deadline)} days from today)`,
-    !done && `start: ${startLabel(startBy(t, ctx)).text}`,
+    done ? `delivered ${formatDate(t.delivered_at ?? t.deadline ?? t.updated_at)}` : due ? `due ${formatDate(due)} (${daysFromToday(due)} days from today)` : "no due date",
+    !done && due && `start: ${startLabel(startBy(t, ctx)).text}`,
     t.priority !== "Standard" && `priority: ${t.priority}`,
     t.pinned && "pinned",
     !done && isAtRisk(t, ctx) && "AT RISK",
