@@ -1684,3 +1684,53 @@ html.app-glass .app-drag { background: transparent; border-bottom-color: transpa
 }
 .tell-chips .tell-biz { color: var(--label-2); font-weight: 400; }
 .tell-chips button[aria-pressed="true"] .tell-biz { color: inherit; opacity: .75; }
+
+/* Customise (components/PageBlocks.tsx): Queue and Overview as blocks to drag, remove and add. */
+.page-tools { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.page-tools > div:empty { display: none; }
+.page-tools:has(> div:empty) { justify-content: flex-end; margin-bottom: 6px; }
+.customise-btn { display: inline-flex; align-items: center; gap: 6px; flex: none; margin-top: 8px; }
+.customise-btn svg, .pb-block svg, .pb-spare svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pb-row + .pb-row { margin-top: 6px; }
+.pb-row > .stats, .pb-row > .biz-grid { margin-bottom: 18px; }
+.pb-edit { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding-top: 4px; }
+.pb-intro { margin: 0 0 4px; color: var(--label-2); font-size: 14px; max-width: 60ch; }
+.pb-block { background: var(--surface); border-radius: 16px; box-shadow: 0 0 0 .5px var(--sep), var(--shadow); overflow: hidden; animation: pb-wiggle-in .2s ease-out; transition: opacity .15s, transform .15s; }
+.pb-block.dragging { opacity: .45; transform: scale(.985); }
+.pb-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: .5px solid var(--sep); cursor: grab; user-select: none; }
+.pb-head:active { cursor: grabbing; }
+.pb-name { flex: 1; min-width: 0; display: grid; line-height: 1.25; }
+.pb-name b { font-size: 15px; }
+.pb-name small { color: var(--label-2); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pb-remove, .pb-plus { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 0; display: grid; place-items: center; padding: 0; color: #fff; }
+.pb-remove { background: var(--red); cursor: pointer; }
+.pb-plus { background: var(--green); }
+.pb-arrow { flex: none; width: 32px; height: 32px; border: 0; border-radius: 9px; background: var(--fill); color: var(--label); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.pb-arrow:disabled { opacity: .35; cursor: default; }
+.pb-grip { flex: none; color: var(--label-3); display: grid; place-items: center; width: 22px; }
+.pb-preview { position: relative; max-height: 190px; overflow: hidden; padding: 12px 14px 0; pointer-events: none; background: var(--bg); }
+.pb-preview::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 56px; background: linear-gradient(transparent, var(--bg)); }
+.pb-preview > :first-child { margin-top: 0; }
+.pb-preview > .eyebrow:first-child { display: none; }
+.pb-preview > h1.large { font-size: 24px; }
+.pb-preview .widgets { margin-bottom: 8px; }
+.pb-empty { padding: 28px 16px; text-align: center; color: var(--label-2); border: 1.5px dashed var(--sep); border-radius: 16px; }
+.pb-spare { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.pb-spare button { display: flex; align-items: center; gap: 10px; text-align: left; border: 1.5px dashed var(--sep); background: transparent; color: var(--label); font: inherit; padding: 12px; border-radius: 14px; cursor: pointer; }
+.pb-spare button:hover { background: var(--fill); }
+.pb-edit > .eyebrow { margin-top: 14px; }
+/* The bar to finish with floats over the page, so it's glass; it rides along at the bottom. */
+.pb-bar { position: sticky; bottom: 16px; z-index: 10; justify-self: center; display: flex; align-items: center; gap: 8px; margin-top: 18px; padding: 8px 8px 8px 16px; border-radius: 99px; background: var(--glass-tint), var(--glass-thick); -webkit-backdrop-filter: var(--glass-blur-deep); backdrop-filter: var(--glass-blur-deep); box-shadow: var(--glass-edge), 0 0 0 .5px var(--glass-line), var(--glass-shadow); }
+.pb-bar .btn.small { border-radius: 99px; padding: 8px 14px; }
+.pb-bar-title { font-weight: 600; font-size: 14px; margin-right: 6px; white-space: nowrap; }
+@keyframes pb-wiggle-in { from { transform: scale(.98); opacity: .6; } }
+@media (max-width: 700px) {
+  html.customising .tabbar { display: none; }
+  .pb-bar { bottom: calc(12px + env(safe-area-inset-bottom, 0px)); width: 100%; justify-content: flex-end; }
+  .pb-bar-title { margin-right: auto; }
+  .pb-bar-title span { display: none; }
+  .pb-name small { white-space: normal; }
+  .pb-grip { display: none; }
+}
+@media (prefers-reduced-transparency: reduce) { .pb-bar { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+@media (prefers-reduced-motion: reduce) { .pb-block { animation: none; } }

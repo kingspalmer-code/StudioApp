@@ -1,143 +1,39 @@
 import Link from "next/link";
-import BizBadge from "@/components/BizBadge";
 import QueueWidgets from "@/components/QueueWidgets";
+import HomeBlocks from "@/components/HomeBlocks";
 import Shell from "@/components/Shell";
 import SplitHost from "@/components/SplitHost";
 import TicketRow from "@/components/TicketRow";
-import { businessOatcakes, hatchBase, oatcakesEarned, STARTER_OATCAKES } from "@/lib/pet";
-import { dueOf, dueWithin, finalStage, formatDate, isAtRisk, isDone, money, sortQueue, stageColor } from "@/lib/priority";
+import { businessOatcakes, STARTER_OATCAKES } from "@/lib/pet";
+import { dueWithin, finalStage, isDone, stageColor } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
-import { withMine } from "@/lib/workspace";
 import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
-import type { Ticket } from "@/lib/types";
 import { loadWidgets } from "@/lib/widgets";
 
 type Session = Awaited<ReturnType<typeof requireMember>>;
 
-export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ business?: string }> }) {
+export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ business?: string; view?: string; biz?: string }> }) {
   const session = asClient(await requireMember(["manager", "designer", "client"], "requests"));
-  if (session.member.role === "client") return <ClientOverview session={session} business={(await searchParams).business} />;
-  const { supabase, member, businesses, self, ctx, terms, workspace, shell, viewing } = session;
-  // Managers get the widget row too, with an oatcake for Pickle for every request they send.
-  const manager = member.role === "manager" && !viewing;
-  const [{ data }, earned] = await Promise.all([
-    supabase.from("tickets").select(LIST_COLUMNS).returns<ListTicket[]>(),
-    manager ? oatcakesEarned(supabase, member, ctx) : Promise.resolve(0),
-  ]);
-  const all = data ?? [];
-  const open = sortQueue(all, ctx);
-  const done = all
-    .filter((t) => isDone(t, ctx))
-    .sort((a, b) => (b.delivered_at ?? "").localeCompare(a.delivered_at ?? ""));
-  const risk = open.filter((t) => isAtRisk(t, ctx));
-  const byId = Object.fromEntries(withMine(businesses, self, workspace.kind).map((b) => [b.id, b]));
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
-  const deliveredThisMonth = done.filter((t) => t.delivered_at && new Date(t.delivered_at) >= monthStart).length;
-
-  const unpaid = all.reduce((sum, t) => sum + Math.max(0, (t.quote_amount ?? 0) - (t.paid_amount ?? 0)), 0);
-  const stats = [
-    { n: open.length, label: `Open ${terms.jobs}` },
-    workspace.kind !== "studio"
-      ? { n: money(unpaid), label: "Quoted, not yet paid", color: unpaid ? "var(--orange)" : undefined }
-      : ctx.noDates
-        ? { n: open.filter((t) => t.status === "waiting").length, label: "Waiting on clients" }
-        : { n: open.filter((t) => dueWithin(t, ctx, 7)).length, label: "Due this week" },
-    // Without dates nothing can run late, so the up-next list stands in for at risk.
-    ctx.noDates
-      ? { n: all.filter((t) => new Date(t.created_at) >= monthStart).length, label: "New this month" }
-      : { n: risk.length, label: "At risk", color: risk.length ? "var(--red)" : undefined },
-    { n: deliveredThisMonth, label: "Delivered this month", color: "var(--green)" },
-  ];
-
-  const widgets = manager
-    ? <QueueWidgets {...await loadWidgets(supabase, all, ctx, byId, { earned, base: hatchBase(member, earned) })} earnHint="Send a request to earn an oatcake" />
-    : null;
-
+  const { business, view, biz } = await searchParams;
+  if (session.member.role === "client") return <ClientOverview session={session} business={business} />;
+  const { data } = await session.supabase.from("tickets").select(LIST_COLUMNS).returns<ListTicket[]>();
+  const { terms, workspace } = session;
+  // The owner's and managers' Overview is a page of blocks they can change with Customise
+  // (lib/layouts.ts): totals, the work by client, at risk and delivered to start with.
   return (
-    <Shell {...shell}>
-      {widgets}
-      <h1 className="large">Overview</h1>
-      <p className="sub">Workload and progress across all your {workspace.kind === "solo" ? terms.jobs : terms.clients}.</p>
-      <div className="stats">
-        {stats.map((s) => (
-          <div className="stat" key={s.label}>
-            <b style={s.color ? { color: s.color } : undefined}>{s.n}</b>
-            <span>{s.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Working alone, there's nobody to break the work down by. */}
-      {workspace.kind !== "solo" && (
-        <>
-          <p className="eyebrow">By {terms.client}</p>
-          <div className="biz-grid">
-            {businesses.filter((b) => workspace.kind === "studio" || open.some((t) => t.business_id === b.id)).map((b) => {
-              const ts = all.filter((t) => t.business_id === b.id);
-              const counts = ctx.stages.map((st) => ({ st, n: ts.filter((t) => t.status === st.key).length }));
-              const total = ts.length || 1;
-              // open is already in queue order, which goes by due date when there are dates.
-              const next = open.find((t) => t.business_id === b.id);
-              const nextDue = next && dueOf(next, ctx);
-              return (
-                <div className="biz" key={b.id}>
-                  <h4><BizBadge biz={b} size={26} />{b.name}</h4>
-                  <div className="meter" role="img" aria-label={counts.map((c) => `${c.n} ${c.st.label}`).join(", ")}>
-                    {counts.map((c) => (
-                      <i key={c.st.key} style={{ width: `${(c.n / total) * 100}%`, background: stageColor(c.st.color) }} />
-                    ))}
-                  </div>
-                  <div className="legend">
-                    {counts.filter((c) => c.n).map((c) => (
-                      <span key={c.st.key}>
-                        <span className="dot" style={{ background: stageColor(c.st.color), width: 7, height: 7 }} />
-                        {c.n} {c.st.label}
-                      </span>
-                    ))}
-                    {!ts.length && <span>No {terms.jobs} yet</span>}
-                  </div>
-                  <div className="kv">
-                    <span>{ctx.noDates ? "Next up" : "Next due"}</span>
-                    <b>{next ? `${next.title}${nextDue ? ` · ${formatDate(nextDue)}` : ""}` : "Nothing open"}</b>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-
-      <SplitHost warm={risk.slice(0, 2).map((t) => t.id)}>
-      <div className="cols" style={{ marginTop: 6 }}>
-        <div>
-          {ctx.noDates ? (
-            <>
-              <p className="eyebrow">Up next</p>
-              <div className="group">
-                {open.length ? open.slice(0, 5).map((t) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} plan={member.role === "designer" && !viewing} />) : <div className="empty">Nothing open right now.</div>}
-              </div>
-              <p className="foot">Pinned first, then by importance, oldest first.</p>
-            </>
-          ) : (
-            <>
-              <p className="eyebrow">At risk</p>
-              <div className="group">
-                {risk.length ? risk.map((t) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} plan={member.role === "designer" && !viewing} />) : <div className="empty">Nothing at risk right now.</div>}
-              </div>
-              <p className="foot">Should already have started, or waiting on the client within 5 days of the deadline.</p>
-            </>
-          )}
-        </div>
-        <div>
-          <p className="eyebrow">Delivered recently</p>
-          <div className="group">
-            {done.length ? done.slice(0, 10).map((t) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} />) : <div className="empty">Nothing delivered yet.</div>}
-          </div>
-        </div>
-      </div>
-      </SplitHost>
+    <Shell {...session.shell}>
+      <HomeBlocks
+        session={session}
+        all={data ?? []}
+        page="overview"
+        title="Overview"
+        view={view}
+        biz={biz}
+        head={<>
+          <h1 className="large">Overview</h1>
+          <p className="sub">Workload and progress across all your {workspace.kind === "solo" ? terms.jobs : terms.clients}.</p>
+        </>}
+      />
     </Shell>
   );
 }
