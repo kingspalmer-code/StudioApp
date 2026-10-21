@@ -3,12 +3,20 @@ import Shell from "@/components/Shell";
 import FrameChanged from "@/components/FrameChanged";
 import { loadSettings } from "@/lib/docs-server";
 import { requireMember } from "@/lib/session";
+import { allows } from "@/lib/access";
+import { gmailReady } from "@/lib/gmail";
 import DocSettingsForm from "./DocSettingsForm";
+import MailConnect from "./MailConnect";
 
 // Settings → Quotes & invoices: the look and business details every PDF uses.
-export default async function DocumentSettingsPage() {
+export default async function DocumentSettingsPage({ searchParams }: { searchParams: Promise<{ mail?: string }> }) {
   const { supabase, workspace, member, shell, viewing } = await requireMember(["designer"], "quotes");
-  const settings = await loadSettings(supabase, workspace.id);
+  const [settings, { data: account }, { mail }] = await Promise.all([
+    loadSettings(supabase, workspace.id),
+    // Only people who can edit quotes see this row; for everyone else it reads as not connected.
+    supabase.from("mail_accounts").select("email").eq("workspace_id", workspace.id).maybeSingle<{ email: string }>(),
+    searchParams,
+  ]);
   const logo = settings.logo_path ? (await supabase.storage.from("brand").createSignedUrl(settings.logo_path, 3600)).data?.signedUrl ?? null : null;
 
   return (
@@ -24,6 +32,7 @@ export default async function DocumentSettingsPage() {
           workspaceId={workspace.id}
           readOnly={viewing}
         />
+        <MailConnect ready={gmailReady()} email={account?.email ?? null} result={mail} readOnly={viewing || !allows(member.access, "quotes", "edit")} />
       </div>
     </Shell>
   );

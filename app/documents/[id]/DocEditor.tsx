@@ -91,7 +91,7 @@ export default function DocEditor({
       const res = await sendDocument(doc.id, to, note);
       if (res.error) return setMsg({ text: res.error, bad: true });
       setSending(false);
-      setMsg({ text: `Sent to ${to}.` });
+      setMsg(res.note ? { text: `Sent to ${to}. ${res.note}`, bad: true } : { text: res.via ? `Sent to ${to} from ${res.via}.` : `Sent to ${to}.` });
       router.refresh();
     });
   }

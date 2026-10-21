@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { addDays, cleanItems, CUSTOM_FONT, docName, gbp, KIND_LABEL, type DocKind, type LineItem } from "@/lib/documents";
 import { asDoc, loadSettings, pdfFor, readSettingsForm } from "@/lib/docs-server";
 import { itemsKey, itemsOf } from "@/lib/fields";
+import { gmailReady, revoke, sendViaGmail, unseal } from "@/lib/gmail";
 import { requireEditor } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
 
@@ -233,10 +234,29 @@ notes: one or two short sentences for the bottom of the ${KIND_LABEL[doc.kind].t
 // Emailing ---------------------------------------------------------------------------------------
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-export async function sendDocument(id: number, to: string, message: string): Promise<{ ok?: boolean; error?: string }> {
+// Settings > Quotes & invoices > Disconnect: forget the Gmail sign-in and tell Google too.
+export async function disconnectMail() {
+  const { supabase, workspace } = await owner();
+  const { data } = await supabase.from("mail_accounts").select("refresh_token").eq("workspace_id", workspace.id).maybeSingle();
+  const { error } = await supabase.from("mail_accounts").delete().eq("workspace_id", workspace.id);
+  if (error) throw new Error(error.message);
+  if (data?.refresh_token) {
+    try {
+      await revoke(unseal(data.refresh_token));
+    } catch {}
+  }
+  revalidatePath("/settings/documents");
+}
+
+// Sent from their own Gmail when one is connected, otherwise from Oatcake's address with replies
+// going to them. If Gmail stops accepting the sign-in, it goes from Oatcake and says to reconnect.
+export async function sendDocument(id: number, to: string, message: string): Promise<{ ok?: boolean; error?: string; note?: string; via?: string }> {
   const key = process.env.RESEND_API_KEY;
-  if (!key) return { error: "Emailing isn't switched on yet. Download the PDF and send it yourself for now." };
   const { supabase, workspace, member } = await owner();
+  const { data: account } = gmailReady()
+    ? await supabase.from("mail_accounts").select("email, refresh_token").eq("workspace_id", workspace.id).maybeSingle()
+    : { data: null };
+  if (!key && !account) return { error: "Emailing isn't switched on yet. Download the PDF and send it yourself for now." };
   const address = to.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) return { error: "Check the email address." };
 
@@ -265,23 +285,50 @@ ${esc(body).replace(/\n/g, "<br>")}
 <p style="margin:22px 0 0;color:#6b5d55;font-size:13px">${esc(from)}${replyTo ? ` · Reply to this email to get in touch` : ""}</p>
 </div>`;
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: `${from} via Oatcake <documents@oatcake.xyz>`,
-      to: [address],
-      reply_to: replyTo || undefined,
-      subject: `${name} from ${from}`,
+  const subject = `${name} from ${from}`;
+  const text = `${body}\n\n${name}${doc.title ? ` · ${doc.title}` : ""}\n${gbp(doc.total)}\n\n${from}`;
+  const filename = `${name}.pdf`;
+
+  let via: string | undefined;
+  let note: string | undefined;
+  if (account) {
+    const sent = await sendViaGmail(account.refresh_token, {
+      fromName: from,
+      from: account.email,
+      to: address,
+      replyTo: replyTo || undefined,
+      subject,
+      text,
       html,
-      text: `${body}\n\n${name}${doc.title ? ` · ${doc.title}` : ""}\n${gbp(doc.total)}\n\n${from}`,
-      attachments: [{ filename: `${name}.pdf`, content: Buffer.from(pdf).toString("base64") }],
-    }),
-  });
-  if (!res.ok) {
-    const detail = await res.text();
-    console.error("sendDocument", res.status, detail);
-    return { error: `The email didn't send (${res.status}). Try again, or download the PDF and send it yourself.` };
+      attachment: { filename, content: Buffer.from(pdf) },
+    });
+    if (sent.ok) via = account.email;
+    else {
+      console.error("sendDocument gmail", sent.detail);
+      if (!key) return { error: sent.reconnect ? "Gmail needs reconnecting in Settings > Quotes & invoices. Nothing was sent." : "Gmail didn't send it. Try again in a moment." };
+      note = sent.reconnect ? "Gmail needs reconnecting in Settings > Quotes & invoices, so this went from Oatcake's address." : "Gmail didn't take it, so this went from Oatcake's address.";
+    }
+  }
+
+  if (!via) {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: `${from} via Oatcake <documents@oatcake.xyz>`,
+        to: [address],
+        reply_to: replyTo || undefined,
+        subject,
+        html,
+        text,
+        attachments: [{ filename, content: Buffer.from(pdf).toString("base64") }],
+      }),
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      console.error("sendDocument", res.status, detail);
+      return { error: `The email didn't send (${res.status}). Try again, or download the PDF and send it yourself.` };
+    }
   }
   await supabase
     .from("documents")
@@ -291,5 +338,5 @@ ${esc(body).replace(/\n/g, "<br>")}
     await supabase.from("tickets").update({ quote_amount: doc.total }).eq("id", doc.ticket_id).is("quote_amount", null);
   }
   revalidatePath(`/documents/${id}`);
-  return { ok: true };
+  return { ok: true, via, note };
 }
