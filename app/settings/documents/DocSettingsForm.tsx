@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { saveDocSettings, setBrandFile } from "@/app/documents/actions";
-import { CUSTOM_FONT, FONTS, type DocSettings } from "@/lib/documents";
+import { CUSTOM_FONT, FONTS, docNumber, type DocSettings } from "@/lib/documents";
 import { createClient } from "@/lib/supabase/client";
 import PdfSheet, { type PdfRequest } from "@/components/PdfSheet";
 
@@ -14,8 +14,10 @@ export default function DocSettingsForm({
   logoUrl,
   workspaceId,
   readOnly,
+  used,
 }: {
   settings: DocSettings;
+  used: { invoice: number; quote: number };
   logoUrl: string | null;
   workspaceId: string;
   readOnly: boolean;
@@ -24,6 +26,8 @@ export default function DocSettingsForm({
   const [font, setFont] = useState(settings.font);
   const [accent, setAccent] = useState(settings.accent);
   const [vat, setVat] = useState(settings.vat_registered);
+  const [nextInvoice, setNextInvoice] = useState(String(settings.next_invoice));
+  const [nextQuote, setNextQuote] = useState(String(settings.next_quote));
   const [msg, setMsg] = useState<{ text: string; bad?: boolean } | null>(null);
   const [uploading, setUploading] = useState<"logo" | "font" | null>(null);
   const [pending, start] = useTransition();
@@ -134,6 +138,16 @@ export default function DocSettingsForm({
             <div className="row"><label htmlFor="bk">Bank details</label><div className="ctl"><textarea id="bk" name="bank_details" defaultValue={settings.bank_details} rows={3} placeholder={"Account name, sort code and account number.\nShown on invoices only."} /></div></div>
             <div className="row"><label htmlFor="ft">Footer</label><div className="ctl"><input id="ft" name="footer" defaultValue={settings.footer} placeholder="e.g. Thank you for your business" /></div></div>
           </div>
+
+          <p className="eyebrow">Numbering</p>
+          <div className="group">
+            <div className="row"><label htmlFor="ni">Next invoice</label><div className="ctl"><input id="ni" name="next_invoice" type="number" min={used.invoice + 1} max={9999999} step={1} value={nextInvoice} onChange={(e) => setNextInvoice(e.target.value)} /></div><span className="when">{docNumber({ kind: "invoice", number: Math.max(Number(nextInvoice) || 0, used.invoice + 1) })}</span></div>
+            <div className="row"><label htmlFor="nq">Next quote</label><div className="ctl"><input id="nq" name="next_quote" type="number" min={used.quote + 1} max={9999999} step={1} value={nextQuote} onChange={(e) => setNextQuote(e.target.value)} /></div><span className="when">{docNumber({ kind: "quote", number: Math.max(Number(nextQuote) || 0, used.quote + 1) })}</span></div>
+          </div>
+          <p className="foot">
+            Already numbering invoices somewhere else? Put the next number here and Oatcake carries on from it.
+            {(used.invoice > 0 || used.quote > 0) && " It can't go back to a number you've already used."}
+          </p>
 
           {msg && <p className={msg.bad ? "error" : "foot"}>{msg.text}</p>}
           <div className="doc-actions">
