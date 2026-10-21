@@ -30,12 +30,16 @@ export default function SplitHost({
   // While a job is open beside the list, the page makes room for it (globals.css, html.split-open),
   // and its row is marked.
   useEffect(() => {
-    document.documentElement.classList.toggle("split-open", openHref !== null);
+    if (openHref === null) return;
+    document.documentElement.classList.add("split-open");
+    return () => document.documentElement.classList.remove("split-open");
+  }, [openHref]);
+  useEffect(() => {
     box.current?.querySelectorAll("a[href]").forEach((a) => {
+      if (a.closest(".split-host") !== box.current) return;
       if (a.getAttribute("href") === openHref) a.setAttribute("data-open", "");
       else a.removeAttribute("data-open");
     });
-    return () => document.documentElement.classList.remove("split-open");
   }, [openHref, children]);
 
   // Going back to a narrow window closes the panel rather than squashing the list.
@@ -47,7 +51,16 @@ export default function SplitHost({
   }, []);
   useEffect(() => () => clearTimeout(hoverWait.current), []);
 
+  // A list inside another (the queue's list in a page of blocks) looks after its own rows, and
+  // opening a job in one closes whatever the other had open.
+  useEffect(() => {
+    const other = (e: Event) => (e as CustomEvent).detail !== box.current && setOpenHref(null);
+    window.addEventListener("oc-split-open", other);
+    return () => window.removeEventListener("oc-split-open", other);
+  }, []);
+
   const rowHref = (e: MouseEvent | PointerEvent) => {
+    if ((e.target as Element).closest?.(".split-host") !== box.current) return null;
     const href = (e.target as Element).closest?.("a[href]")?.getAttribute("href");
     return href && opensHere(under, href) ? href : null;
   };
@@ -58,6 +71,7 @@ export default function SplitHost({
     const href = rowHref(e);
     if (!href) return;
     e.preventDefault();
+    window.dispatchEvent(new CustomEvent("oc-split-open", { detail: box.current }));
     setOpenHref(href);
   };
   // After a beat, so sweeping across the list doesn't load every job.
