@@ -13,7 +13,7 @@ const RESULT: Record<string, { text: string; bad?: boolean }> = {
 };
 
 // Settings > Quotes & invoices > Sending: which address customers see quotes and invoices come from.
-export default function MailConnect({ ready, email, result, readOnly }: { ready: boolean; email: string | null; result?: string; readOnly: boolean }) {
+export default function MailConnect({ ready, email, sendAs, result, readOnly }: { ready: boolean; email: string | null; sendAs: string; result?: string; readOnly: boolean }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState(result ? RESULT[result] ?? null : null);
@@ -37,7 +37,9 @@ export default function MailConnect({ ready, email, result, readOnly }: { ready:
         <div className="row">
           <span className="when">
             {email
-              ? `Quotes and invoices go from ${email} and show in its Sent folder.`
+              ? sendAs && sendAs !== email
+                ? `Quotes and invoices go through ${email} from ${sendAs}, your Email above, and show in its Sent folder. ${sendAs} needs to be set up in Gmail under Settings > Accounts > Send mail as, or Gmail sends from ${email} instead.`
+                : `Quotes and invoices go from ${email} and show in its Sent folder. To send from another address you've added to Gmail under "Send mail as", put it in Email above.`
               : ready
                 ? "Customers see “via Oatcake” and replies come to your email above. Connect Gmail to send from your own address instead. Oatcake can only send, never read your mail."
                 : "Customers see “via Oatcake” and replies come to your email above."}
