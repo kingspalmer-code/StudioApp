@@ -30,7 +30,7 @@ export default function MailConnect({ ready, email, result, readOnly }: { ready:
                 Disconnect
               </button>
             ) : ready ? (
-              <a className="btn plain small" href="/api/mail/google/start">Connect Gmail</a>
+              <a className="btn plain small" href="/api/mail/google/start" target="_top">Connect Gmail</a>
             ) : null}
           </div>
         </div>
