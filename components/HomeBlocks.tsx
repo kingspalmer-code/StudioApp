@@ -5,6 +5,7 @@ import BizBadge from "@/components/BizBadge";
 import QueueList from "@/components/QueueList";
 import QueueWidgets from "@/components/QueueWidgets";
 import TicketRow from "@/components/TicketRow";
+import ViewSwitch from "@/components/ViewSwitch";
 import PageBlocks from "@/components/PageBlocks";
 import Walkthrough from "@/components/Walkthrough";
 import { BLOCKS, defaultLayout, layoutFor, type BlockId, type PageKey } from "@/lib/layouts";
@@ -20,12 +21,13 @@ export type Block = { id: BlockId; label: string; hint: string; half?: boolean; 
 
 // The blocks of the owner's and managers' Queue and Overview (lib/layouts.ts), all made from the
 // one list of jobs, so one added under Customise shows straight away (the widgets once it's done). `view`, `biz` and `tour` are the Up next block's
-// own switches (Priority list or Board, which client, the first-run tour).
+// own switches (Priority list or Board, which client, the first-run tour); without a view in the
+// address it's the one they last picked.
 export async function homeBlocks({
   session,
   all,
   page,
-  view = "list",
+  view: asked,
   biz = "all",
   tour,
 }: {
@@ -36,7 +38,8 @@ export async function homeBlocks({
   biz?: string;
   tour?: string;
 }): Promise<{ blocks: Block[]; order: BlockId[] }> {
-  const { supabase, member, businesses, self, ctx, terms, workspace, viewing, layouts } = session;
+  const { supabase, member, businesses, self, ctx, terms, workspace, viewing, layouts, jobsView } = session;
+  const view = asked === "board" || asked === "list" ? asked : jobsView;
   const canEdit = member.role === "designer" && !viewing;
   const trade = workspace.kind !== "studio";
   const queue = sortQueue(all, ctx);
@@ -61,7 +64,7 @@ export async function homeBlocks({
     board: () => (
       <>
         <p className="eyebrow">Board</p>
-        <Board all={all} ctx={ctx} byId={byId} trade={trade} />
+        <Board all={all} ctx={ctx} byId={byId} trade={trade} canMove={canEdit} />
       </>
     ),
     totals: () => {
@@ -177,8 +180,8 @@ export async function homeBlocks({
       <>
         <p className="eyebrow">{trade ? terms.Jobs : "Queue"}</p>
         <nav className="seg" aria-label="Layout" data-tour="layout">
-          <Link href={href("list", biz)} aria-current={view !== "board" ? "page" : undefined}>Priority list</Link>
-          <Link href={href("board", biz)} aria-current={view === "board" ? "page" : undefined}>Board</Link>
+          <ViewSwitch href={href("list", biz)} view="list" current={view !== "board"} remember={!session.shell.viewing}>Priority list</ViewSwitch>
+          <ViewSwitch href={href("board", biz)} view="board" current={view === "board"} remember={!session.shell.viewing}>Board</ViewSwitch>
         </nav>
         {showFilter && <nav className="seg" aria-label={terms.Client}>
           <Link href={href(view, "all")} aria-current={!filterBiz ? "page" : undefined}>All</Link>
@@ -227,7 +230,7 @@ export async function homeBlocks({
         ) : (
           <>
             <div className="toolbar">{toolbar}</div>
-            <Board all={all.filter(keep)} ctx={ctx} byId={byId} trade={trade} />
+            <Board all={all.filter(keep)} ctx={ctx} byId={byId} trade={trade} canMove={canEdit} />
           </>
         )}
         {canEdit && page === "queue" && view !== "board" && <Walkthrough force={tour === "1"} job={terms.job} clients={terms.clients} />}
