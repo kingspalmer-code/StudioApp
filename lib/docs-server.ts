@@ -103,3 +103,17 @@ export function sampleDoc(settings: DocSettings): Doc {
     sent_to: "",
   });
 }
+
+// Where a job's quotes and invoices go: an Email field filled in on the job itself, otherwise the
+// customer's email (the Email under Customer at the top of the job form saves onto the customer).
+export async function jobEmail(supabase: SupabaseClient, ticketId: number): Promise<string> {
+  const [{ data: t }, { data: fields }] = await Promise.all([
+    supabase.from("tickets").select("details, business_id").eq("id", ticketId).maybeSingle<{ details: Record<string, unknown> | null; business_id: string }>(),
+    supabase.from("job_fields").select("key").eq("kind", "email").order("position").returns<{ key: string }[]>(),
+  ]);
+  if (!t) return "";
+  const ok = (v: unknown) => (typeof v === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? v.trim().toLowerCase() : "");
+  for (const f of fields ?? []) if (ok(t.details?.[f.key])) return ok(t.details?.[f.key]);
+  const { data: biz } = await supabase.from("businesses").select("email").eq("id", t.business_id).maybeSingle<{ email: string | null }>();
+  return ok(biz?.email);
+}
