@@ -5,7 +5,7 @@ import Shell from "@/components/Shell";
 import SplitHost from "@/components/SplitHost";
 import TicketRow from "@/components/TicketRow";
 import { businessOatcakes, hatchBase, oatcakesEarned, STARTER_OATCAKES } from "@/lib/pet";
-import { daysFromToday, finalStage, formatDate, isAtRisk, isDone, money, sortQueue, stageColor } from "@/lib/priority";
+import { dueOf, dueWithin, finalStage, formatDate, isAtRisk, isDone, money, sortQueue, stageColor } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
 import { withMine } from "@/lib/workspace";
 import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
@@ -41,8 +41,13 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
     { n: open.length, label: `Open ${terms.jobs}` },
     workspace.kind !== "studio"
       ? { n: money(unpaid), label: "Quoted, not yet paid", color: unpaid ? "var(--orange)" : undefined }
-      : { n: open.filter((t) => { const d = daysFromToday(t.deadline); return d >= 0 && d <= 7; }).length, label: "Due this week" },
-    { n: risk.length, label: "At risk", color: risk.length ? "var(--red)" : undefined },
+      : ctx.noDates
+        ? { n: open.filter((t) => t.status === "waiting").length, label: "Waiting on clients" }
+        : { n: open.filter((t) => dueWithin(t, ctx, 7)).length, label: "Due this week" },
+    // Without dates nothing can run late, so the up-next list stands in for at risk.
+    ctx.noDates
+      ? { n: all.filter((t) => new Date(t.created_at) >= monthStart).length, label: "New this month" }
+      : { n: risk.length, label: "At risk", color: risk.length ? "var(--red)" : undefined },
     { n: deliveredThisMonth, label: "Delivered this month", color: "var(--green)" },
   ];
 
@@ -73,7 +78,9 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
               const ts = all.filter((t) => t.business_id === b.id);
               const counts = ctx.stages.map((st) => ({ st, n: ts.filter((t) => t.status === st.key).length }));
               const total = ts.length || 1;
-              const next = open.filter((t) => t.business_id === b.id).sort((x, y) => x.deadline.localeCompare(y.deadline))[0];
+              // open is already in queue order, which goes by due date when there are dates.
+              const next = open.find((t) => t.business_id === b.id);
+              const nextDue = next && dueOf(next, ctx);
               return (
                 <div className="biz" key={b.id}>
                   <h4><BizBadge biz={b} size={26} />{b.name}</h4>
@@ -92,8 +99,8 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
                     {!ts.length && <span>No {terms.jobs} yet</span>}
                   </div>
                   <div className="kv">
-                    <span>Next due</span>
-                    <b>{next ? `${next.title} · ${formatDate(next.deadline)}` : "Nothing open"}</b>
+                    <span>{ctx.noDates ? "Next up" : "Next due"}</span>
+                    <b>{next ? `${next.title}${nextDue ? ` · ${formatDate(nextDue)}` : ""}` : "Nothing open"}</b>
                   </div>
                 </div>
               );
@@ -105,11 +112,23 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
       <SplitHost warm={risk.slice(0, 2).map((t) => t.id)}>
       <div className="cols" style={{ marginTop: 6 }}>
         <div>
-          <p className="eyebrow">At risk</p>
-          <div className="group">
-            {risk.length ? risk.map((t) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} plan={member.role === "designer" && !viewing} />) : <div className="empty">Nothing at risk right now.</div>}
-          </div>
-          <p className="foot">Should already have started, or waiting on the client within 5 days of the deadline.</p>
+          {ctx.noDates ? (
+            <>
+              <p className="eyebrow">Up next</p>
+              <div className="group">
+                {open.length ? open.slice(0, 5).map((t) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} plan={member.role === "designer" && !viewing} />) : <div className="empty">Nothing open right now.</div>}
+              </div>
+              <p className="foot">Pinned first, then by importance, oldest first.</p>
+            </>
+          ) : (
+            <>
+              <p className="eyebrow">At risk</p>
+              <div className="group">
+                {risk.length ? risk.map((t) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} plan={member.role === "designer" && !viewing} />) : <div className="empty">Nothing at risk right now.</div>}
+              </div>
+              <p className="foot">Should already have started, or waiting on the client within 5 days of the deadline.</p>
+            </>
+          )}
         </div>
         <div>
           <p className="eyebrow">Delivered recently</p>
@@ -152,7 +171,7 @@ async function ClientOverview({ session, business }: { session: Session; busines
   const open = all.filter((t) => !isDone(t, ctx));
   const done = all
     .filter((t) => isDone(t, ctx))
-    .sort((a, b) => (b.delivered_at ?? b.deadline).localeCompare(a.delivered_at ?? a.deadline));
+    .sort((a, b) => (b.delivered_at ?? b.deadline ?? b.updated_at).localeCompare(a.delivered_at ?? a.deadline ?? a.updated_at));
   const [widgets, { data: draftRows }] = await Promise.all([
     // While the studio previews a client, Pickle stays out of it: it's the client's own pet.
     loadWidgets(supabase, all, ctx, byId, previewing || !petBiz ? undefined : { earned, base: Math.min(0, earned - STARTER_OATCAKES), owner: { business: petBiz } }),
@@ -169,7 +188,7 @@ async function ClientOverview({ session, business }: { session: Session; busines
   const stats = [
     { n: open.length, label: "In progress" },
     { n: waiting, label: "Waiting on you", color: waiting ? "var(--orange)" : undefined },
-    { n: open.filter((t) => { const d = daysFromToday(t.deadline); return d >= 0 && d <= 7; }).length, label: "Due this week" },
+    ctx.noDates ? { n: done.length, label: "Finished in all" } : { n: open.filter((t) => dueWithin(t, ctx, 7)).length, label: "Due this week" },
     { n: done.filter((t) => t.delivered_at && new Date(t.delivered_at) >= monthStart).length, label: "Finished this month", color: "var(--green)" },
   ];
   // Open requests under the stage they're at, in the studio's order of stages.

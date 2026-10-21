@@ -23,7 +23,7 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
   const { data } = await query.returns<ListTicket[]>();
   const finished = (data ?? [])
     .filter((t) => isDone(t, ctx))
-    .map((t) => ({ ...t, when: t.delivered_at ?? t.deadline }))
+    .map((t) => ({ ...t, when: t.delivered_at ?? t.deadline ?? t.updated_at }))
     .sort((a, b) => b.when.localeCompare(a.when));
   // Only finished jobs with files delivered on them: this is a gallery of the work itself.
   const covers = await coversFor(supabase, finished.map((t) => t.id));

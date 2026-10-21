@@ -19,7 +19,7 @@ export type CoreField = {
   label: string;
   hint: string;
   hidden: boolean;
-  // The contact details and importance have fallbacks (left blank, Standard); the rest every job needs.
+  // The contact details, needed by and importance have fallbacks (left blank, no date, Standard); the rest every job needs.
   canHide: boolean;
   // Dropdowns and dates have no empty-box hint.
   hasHint: boolean;
@@ -34,7 +34,7 @@ const DEFAULTS: { key: CoreKey; label: string; canHide: boolean; hasHint: boolea
   { key: "address", label: "Address", canHide: true, hasHint: true, customers: true, off: true },
   { key: "title", label: "Title", canHide: false, hasHint: true },
   { key: "type", label: "Type", canHide: false, hasHint: false },
-  { key: "deadline", label: "Needed by", canHide: false, hasHint: false },
+  { key: "deadline", label: "Needed by", canHide: true, hasHint: false },
   { key: "priority", label: "Importance", canHide: true, hasHint: false },
 ];
 
@@ -83,3 +83,7 @@ export function coreFields(raw: unknown, mode: { trade: boolean; solo: boolean }
       };
     });
 }
+
+// A workspace that hid Needed by works without dates: jobs save without one and nothing shows or
+// sorts by a due date. Dates already saved stay put, so showing it again brings them back.
+export const datesOff = (raw: unknown) => coreFields(raw, { trade: false, solo: false }).some((f) => f.key === "deadline" && f.hidden);

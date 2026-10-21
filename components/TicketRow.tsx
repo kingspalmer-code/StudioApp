@@ -1,6 +1,6 @@
 import BizBadge from "./BizBadge";
 import Link from "next/link";
-import { type Ctx, dueLabel, formatDate, isDone, startBy, startLabel } from "@/lib/priority";
+import { type Ctx, dueLabel, dueOf, formatDate, isDone, startBy, startLabel } from "@/lib/priority";
 import type { Business, ListTicket } from "@/lib/types";
 import StatusChip from "./StatusChip";
 
@@ -27,7 +27,9 @@ export default function TicketRow({
   plan?: boolean;
 }) {
   const done = isDone(t, ctx);
-  const sb = startLabel(startBy(t, ctx));
+  const due = dueOf(t, ctx);
+  // Without a due date there's no start-by to show.
+  const sb = due ? startLabel(startBy(t, ctx)) : null;
   const cls = rank ? "ticket ranked" : "ticket";
   const body = (
     <>
@@ -37,15 +39,15 @@ export default function TicketRow({
         <span className="t">{t.pinned ? "📌 " : ""}{t.title}</span>
         <span className="m">
           {showBusiness && biz ? `${biz.name} · ` : ""}
-          {t.type} · {done ? `Due ${formatDate(t.deadline)}` : dueLabel(t.deadline)}
+          {t.type}{due ? ` · ${done ? `Due ${formatDate(due)}` : dueLabel(due)}` : ""}
           {t.priority !== "Standard" && <span className={`pri-${t.priority}`}> · {t.priority}</span>}
           {draft && <span className="draft-flag"> · Draft to look at</span>}
         </span>
       </span>
       <span className="side">
         {done ? (
-          <span className="when">{formatDate(t.delivered_at ?? t.deadline)}</span>
-        ) : showBusiness ? (
+          <span className="when">{formatDate(t.delivered_at ?? t.deadline ?? t.updated_at)}</span>
+        ) : showBusiness && sb ? (
           <span className={`when ${sb.tone}`}>{sb.text}</span>
         ) : null}
         <StatusChip status={t.status} ctx={ctx} />

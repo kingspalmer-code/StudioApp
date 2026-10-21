@@ -16,7 +16,8 @@ const pixel = Silkscreen({ weight: "400", subsets: ["latin"] });
 // on the right picks which, and dragging a handle swaps them round. Kept on this computer.
 export type WeekDay = { date: string; label: string; today: boolean; jobs: { id: number; title: string; color: string }[] };
 export type ReelItem = { id: number; title: string; url: string };
-export type WeekStats = { delivered: number; due: number; late: number };
+// due and late are null when the workspace works without dates.
+export type WeekStats = { delivered: number; due: number | null; late: number | null };
 
 type Key = "pet" | "week" | "reel" | "tally" | "days";
 const ALL: { key: Key; title: string; blurb: string }[] = [
@@ -41,12 +42,15 @@ function savedShown(): Key[] {
 }
 
 // `petBusiness` makes Pickle that business's shared pet (a client's Overview).
-export default function QueueWidgets({ week, reel, pet, tally, earnHint = "Deliver a job to earn an oatcake", petBusiness }: { week: WeekDay[]; reel: ReelItem[]; pet: PetView | null; tally: WeekStats; earnHint?: string; petBusiness?: string }) {
+export default function QueueWidgets({ week, reel, pet, tally, earnHint = "Deliver a job to earn an oatcake", petBusiness }: { week: WeekDay[] | null; reel: ReelItem[]; pet: PetView | null; tally: WeekStats; earnHint?: string; petBusiness?: string }) {
   const [shown, setShown] = useState<Key[]>(DEFAULT);
   const [menu, setMenu] = useState(false);
   const [dragging, setDragging] = useState<Key | null>(null);
   const [armed, setArmed] = useState<Key | null>(null);
   useEffect(() => setShown(savedShown()), []);
+  // Without dates there's no week ahead to show, so This week takes its place.
+  const offer = ALL.filter((w) => w.key !== "week" || week);
+  const visible = [...new Set(shown.map((k): Key => (k === "week" && !week ? "tally" : k)))];
 
   // Close the menu on a click elsewhere or Escape.
   useEffect(() => {
@@ -65,28 +69,28 @@ export default function QueueWidgets({ week, reel, pet, tally, earnHint = "Deliv
   // Two show at a time: picking another swaps out the right-hand one; picking a showing one hides
   // it (as long as one stays).
   const pick = (k: Key) => {
-    if (shown.includes(k)) return shown.length > 1 && save(shown.filter((x) => x !== k));
-    save(shown.length < SHOWN ? [...shown, k] : [...shown.slice(0, SHOWN - 1), k]);
+    if (visible.includes(k)) return visible.length > 1 && save(visible.filter((x) => x !== k));
+    save(visible.length < SHOWN ? [...visible, k] : [...visible.slice(0, SHOWN - 1), k]);
   };
   const drop = (target: Key) => (e: DragEvent) => {
     e.preventDefault();
     if (!dragging || dragging === target) return;
-    const next = shown.filter((k) => k !== dragging);
-    next.splice(next.indexOf(target) + (shown.indexOf(dragging) < shown.indexOf(target) ? 1 : 0), 0, dragging);
+    const next = visible.filter((k) => k !== dragging);
+    next.splice(next.indexOf(target) + (visible.indexOf(dragging) < visible.indexOf(target) ? 1 : 0), 0, dragging);
     save(next);
   };
 
   const body: Record<Key, React.ReactNode> = {
     pet: <Pet pet={pet} earnHint={earnHint} business={petBusiness} />,
-    week: <Week days={week} />,
+    week: week ? <Week days={week} /> : null,
     reel: <Reel items={reel} />,
     tally: <Tally {...tally} />,
     days: <Days />,
   };
 
   return (
-    <section className={`widgets n${shown.length}`} aria-label="At a glance">
-      {shown.map((k) => (
+    <section className={`widgets n${visible.length}`} aria-label="At a glance">
+      {visible.map((k) => (
         <div
           key={k}
           className={`widget w-${k}${dragging === k ? " dragging" : ""}`}
@@ -118,8 +122,8 @@ export default function QueueWidgets({ week, reel, pet, tally, earnHint = "Deliv
         {menu && (
           <div className="widget-menu" role="menu" aria-label="Widgets">
             <p>Widgets <small>Two show at a time</small></p>
-            {ALL.map((w) => {
-              const on = shown.includes(w.key);
+            {offer.map((w) => {
+              const on = visible.includes(w.key);
               return (
                 <button key={w.key} type="button" role="menuitemcheckbox" aria-checked={on} className={on ? "on" : undefined} onClick={() => pick(w.key)}>
                   <span><b>{w.title}</b><small>{w.blurb}</small></span>
@@ -167,6 +171,12 @@ function Reel({ items }: { items: ReelItem[] }) {
 }
 
 function Tally({ delivered, due, late }: WeekStats) {
+  if (due == null || late == null)
+    return (
+      <div className="tally">
+        <p><b>{delivered}</b> <span>delivered this week</span></p>
+      </div>
+    );
   const total = delivered + due;
   return (
     <div className="tally">

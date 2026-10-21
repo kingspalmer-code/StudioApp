@@ -24,19 +24,20 @@ export async function loadWidgets(
   const sunday = dayAt(6 - ((new Date(today).getUTCDay() + 6) % 7));
   const open = all.filter((t) => !isDone(t, ctx));
   const done = all.filter((t) => isDone(t, ctx));
-  const week: WeekDay[] = Array.from({ length: 7 }, (_, i) => {
+  // Without dates there's nothing due to put on the week ahead.
+  const week: WeekDay[] | null = ctx.noDates ? null : Array.from({ length: 7 }, (_, i) => {
     const date = dayAt(i);
     return {
       date,
       label: i === 0 ? "Today" : new Date(date).toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" }).slice(0, 2),
       today: i === 0,
       jobs: open
-        .filter((t) => t.deadline === date || (i === 0 && t.deadline < date))
-        .map((t) => ({ id: t.id, title: t.title, color: t.deadline < date ? "var(--red)" : (byId[t.business_id] ? brandFor(byId[t.business_id]).color : "var(--label-3)") })),
+        .filter((t) => t.deadline && (t.deadline === date || (i === 0 && t.deadline < date)))
+        .map((t) => ({ id: t.id, title: t.title, color: t.deadline! < date ? "var(--red)" : (byId[t.business_id] ? brandFor(byId[t.business_id]).color : "var(--label-3)") })),
     };
   });
   const deliveredWeek = done.filter((t) => (t.delivered_at ?? "").slice(0, 10) >= monday).length;
-  const late = open.filter((t) => t.deadline < today).length;
+  const late = ctx.noDates ? null : open.filter((t) => t.deadline && t.deadline < today).length;
   const recent = done
     .filter((t) => t.delivered_at)
     .sort((a, b) => b.delivered_at!.localeCompare(a.delivered_at!))
@@ -46,5 +47,5 @@ export async function loadWidgets(
     pet ? visitPet(supabase, pet.earned, pet.base, pet.owner) : Promise.resolve(null),
   ]);
   const reel = recent.filter((t) => covers[t.id]?.url).slice(0, 6).map((t) => ({ id: t.id, title: t.title, url: covers[t.id]!.url! }));
-  return { week, reel, pet: petView, tally: { delivered: deliveredWeek, due: open.filter((t) => t.deadline <= sunday).length, late } };
+  return { week, reel, pet: petView, tally: { delivered: deliveredWeek, due: ctx.noDates ? null : open.filter((t) => t.deadline && t.deadline <= sunday).length, late } };
 }

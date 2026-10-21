@@ -137,7 +137,7 @@ export async function tellPicked(supabase: SupabaseClient, id: number, studio: S
     .from("tickets")
     .select("id, title, type, deadline, tell, business_id")
     .eq("id", id)
-    .maybeSingle<{ id: number; title: string; type: string; deadline: string; tell: string[]; business_id: string }>();
+    .maybeSingle<{ id: number; title: string; type: string; deadline: string | null; tell: string[]; business_id: string }>();
   if (!j?.tell.length) return;
   const told = [...(await linkedPeople(supabase, j.tell)).values()].filter((p) => canSee(p, j));
   if (!told.length) return;
@@ -145,12 +145,12 @@ export async function tellPicked(supabase: SupabaseClient, id: number, studio: S
   const { data: biz } = await supabase.from("businesses").select("name").eq("id", j.business_id).maybeSingle<{ name: string }>();
   const { job } = studio.terms;
   const forBiz = biz?.name ? ` for ${biz.name}` : "";
-  const due = formatDate(j.deadline);
-  const line = `${studio.name} has added a new ${job}${forBiz}: "${j.title}" (${j.type}), due ${due}.`;
+  const due = j.deadline ? `, due ${formatDate(j.deadline)}` : "";
+  const line = `${studio.name} has added a new ${job}${forBiz}: "${j.title}" (${j.type})${due}.`;
   const next = "You can follow it in Oatcake, and you'll hear when there's a draft to look at and when it's finished.";
   await Promise.all([
     ...told.map(async (who) => email(who.email, `New ${job}: ${j.title}`, [hello(who), line, next], `${await origin()}/tickets/${j.id}`, "Open in Oatcake", studio.name, studio.replyTo)),
-    sendAlert(told.map((who) => who.email), { title: `New ${job}: ${j.title}`, body: `${studio.name} added it${forBiz}, due ${due}.`, url: `/tickets/${j.id}`, tag: `ticket-${j.id}-new` }),
+    sendAlert(told.map((who) => who.email), { title: `New ${job}: ${j.title}`, body: `${studio.name} added it${forBiz}${due}.`, url: `/tickets/${j.id}`, tag: `ticket-${j.id}-new` }),
   ]);
 }
 
