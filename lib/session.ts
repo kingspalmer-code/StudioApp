@@ -116,7 +116,9 @@ const loadMember = cache(async () => {
   // How Queue and Overview are laid out (Customise, lib/layouts.ts). Someone viewing another
   // workspace sees its pages as they come.
   const layouts = { queue: viewing ? undefined : user.user_metadata?.layout_queue, overview: viewing ? undefined : user.user_metadata?.layout_overview } as Record<"queue" | "overview", unknown>;
-  return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview, appBusinesses, layouts };
+  // Priority list or Board for the jobs, whichever they last picked (components/ViewSwitch.tsx).
+  const jobsView = !viewing && user.user_metadata?.jobs_view === "board" ? "board" : "list";
+  return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview, appBusinesses, layouts, jobsView };
 });
 
 type Session = Awaited<ReturnType<typeof requireMember>>;
