@@ -4,7 +4,7 @@ import ConfirmButton from "@/components/ConfirmButton";
 import NumberInput from "@/components/NumberInput";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { deleteDocument, draftItems, saveDocument, sendDocument, setDocStatus, type DocDraft } from "@/app/documents/actions";
+import { deleteDocument, draftItems, fromJob, saveDocument, sendDocument, setDocStatus, type DocDraft } from "@/app/documents/actions";
 import PdfSheet, { type PdfRequest } from "@/components/PdfSheet";
 import { docName, gbp, round2, totals, type Doc, type LineItem } from "@/lib/documents";
 
@@ -85,6 +85,18 @@ export default function DocEditor({
     setMsg({ text: "Drafted. Check the prices, then save." });
   }
 
+  // Pulls the customer, email, address and lines from the job again, for the person to check and save.
+  function refill() {
+    start(async () => {
+      const job = await fromJob(doc.id);
+      if (!job) return setMsg({ text: "Couldn't find the job.", bad: true });
+      setD((x) => ({ ...x, ...job }));
+      setTo(job.customer_email || to);
+      setDirty(true);
+      setMsg({ text: "Filled in from the job. Check it, then save." });
+    });
+  }
+
   function send() {
     start(async () => {
       if (dirty && !(await save())) return;
@@ -99,7 +111,10 @@ export default function DocEditor({
   return (
     <>
       <fieldset disabled={readOnly || pending} className="doc-editor">
-        <p className="eyebrow">{quote ? "Prepared for" : "Bill to"}</p>
+        <div className="doc-items-head">
+          <p className="eyebrow">{quote ? "Prepared for" : "Bill to"}</p>
+          {doc.ticket_id && !readOnly && <button type="button" className="btn plain small" onClick={refill}>Fill in from the job</button>}
+        </div>
         <div className="group">
           <div className="row"><label htmlFor="cn">Name</label><div className="ctl"><input id="cn" value={d.customer_name} onChange={(e) => set("customer_name", e.target.value)} placeholder="Customer or business name" /></div></div>
           <div className="row"><label htmlFor="ce">Email</label><div className="ctl"><input id="ce" type="email" value={d.customer_email} onChange={(e) => { set("customer_email", e.target.value); setTo(e.target.value); }} placeholder="Where to send it" /></div></div>
