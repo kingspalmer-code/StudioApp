@@ -34,6 +34,8 @@ export function readSettingsForm(f: FormData) {
     footer: str("footer", 200),
     font: font === CUSTOM_FONT || FONTS.some((x) => x.key === font) ? font : "helvetica",
     accent: /^#[0-9a-f]{6}$/i.test(accent) ? accent : "#382a25",
+    next_invoice: Math.max(1, num("next_invoice", 1, 9999999)),
+    next_quote: Math.max(1, num("next_quote", 1, 9999999)),
   };
 }
 

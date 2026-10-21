@@ -22,6 +22,8 @@ export type DocSettings = {
   font_path: string;
   accent: string;
   logo_path: string;
+  next_invoice: number;
+  next_quote: number;
 };
 
 export type Doc = {
@@ -77,6 +79,8 @@ export const DEFAULT_SETTINGS: Omit<DocSettings, "workspace_id"> = {
   font_path: "",
   accent: "#382a25",
   logo_path: "",
+  next_invoice: 1,
+  next_quote: 1,
 };
 
 export const KIND_LABEL: Record<DocKind, string> = { quote: "Quote", invoice: "Invoice" };
