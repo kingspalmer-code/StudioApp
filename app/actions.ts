@@ -86,10 +86,11 @@ export async function saveDetails(id: number, formData: FormData) {
   // becomes a new customer. The contact details on the form save onto whichever customer the job ends up with.
   let business_id = t.business_id;
   const name = get("customer");
-  const contact: Partial<Record<ContactKey, string | null>> = {};
+  // The columns are never null: a blank detail saves as empty text.
+  const contact: Partial<Record<ContactKey, string>> = {};
   for (const k of CONTACT_KEYS) {
     const field = k === "phone" ? k : `cust_${k}`;
-    if (formData.has(field)) contact[k] = get(field) || null;
+    if (formData.has(field)) contact[k] = get(field);
   }
   // Adding a customer or changing their details is Clients work; an employee without that can still move the job.
   const clientsOk = !member.staff || allows(member.access, "clients", "edit");
@@ -110,7 +111,7 @@ export async function saveDetails(id: number, formData: FormData) {
     const match = customers.find((b) => !isSelf(b) && b.name.toLowerCase() === name.toLowerCase());
     if (match) {
       business_id = match.id;
-      const changed = Object.fromEntries(Object.entries(contact).filter(([k, v]) => v !== match[k as ContactKey]));
+      const changed = Object.fromEntries(Object.entries(contact).filter(([k, v]) => v !== (match[k as ContactKey] ?? "")));
       if (clientsOk && Object.keys(changed).length) await supabase.from("businesses").update(changed).eq("id", match.id);
     } else if (clientsOk && name.toLowerCase() !== current?.name.toLowerCase()) {
       const { data: created } = await supabase

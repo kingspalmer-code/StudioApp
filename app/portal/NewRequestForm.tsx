@@ -148,7 +148,7 @@ export default function NewRequestForm({
       else {
         const { data: created, error: custError } = await supabase
           .from("businesses")
-          .insert({ name, slug: slugify(name), color: "#8a7a70", phone: get("phone") || null, email: get("cust_email") || null, address: get("cust_address") || null })
+          .insert({ name, slug: slugify(name), color: "#8a7a70", phone: get("phone"), email: get("cust_email"), address: get("cust_address") })
           .select("id")
           .single();
         if (custError || !created) {
