@@ -9,7 +9,7 @@ import PageBlocks from "@/components/PageBlocks";
 import Walkthrough from "@/components/Walkthrough";
 import { BLOCKS, defaultLayout, layoutFor, type BlockId, type PageKey } from "@/lib/layouts";
 import { hatchBase, oatcakesEarned } from "@/lib/pet";
-import { daysFromToday, formatDate, isAtRisk, isDone, money, sortQueue, startBy, stageColor } from "@/lib/priority";
+import { dueOf, dueWithin, formatDate, isAtRisk, isDone, money, sortQueue, startBy, stageColor } from "@/lib/priority";
 import type { requireMember } from "@/lib/session";
 import type { ListTicket } from "@/lib/types";
 import { loadWidgets } from "@/lib/widgets";
@@ -73,8 +73,13 @@ export async function homeBlocks({
         { n: queue.length, label: `Open ${terms.jobs}` },
         trade
           ? { n: money(unpaid), label: "Quoted, not yet paid", color: unpaid ? "var(--orange)" : undefined }
-          : { n: queue.filter((t) => { const d = daysFromToday(t.deadline); return d >= 0 && d <= 7; }).length, label: "Due this week" },
-        { n: risk.length, label: "At risk", color: risk.length ? "var(--red)" : undefined },
+          : ctx.noDates
+            ? { n: queue.filter((t) => t.status === "waiting").length, label: "Waiting on clients" }
+            : { n: queue.filter((t) => dueWithin(t, ctx, 7)).length, label: "Due this week" },
+        // Without dates nothing can run late, so the at-risk count gives way to what's come in.
+        ctx.noDates
+          ? { n: all.filter((t) => new Date(t.created_at) >= monthStart).length, label: "New this month" }
+          : { n: risk.length, label: "At risk", color: risk.length ? "var(--red)" : undefined },
         { n: done.filter((t) => t.delivered_at && new Date(t.delivered_at) >= monthStart).length, label: "Delivered this month", color: "var(--green)" },
       ];
       return (
@@ -96,7 +101,9 @@ export async function homeBlocks({
             const ts = all.filter((t) => t.business_id === b.id);
             const counts = ctx.stages.map((st) => ({ st, n: ts.filter((t) => t.status === st.key).length }));
             const total = ts.length || 1;
-            const next = queue.filter((t) => t.business_id === b.id).sort((x, y) => x.deadline.localeCompare(y.deadline))[0];
+            // queue is already in queue order, which goes by due date when there are dates.
+            const next = queue.find((t) => t.business_id === b.id);
+            const nextDue = next && dueOf(next, ctx);
             return (
               <div className="biz" key={b.id}>
                 <h4><BizBadge biz={b} size={26} />{b.name}</h4>
@@ -115,8 +122,8 @@ export async function homeBlocks({
                   {!ts.length && <span>No {terms.jobs} yet</span>}
                 </div>
                 <div className="kv">
-                  <span>Next due</span>
-                  <b>{next ? `${next.title} · ${formatDate(next.deadline)}` : "Nothing open"}</b>
+                  <span>{ctx.noDates ? "Next up" : "Next due"}</span>
+                  <b>{next ? `${next.title}${nextDue ? ` · ${formatDate(nextDue)}` : ""}` : "Nothing open"}</b>
                 </div>
               </div>
             );
@@ -124,7 +131,16 @@ export async function homeBlocks({
         </div>
       </>
     ),
-    risk: () => (
+    // Without dates nothing can run late, so the top of the up-next list stands in for at risk.
+    risk: () => ctx.noDates ? (
+      <>
+        <p className="eyebrow">Up next</p>
+        <div className="group">
+          {queue.length ? queue.slice(0, 5).map((t) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} plan={canEdit} />) : <div className="empty">Nothing open right now.</div>}
+        </div>
+        <p className="foot">Pinned first, then by importance, oldest first.</p>
+      </>
+    ) : (
       <>
         <p className="eyebrow">At risk</p>
         <div className="group">
@@ -145,8 +161,8 @@ export async function homeBlocks({
 
   // The heading, the one line of what matters, and the priority list (or the board) with its switches.
   function upNext() {
-    const startNow = queue.filter((t) => startBy(t, ctx) <= 0).length;
-    const dueSoon = queue.filter((t) => { const d = daysFromToday(t.deadline); return d >= 0 && d <= 7; }).length;
+    const startNow = queue.filter((t) => dueOf(t, ctx) && startBy(t, ctx) <= 0).length;
+    const dueSoon = queue.filter((t) => dueWithin(t, ctx, 7)).length;
     const waiting = trade ? 0 : all.filter((t) => t.status === "waiting").length;
     const summary = [
       startNow ? { n: startNow, text: "to start now", color: "var(--red)" } : null,
@@ -186,7 +202,9 @@ export async function homeBlocks({
                 </span>
               ))
             : queue.length
-              ? "Nothing urgent. Everything open, in the order to start it."
+              ? ctx.noDates
+                ? "Everything open: pinned first, then by importance, oldest first."
+                : "Nothing urgent. Everything open, in the order to start it."
               : null}
         </p>
         {view !== "board" ? (

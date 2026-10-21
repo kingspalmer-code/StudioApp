@@ -62,7 +62,7 @@ create table if not exists public.tickets (
   copy text not null default '',
   links text not null default '',
   colours text not null default '',
-  deadline date not null,
+  deadline date,
   event_date date,
   priority text not null default 'Standard' check (priority in ('Standard', 'High', 'Urgent')),
   approver text not null default '',

@@ -7,6 +7,7 @@ import type { Business, JobType, Member, Role, Stage, Workspace } from "./types"
 import { clientsLogIn, isSelf, termsFor } from "./workspace";
 import { accessFor, allows, hasAny, type Area } from "./access";
 import { OWNER_HIDDEN_BY_DEFAULT } from "./menu";
+import { datesOff } from "./core-fields";
 
 export const HOME: Record<Role, string> = { designer: "/queue", manager: "/overview", client: "/overview", staff: "/calendar" };
 
@@ -89,7 +90,7 @@ const loadMember = cache(async () => {
   // The studio previewing one client's request pages; only the client pages act on it (see asClient).
   const rawPreview = jar.get(PREVIEW_COOKIE)?.value ?? "";
   const preview = member.role === "designer" && !viewing ? (businesses ?? []).find((b) => b.id === rawPreview) : undefined;
-  const ctx: Ctx = { stages: stages ?? [], types: types ?? [] };
+  const ctx: Ctx = { stages: stages ?? [], types: types ?? [], noDates: datesOff(ws.core_fields) };
   const terms = termsFor(ws.kind);
   const avatar = typeof user.user_metadata?.avatar_url === "string" ? (user.user_metadata.avatar_url as string) : null;
   const initials = (member.full_name || member.email)

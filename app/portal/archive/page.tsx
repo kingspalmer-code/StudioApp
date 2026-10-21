@@ -18,7 +18,7 @@ export default async function ArchivePage({ searchParams }: { searchParams: Prom
   const { data } = await supabase.from("tickets").select(LIST_COLUMNS).in("business_id", ids).returns<ListTicket[]>();
   const finished = (data ?? [])
     .filter((t) => isDone(t, ctx))
-    .map((t) => ({ ...t, when: t.delivered_at ?? t.deadline }))
+    .map((t) => ({ ...t, when: t.delivered_at ?? t.deadline ?? t.updated_at }))
     .sort((a, b) => b.when.localeCompare(a.when));
   const years = [...new Set(finished.map((t) => t.when.slice(0, 4)))];
   const types = [...new Set(finished.map((t) => t.type))].sort();

@@ -120,7 +120,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   const open = all.filter((t) => !isDone(t, ctx));
   const finished = all
     .filter((t) => isDone(t, ctx))
-    .sort((a, b) => (b.delivered_at ?? b.deadline).localeCompare(a.delivered_at ?? a.deadline));
+    .sort((a, b) => (b.delivered_at ?? b.deadline ?? b.updated_at).localeCompare(a.delivered_at ?? a.deadline ?? a.updated_at));
   const [covers, { data: draftRows }] = await Promise.all([
     coversFor(supabase, finished.slice(0, 6).map((t) => t.id)),
     open.length
@@ -169,7 +169,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
                     {covers[t.id]?.url ? <img src={covers[t.id]!.url!} alt="" loading="lazy" /> : <span>{t.type}</span>}
                   </span>
                   <b>{t.title}</b>
-                  <small className="when">{several && !only ? `${byId[t.business_id]?.name} · ` : ""}{formatDate(t.delivered_at ?? t.deadline)}{covers[t.id]?.count ? ` · ${covers[t.id]!.count} file${covers[t.id]!.count > 1 ? "s" : ""}` : ""}</small>
+                  <small className="when">{several && !only ? `${byId[t.business_id]?.name} · ` : ""}{formatDate(t.delivered_at ?? t.deadline ?? t.updated_at)}{covers[t.id]?.count ? ` · ${covers[t.id]!.count} file${covers[t.id]!.count > 1 ? "s" : ""}` : ""}</small>
                 </Link>
               ))}
             </div>

@@ -5,7 +5,7 @@ import Shell from "@/components/Shell";
 import SplitHost from "@/components/SplitHost";
 import TicketRow from "@/components/TicketRow";
 import { businessOatcakes, STARTER_OATCAKES } from "@/lib/pet";
-import { daysFromToday, finalStage, isDone, stageColor } from "@/lib/priority";
+import { dueWithin, finalStage, isDone, stageColor } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
 import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
 import { loadWidgets } from "@/lib/widgets";
@@ -67,7 +67,7 @@ async function ClientOverview({ session, business }: { session: Session; busines
   const open = all.filter((t) => !isDone(t, ctx));
   const done = all
     .filter((t) => isDone(t, ctx))
-    .sort((a, b) => (b.delivered_at ?? b.deadline).localeCompare(a.delivered_at ?? a.deadline));
+    .sort((a, b) => (b.delivered_at ?? b.deadline ?? b.updated_at).localeCompare(a.delivered_at ?? a.deadline ?? a.updated_at));
   const [widgets, { data: draftRows }] = await Promise.all([
     // While the studio previews a client, Pickle stays out of it: it's the client's own pet.
     loadWidgets(supabase, all, ctx, byId, previewing || !petBiz ? undefined : { earned, base: Math.min(0, earned - STARTER_OATCAKES), owner: { business: petBiz } }),
@@ -84,7 +84,7 @@ async function ClientOverview({ session, business }: { session: Session; busines
   const stats = [
     { n: open.length, label: "In progress" },
     { n: waiting, label: "Waiting on you", color: waiting ? "var(--orange)" : undefined },
-    { n: open.filter((t) => { const d = daysFromToday(t.deadline); return d >= 0 && d <= 7; }).length, label: "Due this week" },
+    ctx.noDates ? { n: done.length, label: "Finished in all" } : { n: open.filter((t) => dueWithin(t, ctx, 7)).length, label: "Due this week" },
     { n: done.filter((t) => t.delivered_at && new Date(t.delivered_at) >= monthStart).length, label: "Finished this month", color: "var(--green)" },
   ];
   // Open requests under the stage they're at, in the studio's order of stages.

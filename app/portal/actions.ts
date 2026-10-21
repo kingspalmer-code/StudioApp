@@ -116,7 +116,7 @@ export async function alertNewRequest(ticketId: number) {
       .from("tickets")
       .select("id, title, type, deadline, created_by, created_at, requester_name")
       .eq("id", ticketId)
-      .maybeSingle<{ id: number; title: string; type: string; deadline: string; created_by: string; created_at: string; requester_name: string }>(),
+      .maybeSingle<{ id: number; title: string; type: string; deadline: string | null; created_by: string; created_at: string; requester_name: string }>(),
   ]);
   if ((me?.role !== "client" && me?.role !== "manager") || !ticket || ticket.created_by !== email) return;
   if (Date.now() - Date.parse(ticket.created_at) > 15 * 60_000) return;
@@ -129,7 +129,7 @@ export async function alertNewRequest(ticketId: number) {
     info.emails,
     {
       title: `New request from ${info.business || who}`,
-      body: `${ticket.title} (${ticket.type}), needed by ${formatDate(ticket.deadline)}. Sent by ${who}.`,
+      body: `${ticket.title} (${ticket.type})${ticket.deadline ? `, needed by ${formatDate(ticket.deadline)}` : ""}. Sent by ${who}.`,
       url: `/tickets/${ticket.id}`,
       tag: `ticket-${ticket.id}`,
     },

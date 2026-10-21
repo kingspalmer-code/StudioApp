@@ -1,6 +1,6 @@
 import Link from "next/link";
 import BizBadge from "@/components/BizBadge";
-import { finalStage, formatDate, isDone, money, sortQueue, startBy, startLabel, type Ctx } from "@/lib/priority";
+import { dueOf, finalStage, formatDate, isDone, money, sortQueue, startBy, startLabel, type Ctx } from "@/lib/priority";
 import type { Business, ListTicket } from "@/lib/types";
 
 // Every job in a column for the stage it's at, the last column holding the latest finished ones.
@@ -23,7 +23,7 @@ export default function Board({ all, ctx, byId, trade }: { all: ListTicket[]; ct
             <h3><span>{st.label}</span><span>{items.length}</span></h3>
             {items.map((t) => {
               const b = byId[t.business_id];
-              const sb = startLabel(startBy(t, ctx));
+              const sb = dueOf(t, ctx) ? startLabel(startBy(t, ctx)) : null;
               return (
                 <Link href={`/tickets/${t.id}`} className="card" key={t.id}>
                   <span className="m">
@@ -37,10 +37,10 @@ export default function Board({ all, ctx, byId, trade }: { all: ListTicket[]; ct
                   <span className="m">
                     <span>{trade && t.quote_amount != null ? money(t.quote_amount) : t.type}</span>
                     {st.key === final ? (
-                      <span className="when">{formatDate(t.delivered_at ?? t.deadline)}</span>
-                    ) : (
+                      <span className="when">{formatDate(t.delivered_at ?? t.deadline ?? t.updated_at)}</span>
+                    ) : sb ? (
                       <span className={`when ${sb.tone}`}>{sb.text}</span>
-                    )}
+                    ) : null}
                   </span>
                 </Link>
               );

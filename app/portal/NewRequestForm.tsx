@@ -166,7 +166,8 @@ export default function NewRequestForm({
         business_id,
         title: get("title"),
         type: get("type"),
-        deadline: get("deadline"),
+        // Empty when Needed by is hidden: the workspace works without dates.
+        deadline: get("deadline") || null,
         priority: get("priority") || "Standard",
         ...columns,
         details,
@@ -307,7 +308,7 @@ export default function NewRequestForm({
       </div>
       <p className="foot">
         {picked.length > 0 && `${names(picked)} will get an email and a phone alert now, and again with each draft you share and when it's ready for review or finished. `}
-        {type} jobs need about {lead} working days.
+        {core.some((c) => c.key === "deadline" && !c.hidden) && `${type} jobs need about ${lead} working days.`}
         {tight ? (isDesigner ? " That deadline is tight." : ` That deadline is tight, so ${ownerName} may come back to you about timing.`) : ""}
       </p>
 

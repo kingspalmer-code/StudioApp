@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Shell from "@/components/Shell";
-import { duration, isOwner, list, nextStep, pageName, PROBLEM, requireAdmin, since, STEPS, type Person } from "@/lib/admin";
+import { duration, isOwner, lastNudges, list, nextStep, pageName, PROBLEM, requireAdmin, since, STEPS, type Person } from "@/lib/admin";
 import AdminNav from "./AdminNav";
 
 type Summary = {
@@ -24,13 +24,14 @@ const change = (now: number, before: number) => (now === before ? "same as last 
 // Admin overview: how many people are signing up and using Oatcake, how far they get, and where they get stuck.
 export default async function AdminOverview() {
   const { supabase, shell } = await requireAdmin();
-  const [{ data: sum }, days, people, pages, problems, { data: asks }] = await Promise.all([
+  const [{ data: sum }, days, people, pages, problems, { data: asks }, nudged] = await Promise.all([
     supabase.rpc("admin_summary").single<Summary>(),
     list<Day>(supabase.rpc("admin_daily", { p_days: 30 })),
     list<Person>(supabase.rpc("admin_people")),
     list<PageRow>(supabase.rpc("admin_pages", { p_days: 30 })),
     list<Problem>(supabase.rpc("admin_problems", { p_days: 30 })),
     supabase.from("activity").select("user_id, meta, created_at").eq("kind", "action").eq("name", "ask").order("created_at", { ascending: false }).limit(15),
+    lastNudges(supabase),
   ]);
   const s = sum ?? ({} as Summary);
   const all = people;
@@ -44,6 +45,8 @@ export default async function AdminOverview() {
       const quiet = !p.last_seen || Date.now() - new Date(p.last_seen).getTime() > 14 * 86400000;
       return (old && p.jobs === 0) || (p.jobs > 0 && quiet);
     })
+    // People not nudged yet come first.
+    .sort((a, b) => Number(Boolean(nudged[a.user_id])) - Number(Boolean(nudged[b.user_id])))
     .slice(0, 12);
   const forms = pages
     .filter((p) => p.form_starts >= 2 && p.form_sends / p.form_starts < 0.75)
@@ -106,7 +109,7 @@ export default async function AdminOverview() {
                     {p.jobs === 0 ? nextStep(p)?.missing : `Last seen ${since(p.last_seen)}`} · signed up {since(p.signed_up)}
                   </div>
                 </div>
-                <span className="when">›</span>
+                <span className="when">{nudged[p.user_id] ? `Nudged ${since(nudged[p.user_id])}` : "Nudge"} ›</span>
               </Link>
             ))}
             {!nudge.length && <div className="empty">Nobody stuck or gone quiet.</div>}

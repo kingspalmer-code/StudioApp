@@ -6,7 +6,7 @@ import StatusChip from "@/components/StatusChip";
 import { addNote, saveDetails, setPinned, setStatus } from "@/app/actions";
 import FieldInput from "@/components/FieldInput";
 import { appliesTo, groupFields, hasValue, itemsOf, showValue, valueOf, type JobField } from "@/lib/fields";
-import { PRIORITIES, finalStage, formatDate, isDone, money, reviewStage, startBy, startLabel, statusLabel, todayISO, whenLabel } from "@/lib/priority";
+import { PRIORITIES, dueOf, finalStage, formatDate, isDone, money, reviewStage, startBy, startLabel, statusLabel, todayISO, whenLabel } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
 import { coreFields, type CoreKey } from "@/lib/core-fields";
 import { createClient } from "@/lib/supabase/server";
@@ -64,6 +64,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   // Type and needed-by use the names set in Settings > Job form.
   const core = coreFields(workspace.core_fields, { trade: false, solo: false });
   const coreLabel = (k: CoreKey) => core.find((c) => c.key === k)?.label ?? k;
+  const due = dueOf(t, ctx);
   const trade = workspace.kind !== "studio";
   // The top-of-form fields as this workspace's new job form shows them, for Edit details.
   const top = coreFields(workspace.core_fields, { trade, solo: workspace.kind === "solo" });
@@ -114,7 +115,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   // The studio and the client can add files after a job's sent (an invoice, a forgotten photo);
   // so can a manager, on a request they sent. Not a client it was only shared with.
   const canAddFiles = (member.role === "designer" || (member.role === "client" && linked) || t.created_by === member.email) && !viewing;
-  const sb = startLabel(startBy(t, ctx));
+  const sb = dueOf(t, ctx) ? startLabel(startBy(t, ctx)) : null;
   const review = reviewStage(ctx);
   const owner = workspace.owner_name || "the studio";
   // Show every field that has something in it, even ones since hidden from the form, so nothing saved is lost.
@@ -237,7 +238,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           <StatusChip status={t.status} ctx={ctx} />
           <span className={`chip pri-${t.priority}`} style={{ background: "var(--fill)" }}>{t.priority}</span>
           {mine && <span className="chip in-house">In-house</span>}
-          {!done && member.role !== "client" && <span className={`when ${sb.tone}`}>{sb.text}</span>}
+          {!done && sb && member.role !== "client" && <span className={`when ${sb.tone}`}>{sb.text}</span>}
           {t.pinned && <span className="when">📌 Pinned</span>}
         </div>
         {followsFrom && (
@@ -302,7 +303,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           {biz && <div className="row"><span className="k">{terms.Client}</span><div className="ctl">{biz.name}</div></div>}
           {mine && <div className="row"><span className="k">{terms.Client}</span><div className="ctl">{MY_BUSINESS} <span className="when">(in-house)</span></div></div>}
           <div className="row"><span className="k">{coreLabel("type")}</span><div className="ctl">{t.type}</div></div>
-          <div className="row"><span className="k">{coreLabel("deadline")}</span><div className="ctl">{formatDate(t.deadline, true)} <span className="when">({whenLabel(t.deadline)})</span></div></div>
+          {due && <div className="row"><span className="k">{coreLabel("deadline")}</span><div className="ctl">{formatDate(due, true)} <span className="when">({whenLabel(due)})</span></div></div>}
           {groups[0] && !groups[0].title && groups[0].fields.map(show)}
           <div className="row"><span className="k">{trade && !t.details?.via_link ? "Added" : "Submitted"}</span><div className="ctl">{formatDate(t.created_at)}{t.requester_name && !shown.has("requester_name") ? ` by ${t.requester_name}` : ""}{t.details?.via_link ? " through your request link" : ""}</div></div>
           {members && keepable.length > 0 && (
@@ -352,7 +353,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                           {ctx.types.map((x) => <option key={x.id}>{x.name}</option>)}
                         </select>
                       ) : c.key === "deadline" ? (
-                        <input id="edit-deadline" name="deadline" type="date" required defaultValue={t.deadline?.slice(0, 10)} />
+                        <input id="edit-deadline" name="deadline" type="date" required={Boolean(t.deadline)} defaultValue={t.deadline?.slice(0, 10)} />
                       ) : (
                         <select id="edit-priority" name="priority" defaultValue={t.priority}>
                           {PRIORITIES.map((p) => <option key={p}>{p}</option>)}
