@@ -7,6 +7,7 @@ import AskOatcake from "./AskOatcake";
 import BizBadge from "./BizBadge";
 import AppBar from "./AppBar";
 import Bell from "./Bell";
+import type { BoxStyle } from "@/lib/palette";
 import Colours from "./Colours";
 import NavLinks from "./NavLinks";
 import RailGrip from "./RailGrip";
@@ -159,6 +160,7 @@ export default function Shell({
   isAdmin = false,
   hidden = { computer: [], order: [] },
   palette = null,
+  boxes = "raised",
   preview,
   children,
 }: {
@@ -182,6 +184,8 @@ export default function Shell({
   hidden?: { phoneTabs?: string[]; computer: string[]; order?: string[]; pins?: string[]; admin?: string[] };
   // Their own colour theme (lib/palette.ts), or none for Oatcake's.
   palette?: string[] | null;
+  // Whether boxes float above the page or sit pressed into it (Colours).
+  boxes?: BoxStyle;
   preview?: Business;
   children: React.ReactNode;
 }) {
@@ -239,7 +243,7 @@ export default function Shell({
           {(canCreate || isClient) && <SearchButton />}
           {member.role === "designer" && !member.staff && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake hint={askHint} opens={askOpens} since={askSince} />}
           {/* One button to re-colour the whole app, from a dropped palette image or a preset. */}
-          <Colours palette={palette} />
+          <Colours palette={palette} boxes={boxes} />
           {/* What other people have done on your jobs. Top right of the page, whatever the layout. */}
           {!viewing && !preview && <Bell />}
           {/* Previewing a client: their bell is shown, but it's the client's, so it doesn't open. */}

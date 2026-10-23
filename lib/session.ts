@@ -1,4 +1,4 @@
-import { cleanPalette } from "./palette";
+import { cleanBoxes, cleanPalette } from "./palette";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { Ctx } from "./priority";
@@ -115,7 +115,8 @@ const loadMember = cache(async () => {
   const hidden = { phoneTabs, computer: Array.isArray(user.user_metadata?.hide_computer) ? list(user.user_metadata.hide_computer) : member.role === "designer" ? OWNER_HIDDEN_BY_DEFAULT : [], order: list(user.user_metadata?.menu_order), pins: list(user.user_metadata?.menu_pins), admin: Array.isArray(user.user_metadata?.admin_menu) ? list(user.user_metadata.admin_menu) : undefined };
   // Their own colour theme, if they've picked one (components/Colours.tsx).
   const palette = cleanPalette(user.user_metadata?.palette);
-  const shell = { member, businesses: clients, workspace: ws, isAdmin: Boolean(isAdmin), viewing, readOnly: false, avatar, initials, askHint, askOpens, askSince, helpUnread, track, hidden, palette, preview: undefined as Business | undefined };
+  const boxes = cleanBoxes(user.user_metadata?.boxes);
+  const shell = { member, businesses: clients, workspace: ws, isAdmin: Boolean(isAdmin), viewing, readOnly: false, avatar, initials, askHint, askOpens, askSince, helpUnread, track, hidden, palette, boxes, preview: undefined as Business | undefined };
   // How Queue and Overview are laid out (Customise, lib/layouts.ts). Someone viewing another
   // workspace sees its pages as they come.
   const layouts = { queue: viewing ? undefined : user.user_metadata?.layout_queue, overview: viewing ? undefined : user.user_metadata?.layout_overview } as Record<"queue" | "overview", unknown>;
