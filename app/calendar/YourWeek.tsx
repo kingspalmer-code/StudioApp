@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CARD_COLOURS } from "@/lib/plan";
 import { blockTime, DAY_SHORT, daysLabel, ROUTINE_COLOUR, type RoutineBlock } from "@/lib/routine";
 
@@ -14,6 +14,16 @@ export default function YourWeek({ routine, onChange, readOnly }: { routine: Rou
   const [end, setEnd] = useState("");
   const [colour, setColour] = useState(ROUTINE_COLOUR);
   const [look, setLook] = useState<RoutineBlock["look"]>("fill");
+  // Clicking or tapping anywhere outside the panel (or Escape) closes it.
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("pointerdown", away);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("pointerdown", away); document.removeEventListener("keydown", esc); };
+  }, [open]);
 
   function add(e: React.FormEvent) {
     e.preventDefault();
@@ -25,7 +35,7 @@ export default function YourWeek({ routine, onChange, readOnly }: { routine: Rou
   }
 
   return (
-    <div className="week">
+    <div className="week" ref={box}>
       <button type="button" className="week-btn" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         Your week{routine.length ? ` · ${routine.length}` : ""}
       </button>
