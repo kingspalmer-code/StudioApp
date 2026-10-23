@@ -138,10 +138,13 @@ export default function Cards({
 
       {open.length === 0 && <p className="cards-empty">Nothing to do. Tell Oatcake what&apos;s on your mind and it&apos;ll fill this up.</p>}
 
+      {/* Sections sit side by side, each as wide as its cards need, wrapping onto the next line. */}
+      <div className="cards-secs">
       {sections.map((sec) => (
         <div
           key={sec.key || "loose"}
           className={`cards-sec${over === `sec:${sec.key}` ? " over" : ""}`}
+          style={{ ["--n" as string]: Math.min(8, sec.items.reduce((n, i) => n + (i.size === "s" ? 1 : 2), 0) + (!readOnly && arrange === "groups" ? 1 : 0)) || 1 }}
           onDragOver={(e) => { if (dragId !== null) { e.preventDefault(); setOver(`sec:${sec.key}`); } }}
           onDragLeave={() => setOver((o) => (o === `sec:${sec.key}` ? null : o))}
           onDrop={(e) => { e.preventDefault(); dropOn(null, arrange === "groups" ? sec.key : null); }}
@@ -175,6 +178,7 @@ export default function Cards({
           </div>
         </div>
       ))}
+      </div>
 
       {!readOnly && arrange === "groups" && only === null && <NewGroup onAdd={onAdd} />}
 
