@@ -173,6 +173,10 @@ export default function CreateMenu({
           <button className="ct-add" type="submit" disabled={pending}>{pending ? "Adding…" : "Add"}</button>
         </form>
         <p className="ct-foot">Goes to your To-do. Say when it&apos;s due, and add ! to put it at the top.</p>
+        <p className="ct-foot">
+          Lots on your mind?{" "}
+          <button type="button" className="ct-link" onClick={() => { close(); router.push("/calendar?dump=1"); }}>Tell Oatcake all of it ›</button>
+        </p>
       </>
     );
   } else {
