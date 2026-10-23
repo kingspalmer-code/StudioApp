@@ -71,6 +71,10 @@
 .todo-set { margin: 18px 0 8px; max-width: 760px; }
 .todo-set-title { margin: 0 4px 4px; font: 700 20px/1.2 var(--font-display); letter-spacing: -.02em; }
 .cal-list-head h2 { margin: 0; font: 700 20px/1.2 var(--font-display); letter-spacing: -.02em; }
+.cal-rename { all: unset; cursor: text; border-radius: 6px; }
+.cal-rename:hover { box-shadow: 0 0 0 2px var(--sep); }
+.cal-rename:focus-visible { box-shadow: 0 0 0 2px var(--o); }
+.cal-rename-input { font: inherit; letter-spacing: inherit; color: inherit; background: var(--fill); border: 0; border-radius: 6px; padding: 0 4px; margin-left: -4px; width: 100%; max-width: 480px; outline: 2px solid var(--o); }
 .cal-list-head span { font-size: 12.5px; color: var(--label-2); }
 .cal-todos, .cal-steps { list-style: none; margin: 0; padding: 0; }
 .cal-todos > li { position: relative; border-top: .5px solid var(--sep); }
@@ -298,7 +302,7 @@ input.dump-title:focus { outline: none; box-shadow: 0 1.5px 0 var(--o); }
 .card.over { box-shadow: -5px 0 0 0 var(--o); }
 .card-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .card-top:empty { display: none; }
-.card-when { border: 1.5px solid currentColor; border-radius: 999px; padding: 3px 10px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.card-when { border: 1.5px solid currentColor; border-radius: 999px; padding: 3px 10px; font-size: 12.5px; font-weight: 600; white-space: nowrap; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .card-when.late { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .card-count { margin-left: auto; font: 700 12px/1 ui-monospace, "SF Mono", Menlo, monospace; opacity: .7; }
 .card-title { margin: 0; font: 600 18px/1.15 var(--font-display); letter-spacing: -.02em; overflow-wrap: anywhere; }
@@ -360,7 +364,9 @@ input.dump-title:focus { outline: none; box-shadow: 0 1.5px 0 var(--o); }
 .cards-newgroup-form button:disabled { opacity: .5; }
 
 .cards-shelf { margin: 8px 0 20px; padding: 14px; border-radius: 22px; background: var(--surface); box-shadow: var(--shadow); }
-.cards-shelf > div { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.cards-shelf > div:not(.shelf-tabs) { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.shelf-tabs b { margin-left: 4px; font-variant-numeric: tabular-nums; }
+.shelf-empty { margin: 10px 2px 0; font-size: 13px; color: var(--label-2); }
 .shelf-chip { border: 0; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: line-through; text-decoration-thickness: 1.5px; opacity: .85; animation: shelf-in .35s cubic-bezier(.3,1.4,.5,1); }
 .shelf-chip:hover { text-decoration: none; opacity: 1; }
 @keyframes shelf-in { from { transform: scale(.6); opacity: 0; } }

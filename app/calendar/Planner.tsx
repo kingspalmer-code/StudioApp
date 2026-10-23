@@ -38,8 +38,10 @@ export default function Planner({
   readOnly,
   routine: initialRoutine,
   startView,
+  pageTitle: initialTitle,
   brain,
   focusDump,
+  olderDone,
   top,
 }: {
   initial: PlanItem[];
@@ -55,9 +57,13 @@ export default function Planner({
   routine: RoutineBlock[];
   // Calendar ("list") or Cards: whichever was picked last, saved to the account.
   startView: "cards" | "list";
+  // The page heading, renamed by tapping it (saved to the account).
+  pageTitle: string;
   // Whether "Tell Oatcake" is on (it needs the AI key).
   brain: boolean;
   focusDump?: boolean;
+  // Things finished too long ago to load, for the "Ever" count.
+  olderDone: number;
   // What sits between the heading and the calendar: an employee's tasks from the owner.
   top?: React.ReactNode;
 }) {
@@ -311,7 +317,7 @@ export default function Planner({
     <div className={`cal${drag ? " cal-dragging" : ""}`}>
       <header className="cal-head">
         <div>
-          <h1 className="cal-title">To-do<span>.</span></h1>
+          <PageTitle initial={initialTitle} readOnly={readOnly} />
           <p className="cal-sub">{todayCount ? `${todayCount} thing${todayCount === 1 ? "" : "s"} on today` : "Nothing on today"} · {open.length} to-do{open.length === 1 ? "" : "s"}</p>
         </div>
         <div className="cal-head-r">
@@ -572,6 +578,7 @@ export default function Planner({
           onSave={save}
           onOpen={(id) => setEditing(id)}
           onAdd={(title, grp) => add(title, { grp })}
+          olderDone={who === "all" ? olderDone : null}
         />
       )}
 
@@ -894,5 +901,39 @@ function Running({ log, item, job, onOpen }: { log: TimeLog; item?: PlanItem; jo
       <b>{fmtClock(now - Date.parse(log.started_at!))}</b>
       <span>{item?.title ?? job ?? "Timer running"}</span>
     </button>
+  );
+}
+
+// The page heading. Tap to rename; Enter or tapping away saves it, Escape puts it back.
+function PageTitle({ initial, readOnly }: { initial: string; readOnly: boolean }) {
+  const [title, setTitle] = useState(initial);
+  const [draft, setDraft] = useState<string | null>(null);
+  if (readOnly) return <h1 className="cal-title">{title}<span>.</span></h1>;
+  if (draft === null)
+    return (
+      <h1 className="cal-title">
+        <button type="button" className="cal-rename" onClick={() => setDraft(title)} title="Rename">{title}</button><span>.</span>
+      </h1>
+    );
+  const done = () => {
+    const next = draft.trim().slice(0, 40) || "To-do";
+    setDraft(null);
+    if (next === title) return;
+    setTitle(next);
+    saveProfile({ data: { todo_title: next === "To-do" ? null : next } }).catch(() => setTitle(title));
+  };
+  return (
+    <h1 className="cal-title">
+      <input
+        className="cal-rename-input"
+        autoFocus
+        value={draft}
+        maxLength={40}
+        aria-label="Page name"
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={done}
+        onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") setDraft(null); }}
+      />
+    </h1>
   );
 }
