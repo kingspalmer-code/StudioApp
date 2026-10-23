@@ -118,7 +118,9 @@ const loadMember = cache(async () => {
   const layouts = { queue: viewing ? undefined : user.user_metadata?.layout_queue, overview: viewing ? undefined : user.user_metadata?.layout_overview } as Record<"queue" | "overview", unknown>;
   // Priority list or Board for the jobs, whichever they last picked (components/ViewSwitch.tsx).
   const jobsView = !viewing && user.user_metadata?.jobs_view === "board" ? "board" : "list";
-  return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview, appBusinesses, layouts, jobsView };
+  // Your week on To-do (lib/routine.ts): what happens every week, like office days.
+  const routine = viewing ? undefined : user.user_metadata?.routine;
+  return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview, appBusinesses, layouts, jobsView, routine };
 });
 
 type Session = Awaited<ReturnType<typeof requireMember>>;

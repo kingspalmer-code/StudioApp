@@ -7,7 +7,11 @@ import ConfirmButton from "@/components/ConfirmButton";
 import TimeTracker from "@/components/TimeTracker";
 import { fmtClock, fmtMinutes, totalMinutes, type TimeLog } from "@/lib/hours";
 import { addDays, byRank, byTime, dayName, hhmm, monthDays, monthName, planWhen, REMIND_OPTIONS, shiftMonth, type PlanItem } from "@/lib/plan";
+import { blockTime, routineOn, type RoutineBlock } from "@/lib/routine";
+import { saveProfile } from "@/lib/supabase/client";
 import { addPlanItem, removePlanItem, updatePlanItem, type PlanPatch } from "./actions";
+import BrainDump from "./BrainDump";
+import YourWeek from "./YourWeek";
 
 type Job = { id: number; title: string };
 type Person = { email: string; name: string; owner: boolean };
@@ -31,6 +35,9 @@ export default function Planner({
   openId,
   newForJob,
   readOnly,
+  routine: initialRoutine,
+  brain,
+  focusDump,
   top,
 }: {
   initial: PlanItem[];
@@ -43,6 +50,10 @@ export default function Planner({
   openId?: number;
   newForJob?: Job;
   readOnly: boolean;
+  routine: RoutineBlock[];
+  // Whether "Tell Oatcake" is on (it needs the AI key).
+  brain: boolean;
+  focusDump?: boolean;
   // What sits between the heading and the calendar: an employee's tasks from the owner.
   top?: React.ReactNode;
 }) {
@@ -57,6 +68,7 @@ export default function Planner({
   const [showDone, setShowDone] = useState(false);
   const [error, setError] = useState("");
   const [drag, setDrag] = useState<Drag | null>(null);
+  const [routine, setRoutine] = useState(initialRoutine);
   const [, startTransition] = useTransition();
   const tempId = useRef(-1);
 
@@ -130,6 +142,20 @@ export default function Planner({
         const saved = r.item;
         setItems((list) => list.map((i) => (i.id === draft.id ? saved : i)));
         setEditing((e) => (e === draft.id ? saved.id : e));
+      }
+    });
+  }
+
+  // Your week is saved to your account; if that fails it goes back.
+  function saveRoutine(next: RoutineBlock[]) {
+    if (readOnly) return;
+    const before = routine;
+    setRoutine(next);
+    startTransition(async () => {
+      const { error: e } = await saveProfile({ data: { routine: next } }).catch(() => ({ error: { message: "Couldn't save that. Check your connection." } }));
+      if (e) {
+        setError(e.message || "Couldn't save your week.");
+        setRoutine(before);
       }
     });
   }
@@ -268,6 +294,27 @@ export default function Planner({
 
       {top}
 
+      {!readOnly && (
+        <div className="cal-tools">
+          {brain && (
+            <BrainDump
+              routine={routine}
+              today={today}
+              focus={focusDump}
+              onAdded={(added) => {
+                setItems((list) => [...list, ...added]);
+                const step = added.find((i) => i.parent_id !== null);
+                if (step) setExpanded((s) => new Set(s).add(step.parent_id!));
+                const first = added.find((i) => i.on_date && i.on_date >= today);
+                if (first) { setSelected(first.on_date!); setMonth(first.on_date!.slice(0, 7)); }
+              }}
+              onRoutine={(blocks) => saveRoutine([...routine, ...blocks.map((b) => ({ ...b, id: Math.random().toString(36).slice(2, 10) }))])}
+            />
+          )}
+          <YourWeek routine={routine} onChange={saveRoutine} readOnly={readOnly} />
+        </div>
+      )}
+
       {showWho && (
         <div className="seg cal-who" role="group" aria-label="Show whose to-dos">
           <button type="button" aria-pressed={who === "all"} onClick={() => setWho("all")}>Everyone&apos;s</button>
@@ -303,6 +350,11 @@ export default function Planner({
                     {day.endsWith("-01") && out ? new Date(day + "T12:00:00Z").toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" }) + " " : ""}
                     {Number(day.slice(8))}
                   </span>
+                  {routineOn(routine, day).length > 0 && (
+                    <span className="cal-routine" title={routineOn(routine, day).map((b) => `${b.label} ${blockTime(b)}`).join(", ")}>
+                      {routineOn(routine, day).map((b) => b.label).join(" · ")}
+                    </span>
+                  )}
                   <div className="cal-chips">
                     {list.slice(0, 3).map((i) => (
                       <div
@@ -330,6 +382,16 @@ export default function Planner({
 
           <div className="cal-day">
             <h3>{selected === today ? "Today" : dayName(selected)}</h3>
+            {routineOn(routine, selected).length > 0 && (
+              <ul className="cal-agenda cal-agenda-routine" aria-label="Every week">
+                {routineOn(routine, selected).map((b) => (
+                  <li key={b.id}>
+                    <span className="cal-time">{b.start}</span>
+                    <span className="cal-open">{b.label}<small>{b.end ? `Until ${b.end} · every week` : "Every week"}</small></span>
+                  </li>
+                ))}
+              </ul>
+            )}
             {onDay(selected).length === 0 && <p className="cal-empty">Nothing planned. Add something, or drag a to-do onto a day.</p>}
             <ul className="cal-agenda">
               {onDay(selected).map((i) => {

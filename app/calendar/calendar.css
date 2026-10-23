@@ -183,3 +183,67 @@
 .cal-running i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: tt-pulse 1.2s ease-in-out infinite; flex: none; }
 .cal-running b { font-variant-numeric: tabular-nums; }
 .cal-running span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Tell Oatcake (the brain dump) and Your week, between the heading and the calendar. */
+.cal-tools { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; margin: 0 0 18px; }
+.dump { background: var(--surface); border-radius: 22px; padding: 14px 16px; box-shadow: var(--shadow); }
+.dump-label { display: block; font: 700 17px/1.2 var(--font-display); letter-spacing: -.01em; margin: 0 2px 8px; }
+.dump-label::after { content: "."; color: var(--o); }
+.dump-text { width: 100%; border: 0; border-radius: 14px; background: var(--tile); padding: 12px 14px; font-size: 15px; line-height: 1.45; resize: vertical; color: var(--label); }
+.dump-text:focus { outline: 2px solid color-mix(in srgb, var(--o) 50%, transparent); }
+.dump-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; font-size: 12.5px; color: var(--label-2); }
+.dump-go { border: 0; background: var(--o); color: var(--o-ink); font-weight: 700; font-size: 14px; padding: 9px 16px; border-radius: 11px; cursor: pointer; margin-left: auto; }
+.dump-go:disabled { opacity: .5; cursor: default; }
+.dump-back { border: 0; background: var(--tile); color: var(--label); font-weight: 600; font-size: 14px; padding: 9px 14px; border-radius: 11px; cursor: pointer; }
+.dump-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.dump-head .dump-label { margin-bottom: 4px; }
+.dump-hint { font-size: 12.5px; color: var(--label-2); }
+.dump-rows { list-style: none; margin: 6px 0 0; padding: 0; }
+.dump-rows li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 2px; border-top: .5px solid var(--sep); }
+.dump-rows li:first-child { border-top: 0; }
+.dump-rows li.off .dump-main { opacity: .45; }
+.dump-rows input[type="checkbox"] { accent-color: var(--o); width: 18px; height: 18px; margin-top: 8px; flex: none; }
+.dump-main { flex: 1; min-width: 0; display: grid; gap: 6px; }
+.dump-title { border: 0; background: none; font-size: 15px; font-weight: 600; padding: 4px 0; color: var(--label); width: 100%; }
+input.dump-title:focus { outline: none; box-shadow: 0 1.5px 0 var(--o); }
+.dump-when { display: flex; flex-wrap: wrap; gap: 6px; }
+.dump-when select, .dump-when input { border: 0; background: var(--tile); border-radius: 9px; padding: 6px 8px; font-size: 13px; color: var(--label); min-width: 0; }
+.dump-main small { font-size: 12.5px; color: var(--label-2); }
+.dump-clash { color: var(--o) !important; font-weight: 600; }
+.dump-weekly .dump-title { padding-top: 6px; }
+.dump-error { margin: 8px 2px 0; color: var(--o); font-size: 13.5px; font-weight: 600; }
+
+.week { position: relative; }
+.week-btn { border: 0; background: var(--surface); box-shadow: var(--shadow); color: var(--label); font-weight: 700; font-size: 14px; padding: 12px 16px; border-radius: 16px; cursor: pointer; white-space: nowrap; }
+.week-btn[aria-expanded="true"] { color: var(--o); }
+.week-panel { position: absolute; right: 0; top: calc(100% + 8px); z-index: 40; width: min(360px, calc(100vw - 32px)); background: var(--surface); border-radius: 18px; padding: 14px; box-shadow: var(--shadow); border: .5px solid var(--sep); }
+.week-list { list-style: none; margin: 0 0 10px; padding: 0; }
+.week-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 2px; border-top: .5px solid var(--sep); }
+.week-list li:first-child { border-top: 0; }
+.week-list b { display: block; font-size: 14.5px; }
+.week-list small { font-size: 12.5px; color: var(--label-2); }
+.week-x { border: 0; background: var(--tile); border-radius: 50%; width: 28px; height: 28px; font-size: 17px; line-height: 1; cursor: pointer; color: var(--label-2); }
+.week-add { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--tile); border-radius: 14px; padding: 10px; }
+.week-add > input { flex: 1 1 100%; border: 0; background: var(--surface); border-radius: 9px; padding: 8px 10px; font-size: 14px; }
+.week-add label { font-size: 12.5px; color: var(--label-2); display: flex; align-items: center; gap: 6px; }
+.week-add label input { border: 0; background: var(--surface); border-radius: 9px; padding: 6px 8px; font-size: 13px; }
+.week-add small { flex: 1 1 100%; font-size: 11.5px; color: var(--label-3); }
+.week-add button[type="submit"] { border: 0; background: var(--o); color: var(--o-ink); font-weight: 700; font-size: 13px; padding: 7px 14px; border-radius: 9px; cursor: pointer; margin-left: auto; }
+.week-add button[type="submit"]:disabled { opacity: .5; cursor: default; }
+.week-days { display: flex; gap: 4px; flex: 1 1 100%; }
+.week-days button { flex: 1; border: 0; background: var(--surface); border-radius: 8px; padding: 7px 0; font-size: 12px; font-weight: 700; color: var(--label-2); cursor: pointer; }
+.week-days button[aria-pressed="true"] { background: var(--o); color: var(--o-ink); }
+
+/* Every-week things on the calendar: faint, so they read as background. */
+.cal-routine { font-size: 10.5px; font-weight: 600; color: var(--label-3); padding: 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-tile.today .cal-routine { color: color-mix(in srgb, var(--o-ink) 75%, transparent); }
+.cal-agenda-routine { margin-bottom: 4px; }
+.cal-agenda-routine li { background: repeating-linear-gradient(-45deg, var(--tile), var(--tile) 6px, transparent 6px, transparent 12px); }
+.cal-agenda-routine .cal-time { color: var(--label-3); }
+.cal-agenda-routine .cal-open { cursor: default; color: var(--label-2); }
+
+@media (max-width: 640px) {
+  .cal-tools { grid-template-columns: 1fr; }
+  .week-btn { width: 100%; }
+  .week-panel { position: static; width: auto; margin-top: 8px; }
+}

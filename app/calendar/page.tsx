@@ -2,6 +2,7 @@ import Shell from "@/components/Shell";
 import { allows } from "@/lib/access";
 import { TIME_COLUMNS, type TimeLog } from "@/lib/hours";
 import { PLAN_COLUMNS, todayIn, type PlanItem } from "@/lib/plan";
+import { readRoutine } from "@/lib/routine";
 import { requireMember } from "@/lib/session";
 import { loadStaffList } from "@/lib/staff";
 import StaffList from "@/app/tasks/StaffList";
@@ -10,9 +11,9 @@ import Planner from "./Planner";
 // To-do, the one place for to-dos: a list in priority order on one side, and the month it fills on
 // the other. The owner sees everyone's; an employee sees their own, with the tasks the owner set
 // them on Team at the top.
-export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ item?: string; job?: string; m?: string; task?: string }> }) {
-  const { item, job, m, task } = await searchParams;
-  const { supabase, member, workspace, shell, viewing } = await requireMember(["designer", "staff"]);
+export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ item?: string; job?: string; m?: string; task?: string; dump?: string }> }) {
+  const { item, job, m, task, dump } = await searchParams;
+  const { supabase, member, workspace, shell, viewing, routine } = await requireMember(["designer", "staff"]);
   const employee = member.role === "staff";
   const owner = member.role === "designer" && !member.staff;
   const seesJobs = member.role === "designer" || allows(member.access, "requests");
@@ -61,6 +62,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
         openId={Number(item) || undefined}
         newForJob={jobId ? jobList.find((j) => j.id === jobId) : undefined}
         readOnly={viewing}
+        routine={readRoutine(routine)}
+        brain={Boolean(process.env.ANTHROPIC_API_KEY) && !viewing}
+        focusDump={dump === "1"}
         top={set && hasSet ? (
           <section className="staff-list todo-set" aria-label={`From ${setBy}`}>
             <h2 className="todo-set-title">From {setBy}</h2>
