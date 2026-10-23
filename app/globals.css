@@ -1749,3 +1749,63 @@ html.app-glass .app-drag { background: transparent; border-bottom-color: transpa
 }
 @media (prefers-reduced-transparency: reduce) { .pb-bar { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; } }
 @media (prefers-reduced-motion: reduce) { .pb-block { animation: none; } }
+
+/* Colours (components/Colours.tsx, lib/palette.ts): one button that re-themes the whole app from a
+   palette. A picked palette sets every token above plus --wash, a soft blur of its colours behind
+   the page; content stays on solid surfaces. The button sits in the top bar on phones and in the
+   sidebar on bigger screens; its panel is glass, like the other floating chrome. */
+body { background-image: var(--wash, none); background-attachment: fixed; }
+html.app-glass body { background-image: none; }
+html.app-glass body::before { background-image: var(--wash, none); }
+html.oc-retheme, html.oc-retheme * { transition: background-color .6s ease, color .6s ease, border-color .6s ease, fill .6s ease !important; }
+.theme-btn { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 0; cursor: pointer; background: var(--fill); color: var(--label); padding: 0; transition: transform .18s cubic-bezier(.3,1.6,.5,1); }
+.theme-btn svg { width: 19px; height: 19px; }
+.theme-btn > span { display: none; }
+.theme-btn:active { transform: scale(.92); }
+.theme-btn[aria-expanded="true"], .theme-btn.over { background: var(--accent); color: var(--accent-ink); }
+.theme-btn.over { transform: scale(1.15); }
+@media (min-width: 701px) {
+  .has-rail > .bar .theme-btn { width: 44px; height: 44px; border-radius: 12px; background: transparent; color: var(--label-2); }
+  .has-rail > .bar .theme-btn:hover { background: var(--fill); color: var(--label); }
+  .has-rail > .bar .theme-btn[aria-expanded="true"], .has-rail > .bar .theme-btn.over { background: var(--accent); color: var(--accent-ink); }
+  .has-rail > .bar .theme-btn svg { width: 22px; height: 22px; }
+  html[data-rail="open"] .has-rail > .bar .theme-btn { width: auto; height: 38px; display: flex; align-items: center; gap: 12px; padding: 0 12px; border-radius: 10px; font: inherit; }
+  html[data-rail="open"] .has-rail > .bar .theme-btn svg { width: 20px; height: 20px; flex: none; }
+  html[data-rail="open"] .has-rail > .bar .theme-btn > span { display: inline; }
+}
+.pal-layer { position: fixed; inset: 0; z-index: 60; }
+html.in-app .pal-layer { top: var(--app-bar); }
+.pal-scrim { position: absolute; inset: 0; }
+.pal-panel { position: absolute; top: calc(52px + env(safe-area-inset-top, 0px)); left: 8px; right: 8px; max-height: calc(100dvh - 60px - 84px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow: auto; overscroll-behavior: contain; border-radius: 22px; padding: 16px; display: grid; gap: 12px; color: var(--label); background: var(--glass-tint), var(--glass-thick); -webkit-backdrop-filter: var(--glass-blur-deep); backdrop-filter: var(--glass-blur-deep); box-shadow: var(--glass-edge), 0 0 0 .5px var(--glass-line), var(--glass-shadow); transform-origin: top right; }
+@media (min-width: 701px) {
+  .pal-panel { right: 12px; left: auto; width: 400px; top: calc(58px + env(safe-area-inset-top, 0px)); max-height: calc(100dvh - 76px); }
+  body:has(.has-rail) .pal-panel { top: auto; right: auto; left: calc(var(--rail-w) + 12px); bottom: 16px; transform-origin: bottom left; max-height: calc(100dvh - 32px); }
+}
+.pal-head { display: flex; align-items: center; justify-content: space-between; }
+.pal-head h2 { margin: 0; font: 700 22px/1.1 var(--font-display); letter-spacing: -.02em; }
+.pal-head .pal-close { position: static; transform: none; }
+.pal-drop { display: flex; align-items: center; gap: 14px; text-align: left; width: 100%; padding: 16px; border-radius: 16px; border: 1.5px dashed var(--sep); background: var(--surface); color: var(--label); font: inherit; cursor: pointer; transition: border-color .15s, background-color .15s, transform .15s; }
+.pal-drop:hover { border-color: var(--label-3); }
+.pal-drop.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); transform: scale(1.01); }
+.pal-drop svg { width: 34px; height: 34px; flex: none; color: var(--label-2); }
+.pal-drop img { width: 48px; height: 48px; object-fit: cover; border-radius: 10px; flex: none; }
+.pal-drop span { display: grid; gap: 2px; }
+.pal-drop small { color: var(--label-2); font-size: 13px; }
+.pal-hex { display: flex; gap: 8px; }
+.pal-hex input { flex: 1; min-width: 0; padding: 9px 12px; border-radius: 10px; border: 0; background: var(--surface); box-shadow: inset 0 0 0 .5px var(--sep); font-size: 15px; }
+.pal-hex .btn.small { padding: 8px 14px; }
+.pal-note { margin: 0; color: var(--red); font-size: 13px; }
+.pal-now { display: grid; gap: 6px; }
+.pal-now small { color: var(--label-2); font-size: 12px; }
+.pal-swatches { display: flex; height: 44px; border-radius: 12px; overflow: hidden; box-shadow: 0 0 0 .5px var(--sep); }
+.pal-swatches button { flex: 1; border: 0; cursor: pointer; padding: 0; transition: flex .25s ease; }
+.pal-swatches button[aria-pressed="true"] { flex: 1.8; cursor: default; box-shadow: inset 0 -3px 0 rgba(255,255,255,.85), inset 0 -4px 0 rgba(0,0,0,.25); }
+.pal-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pal-presets button { display: grid; gap: 6px; padding: 6px 6px 8px; border-radius: 12px; border: 0; background: var(--surface); box-shadow: 0 0 0 .5px var(--sep); color: var(--label); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; text-align: left; }
+.pal-presets button:hover { box-shadow: 0 0 0 1px var(--label-3); }
+.pal-presets button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--accent); }
+.pal-strip { display: flex; height: 24px; border-radius: 7px; overflow: hidden; }
+.pal-strip i { flex: 1; }
+.pal-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 4px; }
+@media (prefers-reduced-transparency: reduce) { .pal-panel { background: var(--surface-2); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+@media (prefers-reduced-motion: reduce) { html.oc-retheme, html.oc-retheme * { transition: none !important; } }
