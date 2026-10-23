@@ -13,7 +13,7 @@ import Planner from "./Planner";
 // them on Team at the top.
 export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ item?: string; job?: string; m?: string; task?: string; dump?: string }> }) {
   const { item, job, m, task, dump } = await searchParams;
-  const { supabase, member, workspace, shell, viewing, routine, todoView } = await requireMember(["designer", "staff"]);
+  const { supabase, member, workspace, shell, viewing, routine, todoView, todoTitle } = await requireMember(["designer", "staff"]);
   const employee = member.role === "staff";
   const owner = member.role === "designer" && !member.staff;
   const seesJobs = member.role === "designer" || allows(member.access, "requests");
@@ -67,6 +67,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
         readOnly={viewing}
         routine={readRoutine(routine)}
         startView={todoView}
+        pageTitle={todoTitle}
         brain={Boolean(process.env.ANTHROPIC_API_KEY) && !viewing}
         focusDump={dump === "1"}
         top={set && hasSet ? (

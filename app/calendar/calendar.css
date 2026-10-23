@@ -71,6 +71,10 @@
 .todo-set { margin: 18px 0 8px; max-width: 760px; }
 .todo-set-title { margin: 0 4px 4px; font: 700 20px/1.2 var(--font-display); letter-spacing: -.02em; }
 .cal-list-head h2 { margin: 0; font: 700 20px/1.2 var(--font-display); letter-spacing: -.02em; }
+.cal-rename { all: unset; cursor: text; border-radius: 6px; }
+.cal-rename:hover { box-shadow: 0 0 0 2px var(--sep); }
+.cal-rename:focus-visible { box-shadow: 0 0 0 2px var(--o); }
+.cal-rename-input { font: inherit; letter-spacing: inherit; color: inherit; background: var(--fill); border: 0; border-radius: 6px; padding: 0 4px; margin-left: -4px; width: 100%; max-width: 480px; outline: 2px solid var(--o); }
 .cal-list-head span { font-size: 12.5px; color: var(--label-2); }
 .cal-todos, .cal-steps { list-style: none; margin: 0; padding: 0; }
 .cal-todos > li { position: relative; border-top: .5px solid var(--sep); }

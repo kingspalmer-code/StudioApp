@@ -125,7 +125,9 @@ const loadMember = cache(async () => {
   const routine = viewing ? undefined : user.user_metadata?.routine;
   // To-do opens on the calendar or Cards, whichever they last picked.
   const todoView: "list" | "cards" = !viewing && user.user_metadata?.todo_view === "cards" ? "cards" : "list";
-  return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview, appBusinesses, layouts, jobsView, routine, todoView };
+  // Their own name for the To-do page heading ("To-do" until renamed).
+  const todoTitle = (!viewing && typeof user.user_metadata?.todo_title === "string" && user.user_metadata.todo_title.trim()) || "To-do";
+  return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview, appBusinesses, layouts, jobsView, routine, todoView, todoTitle };
 });
 
 type Session = Awaited<ReturnType<typeof requireMember>>;
