@@ -7,6 +7,7 @@ import AskOatcake from "./AskOatcake";
 import BizBadge from "./BizBadge";
 import AppBar from "./AppBar";
 import Bell from "./Bell";
+import Colours from "./Colours";
 import NavLinks from "./NavLinks";
 import RailGrip from "./RailGrip";
 import RailNav from "./RailNav";
@@ -157,6 +158,7 @@ export default function Shell({
   track = false,
   isAdmin = false,
   hidden = { computer: [], order: [] },
+  palette = null,
   preview,
   children,
 }: {
@@ -178,6 +180,8 @@ export default function Shell({
   // the order they dragged the sidebar into, and the ones they picked for the phone tab bar. Pins are
   // other pages added to the sidebar, and admin what a platform admin keeps in their Admin section.
   hidden?: { phoneTabs?: string[]; computer: string[]; order?: string[]; pins?: string[]; admin?: string[] };
+  // Their own colour theme (lib/palette.ts), or none for Oatcake's.
+  palette?: string[] | null;
   preview?: Business;
   children: React.ReactNode;
 }) {
@@ -234,6 +238,8 @@ export default function Shell({
           {rail ? <RailNav links={deskLinks} all={deskAll} hidden={hidden.computer} admin={isAdmin && !viewing && !preview ? admin : undefined} pages={pages} editable={!viewing && !preview} canCreate={canCreate} clients={businesses} newHref={newHref} /> : <NavLinks links={links} />}
           {(canCreate || isClient) && <SearchButton />}
           {member.role === "designer" && !member.staff && !viewing && process.env.ANTHROPIC_API_KEY && <AskOatcake hint={askHint} opens={askOpens} since={askSince} />}
+          {/* One button to re-colour the whole app, from a dropped palette image or a preset. */}
+          <Colours palette={palette} />
           {/* What other people have done on your jobs. Top right of the page, whatever the layout. */}
           {!viewing && !preview && <Bell />}
           {/* Previewing a client: their bell is shown, but it's the client's, so it doesn't open. */}
