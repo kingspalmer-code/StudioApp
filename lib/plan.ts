@@ -113,11 +113,22 @@ export function planWhen(date: string | null, time: string | null, today = today
 export const onThisDay = (i: Pick<PlanItem, "on_date" | "end_date">, day: string) =>
   i.on_date === day || (i.on_date !== null && i.end_date !== null && i.on_date < day && day <= i.end_date);
 
-// "Fri 24 Oct – Mon 27 Oct", or planWhen for a single day.
+// Kept short so it fits a small card: "26–30 Oct", "28 Oct – 3 Nov", "Today – 26 Oct · 09:00", or
+// planWhen for a single day.
 export function planSpan(i: Pick<PlanItem, "on_date" | "end_date" | "at_time">, today = todayIn()): string {
   if (!i.on_date) return "";
   if (!i.end_date || i.end_date <= i.on_date) return planWhen(i.on_date, i.at_time, today);
-  return `${planWhen(i.on_date, i.at_time, today)} – ${planWhen(i.end_date, null, today)}`;
+  const word = (d: string) => {
+    const n = Math.round((Date.parse(d) - Date.parse(today)) / DAY_MS);
+    return n === 0 ? "Today" : n === 1 ? "Tomorrow" : n === -1 ? "Yesterday" : "";
+  };
+  const dm = (d: string, month: boolean) =>
+    new Date(d + "T12:00:00Z").toLocaleDateString("en-GB", month ? { day: "numeric", month: "short", timeZone: "UTC" } : { day: "numeric", timeZone: "UTC" });
+  const end = word(i.end_date) || dm(i.end_date, true);
+  const sameMonth = i.on_date.slice(0, 7) === i.end_date.slice(0, 7) && !word(i.end_date);
+  const start = word(i.on_date) || dm(i.on_date, !sameMonth);
+  const span = !word(i.on_date) && sameMonth ? `${start}–${end}` : `${start} – ${end}`;
+  return i.at_time ? `${span} · ${hhmm(i.at_time)}` : span;
 }
 
 // Calendar order within a day: timed things first by time, then the rest by priority.
