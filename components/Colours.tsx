@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { saveProfile } from "@/lib/supabase/client";
-import { chroma, distance, paletteCss, parseColours, PRESETS, randomPalette, rgbToHex } from "@/lib/palette";
+import { boxesCss, chroma, distance, paletteCss, parseColours, PRESETS, randomPalette, rgbToHex, type BoxStyle } from "@/lib/palette";
 import { flashSaved } from "./Saved";
 
 type Rgb = [number, number, number];
@@ -80,8 +80,9 @@ function PaletteIcon({ colours }: { colours: string[] | null }) {
 // One button that re-colours the whole app: drop in a palette image, a photo or a screenshot (or
 // paste one, or hex codes, or a Coolors link), pick a preset, or let it surprise you. The colours
 // change straight away, in light and dark mode, and are saved to the account (lib/palette.ts).
-export default function Colours({ palette: saved }: { palette: string[] | null }) {
+export default function Colours({ palette: saved, boxes: savedBoxes }: { palette: string[] | null; boxes: BoxStyle }) {
   const [palette, setPalette] = useState<string[] | null>(saved);
+  const [boxes, setBoxes] = useState<BoxStyle>(savedBoxes);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [over, setOver] = useState(false);
@@ -93,7 +94,22 @@ export default function Colours({ palette: saved }: { palette: string[] | null }
   const router = useRouter();
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const fileInput = useRef<HTMLInputElement>(null);
-  const css = useMemo(() => paletteCss(palette), [palette]);
+  const css = useMemo(() => paletteCss(palette) + boxesCss(boxes), [palette, boxes]);
+
+  async function pickBoxes(next: BoxStyle) {
+    if (next === boxes) return;
+    const before = boxes;
+    const root = document.documentElement;
+    root.classList.add("oc-retheme");
+    setTimeout(() => root.classList.remove("oc-retheme"), 700);
+    setBoxes(next);
+    const { error } = await saveProfile({ data: { boxes: next } });
+    if (error) {
+      setBoxes(before);
+      return setNote("Couldn't save that. Check your connection.");
+    }
+    flashSaved("Boxes saved");
+  }
 
   useEffect(() => setMounted(true), []);
   useEffect(() => setOpen(false), [pathname]);
@@ -305,6 +321,13 @@ export default function Colours({ palette: saved }: { palette: string[] | null }
                           {p.name}
                         </button>
                       ))}
+                    </div>
+                    <div className="pal-boxes">
+                      <span>Boxes</span>
+                      <div className="seg" role="group" aria-label="Boxes">
+                        <button type="button" aria-pressed={boxes === "raised"} onClick={() => pickBoxes("raised")}>Raised</button>
+                        <button type="button" aria-pressed={boxes === "embossed"} onClick={() => pickBoxes("embossed")}>Embossed</button>
+                      </div>
                     </div>
                     <div className="pal-foot">
                       {palette ? (

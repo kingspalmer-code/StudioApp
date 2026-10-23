@@ -223,3 +223,25 @@ export function paletteCss(palette: string[] | null): string {
     `${sel(':root[data-theme="dark"]')}{${body(dark)}}`
   );
 }
+
+// Boxes on the page either float above it (raised, Oatcake's look) or sit pressed into it
+// (embossed): the page's own colour with a soft inner shadow. Only boxes in the page itself
+// change; menus and sheets keep floating.
+export type BoxStyle = "raised" | "embossed";
+
+export const cleanBoxes = (v: unknown): BoxStyle => (v === "embossed" ? "embossed" : "raised");
+
+export function boxesCss(boxes: BoxStyle): string {
+  if (boxes !== "embossed") return "";
+  const light = "--surface:var(--bg);--shadow:inset 0 1.5px 3px rgba(56,42,37,.13),inset 0 -1px 0 rgba(255,255,255,.65),0 0 0 .5px rgba(56,42,37,.06)";
+  const dark = "--surface:var(--bg);--shadow:inset 0 2px 4px rgba(0,0,0,.45),inset 0 -1px 0 rgba(255,255,255,.05),0 0 0 .5px rgba(255,255,255,.04)";
+  // Dialogs, sheets and menus that open inside the page keep the floating look.
+  const lift = 'main [role="dialog"],main [role="menu"],main [role="listbox"],main .sheet{--surface:var(--up-surface);--shadow:var(--up-shadow)}';
+  return (
+    `:root{--up-surface:var(--surface);--up-shadow:var(--shadow)}` +
+    `main{${light}}` +
+    `@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) main{${dark}}}` +
+    `:root[data-theme="dark"] main{${dark}}` +
+    lift
+  );
+}
