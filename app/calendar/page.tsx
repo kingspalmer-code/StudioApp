@@ -20,7 +20,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   const seesTeam = owner || allows(member.access, "team");
   // Finished things drop off after a couple of months, so the page stays quick.
   const since = new Date(Date.now() - 60 * 86400000).toISOString();
-  const [{ data: rows }, { data: jobs }, { data: people }, { data: timeRows }, set] = await Promise.all([
+  const [{ data: rows }, { data: jobs }, { data: people }, { data: timeRows }, set, { count: olderDone }] = await Promise.all([
     supabase.from("plan_items").select(PLAN_COLUMNS).eq("gone", false).or(`done_at.is.null,done_at.gt.${since}`).order("rank").returns<PlanItem[]>(),
     seesJobs
       ? supabase.from("tickets").select("id, title, delivered_at").order("updated_at", { ascending: false }).limit(300).returns<{ id: number; title: string; delivered_at: string | null }[]>()
@@ -31,6 +31,8 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     // Hours logged on to-dos, and any timer that's running.
     supabase.from("time_logs").select(TIME_COLUMNS).eq("gone", false).or("plan_item_id.not.is.null,minutes.is.null").limit(3000).returns<TimeLog[]>(),
     employee ? loadStaffList(supabase, member.email, workspace.owner_name || "Your manager") : Promise.resolve(null),
+    // How many were finished before that, for the "Ever" count on the cards.
+    supabase.from("plan_items").select("id", { count: "exact", head: true }).eq("gone", false).lte("done_at", since),
   ]);
   const setBy = workspace.owner_name || workspace.name;
   const hasSet = set && set.daily.length + set.waiting.length + set.todo.length + set.done.length > 0;
@@ -54,6 +56,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       <Planner
         initial={items}
         initialLogs={timeRows ?? []}
+        olderDone={olderDone ?? 0}
         jobs={jobList}
         team={team}
         me={member.email}

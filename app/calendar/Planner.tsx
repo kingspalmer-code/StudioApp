@@ -40,6 +40,7 @@ export default function Planner({
   startView,
   brain,
   focusDump,
+  olderDone,
   top,
 }: {
   initial: PlanItem[];
@@ -58,6 +59,8 @@ export default function Planner({
   // Whether "Tell Oatcake" is on (it needs the AI key).
   brain: boolean;
   focusDump?: boolean;
+  // Things finished too long ago to load, for the "Ever" count.
+  olderDone: number;
   // What sits between the heading and the calendar: an employee's tasks from the owner.
   top?: React.ReactNode;
 }) {
@@ -572,6 +575,7 @@ export default function Planner({
           onSave={save}
           onOpen={(id) => setEditing(id)}
           onAdd={(title, grp) => add(title, { grp })}
+          olderDone={who === "all" ? olderDone : null}
         />
       )}
 

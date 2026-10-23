@@ -21,6 +21,7 @@ export default function Cards({
   onSave,
   onOpen,
   onAdd,
+  olderDone,
 }: {
   items: PlanItem[];
   today: string;
@@ -31,6 +32,8 @@ export default function Cards({
   onSave: (id: number, patch: PlanPatch) => void;
   onOpen: (id: number) => void;
   onAdd: (title: string, grp: string) => void;
+  // Finished before the last two months (null when only one person's list is showing).
+  olderDone: number | null;
 }) {
   const [popping, setPopping] = useState<Set<number>>(new Set());
   const [dragId, setDragId] = useState<number | null>(null);
@@ -40,7 +43,14 @@ export default function Cards({
   const tops = items.filter((i) => i.parent_id === null);
   const open = tops.filter((i) => !i.done_at).sort(byRank);
   const stepsOf = (id: number) => items.filter((i) => i.parent_id === id).sort(byRank);
-  const doneToday = tops.filter((i) => i.done_at && i.done_at.slice(0, 10) === today);
+  // Everything ticked off, steps included, newest first.
+  const done = items.filter((i) => i.done_at).sort((a, b) => b.done_at!.localeCompare(a.done_at!));
+  const doneToday = done.filter((i) => i.done_at!.slice(0, 10) === today);
+  const monday = addDays(today, -((new Date(today + "T12:00:00Z").getUTCDay() + 6) % 7));
+  const doneWeek = done.filter((i) => i.done_at!.slice(0, 10) >= monday);
+  const [shelf, setShelf] = useState<"today" | "week" | "ever">("today");
+  const shelfItems = shelf === "today" ? doneToday : shelf === "week" ? doneWeek : done;
+  const parentOf = (i: PlanItem) => (i.parent_id ? items.find((p) => p.id === i.parent_id) : undefined);
   const dueToday = open.filter((i) => i.on_date && i.on_date <= today && (!i.end_date || i.end_date >= today || i.on_date === today));
   const groups = useMemo(() => [...new Set(open.map((i) => i.grp))].sort((a, b) => (a === LOOSE ? 1 : b === LOOSE ? -1 : a.localeCompare(b))), [open]);
 
@@ -182,16 +192,28 @@ export default function Cards({
 
       {!readOnly && arrange === "groups" && only === null && <NewGroup onAdd={onAdd} />}
 
-      {doneToday.length > 0 && (
-        <div className="cards-shelf" aria-label="Done today">
-          <span className="hero-k">Done today</span>
-          <div>
-            {doneToday.map((i) => (
-              <button key={i.id} type="button" className="shelf-chip" style={chipStyle(i)} onClick={() => !readOnly && onSave(i.id, { done: false })} title="Tap to put it back">
-                ✓ {i.title}
-              </button>
-            ))}
+      {done.length + (olderDone ?? 0) > 0 && (
+        <div className="cards-shelf" aria-label="Done">
+          <div className="seg shelf-tabs" role="group" aria-label="Done">
+            <button type="button" aria-pressed={shelf === "today"} onClick={() => setShelf("today")}>Done today <b>{doneToday.length}</b></button>
+            <button type="button" aria-pressed={shelf === "week"} onClick={() => setShelf("week")}>This week <b>{doneWeek.length}</b></button>
+            <button type="button" aria-pressed={shelf === "ever"} onClick={() => setShelf("ever")}>Ever <b>{done.length + (olderDone ?? 0)}</b></button>
           </div>
+          {shelfItems.length > 0 ? (
+            <div>
+              {shelfItems.slice(0, shelf === "ever" ? 200 : undefined).map((i) => {
+                const parent = parentOf(i);
+                return (
+                  <button key={i.id} type="button" className="shelf-chip" style={chipStyle(parent ?? i)} onClick={() => !readOnly && onSave(i.id, { done: false })} title={parent ? `From ${parent.title}. Tap to put it back` : "Tap to put it back"}>
+                    ✓ {i.title}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="shelf-empty">{shelf === "today" ? "Nothing ticked off yet today." : "Nothing ticked off yet this week."}</p>
+          )}
+          {shelf === "ever" && (olderDone ?? 0) > 0 && <p className="shelf-empty">Showing the last two months. {olderDone} more before that.</p>}
         </div>
       )}
     </section>
