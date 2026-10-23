@@ -123,7 +123,9 @@ const loadMember = cache(async () => {
   const jobsView = !viewing && user.user_metadata?.jobs_view === "board" ? "board" : "list";
   // Your week on To-do (lib/routine.ts): what happens every week, like office days.
   const routine = viewing ? undefined : user.user_metadata?.routine;
-  return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview, appBusinesses, layouts, jobsView, routine };
+  // To-do opens on the calendar or Cards, whichever they last picked.
+  const todoView: "list" | "cards" = !viewing && user.user_metadata?.todo_view === "cards" ? "cards" : "list";
+  return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview, appBusinesses, layouts, jobsView, routine, todoView };
 });
 
 type Session = Awaited<ReturnType<typeof requireMember>>;

@@ -37,6 +37,7 @@ export default function Planner({
   newForJob,
   readOnly,
   routine: initialRoutine,
+  startView,
   brain,
   focusDump,
   top,
@@ -52,6 +53,8 @@ export default function Planner({
   newForJob?: Job;
   readOnly: boolean;
   routine: RoutineBlock[];
+  // Calendar ("list") or Cards: whichever was picked last, saved to the account.
+  startView: "cards" | "list";
   // Whether "Tell Oatcake" is on (it needs the AI key).
   brain: boolean;
   focusDump?: boolean;
@@ -70,16 +73,19 @@ export default function Planner({
   const [error, setError] = useState("");
   const [drag, setDrag] = useState<Drag | null>(null);
   const [routine, setRoutine] = useState(initialRoutine);
-  // Cards (the board) or the list and calendar; and how the cards are arranged. Kept on this computer.
-  const [view, setView] = useState<"cards" | "list">("cards");
+  // The calendar and list or Cards (the board), whichever was picked last (saved to the account); and how
+  // the cards are arranged (kept on this computer).
+  const [view, setView] = useState(startView);
   const [arrange, setArrange] = useState<"groups" | "days">("groups");
   useEffect(() => {
     try {
-      if (localStorage.getItem("oatcake-todo-view") === "list") setView("list");
       if (localStorage.getItem("oatcake-todo-arrange") === "days") setArrange("days");
     } catch {}
   }, []);
-  const pickView = (v: "cards" | "list") => { setView(v); try { localStorage.setItem("oatcake-todo-view", v); } catch {} };
+  const pickView = (v: "cards" | "list") => {
+    setView(v);
+    if (!readOnly && v !== view) saveProfile({ data: { todo_view: v } }).catch(() => {});
+  };
   const pickArrange = (a: "groups" | "days") => { setArrange(a); try { localStorage.setItem("oatcake-todo-arrange", a); } catch {} };
   const [, startTransition] = useTransition();
   const tempId = useRef(-1);
@@ -310,8 +316,8 @@ export default function Planner({
         </div>
         <div className="cal-head-r">
           <div className="seg cal-view" role="group" aria-label="Show as">
+            <button type="button" aria-pressed={view === "list"} onClick={() => pickView("list")}>Calendar</button>
             <button type="button" aria-pressed={view === "cards"} onClick={() => pickView("cards")}>Cards</button>
-            <button type="button" aria-pressed={view === "list"} onClick={() => pickView("list")}>Calendar &amp; list</button>
           </div>
           {view === "list" && (
             <div className="cal-big" aria-label={`Today is ${dayName(today)}`}>
