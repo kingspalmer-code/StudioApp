@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { planWhen, type PlanItem } from "@/lib/plan";
 import { blockTime, clashWith, daysLabel, type RoutineBlock } from "@/lib/routine";
 import { addBrainDump, readBrainDump, type DumpItem, type DumpKind, type DumpRoutine } from "./brain";
@@ -8,6 +8,26 @@ import { addBrainDump, readBrainDump, type DumpItem, type DumpKind, type DumpRou
 const KIND_LABEL: Record<DumpKind, string> = { event: "On the calendar", todo: "To-do", get: "To get" };
 
 type Row = DumpItem & { keep: boolean };
+type Weekly = DumpRoutine & { keep: boolean };
+
+// What's typed (and any preview not yet added) stays on this computer, so leaving To-do and
+// coming back doesn't lose it.
+const DRAFT_KEY = "oatcake-tell-draft";
+type Draft = { text: string; rows: Row[] | null; weekly: Weekly[] };
+function loadDraft(): Draft | null {
+  try {
+    const d = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "null");
+    return d && typeof d.text === "string" ? { text: d.text, rows: Array.isArray(d.rows) ? d.rows : null, weekly: Array.isArray(d.weekly) ? d.weekly : [] } : null;
+  } catch {
+    return null;
+  }
+}
+function saveDraft(d: Draft) {
+  try {
+    if (!d.text.trim() && !d.rows && !d.weekly.length) localStorage.removeItem(DRAFT_KEY);
+    else localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+  } catch {}
+}
 
 // "Tell Oatcake": type or dictate everything on your mind, Oatcake sorts it, you check it, it goes in.
 export default function BrainDump({
@@ -25,11 +45,25 @@ export default function BrainDump({
 }) {
   const [text, setText] = useState("");
   const [rows, setRows] = useState<Row[] | null>(null);
-  const [weekly, setWeekly] = useState<(DumpRoutine & { keep: boolean })[]>([]);
+  const [weekly, setWeekly] = useState<Weekly[]>([]);
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [reading, startReading] = useTransition();
   const [adding, startAdding] = useTransition();
+  const loaded = useRef(false);
+
+  useEffect(() => {
+    const d = loadDraft();
+    if (d) {
+      setText(d.text);
+      setRows(d.rows);
+      setWeekly(d.weekly);
+    }
+    loaded.current = true;
+  }, []);
+  useEffect(() => {
+    if (loaded.current) saveDraft({ text, rows, weekly });
+  }, [text, rows, weekly]);
 
   function read() {
     setError("");
