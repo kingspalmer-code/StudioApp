@@ -11,7 +11,7 @@ import { blockTime, daysLabel, readRoutine, type RoutineBlock } from "@/lib/rout
 
 export type DumpKind = "event" | "todo" | "get";
 export type DumpItem = { title: string; kind: DumpKind; date: string | null; end_date: string | null; time: string | null; notes: string; group: string; place: string };
-export type DumpRoutine = Omit<RoutineBlock, "id">;
+export type DumpRoutine = Omit<RoutineBlock, "id" | "colour" | "look">;
 // A change to something already on the list: null leaves that part as it is.
 export type DumpChange = { id: number; was: string; title: string | null; date: string | null; end_date: string | null; time: string | null; group: string | null; place: string | null; clear_date: boolean; done: boolean; remove: boolean };
 

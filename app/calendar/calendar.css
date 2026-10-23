@@ -385,3 +385,22 @@ input.dump-title:focus { outline: none; box-shadow: 0 1.5px 0 var(--o); }
 /* Ink cards and the Next up tile keep an edge against a dark page. */
 .card.ink, .hero-next { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--label) 22%, transparent); }
 .card.ink .card-place { background: rgba(255,255,255,.12); }
+
+/* Days a weekly block covers (Your week): filled with its colour, or outlined in it. */
+.cal-tile.wk-fill:not(.today) { background: var(--wk); color: var(--wk-ink); }
+.cal-tile.wk-fill:not(.today) .cal-num, .cal-tile.wk-fill:not(.today) .cal-routine { color: var(--wk-ink); }
+.cal-tile.wk-fill.out:not(.today) { opacity: .55; }
+.cal-tile.wk-outline:not(.sel) { box-shadow: inset 0 0 0 2.5px var(--wk); }
+.cal-tile.wk-outline .cal-routine { color: var(--wk); }
+.cal-tile.today.wk-fill, .cal-tile.today.wk-outline { box-shadow: inset 0 0 0 3px var(--wk); }
+@media (max-width: 640px) { .cal-tile.wk-fill:not(.today) .cal-dots i { background: var(--wk-ink); } }
+.week-list li { gap: 10px; }
+.week-list li > span { flex: 1; min-width: 0; }
+.week-look { position: relative; display: flex; align-items: center; }
+.week-look.wide { flex: 1 1 100%; }
+.week-swatch { width: 26px; height: 26px; border-radius: 8px; border: 0; padding: 0; cursor: pointer; background: var(--wk); }
+.week-swatch.outline { background: transparent; box-shadow: inset 0 0 0 3px var(--wk); }
+.week-look.wide .week-swatch { display: none; }
+.week-look-pick { display: grid; gap: 8px; }
+.week-look:not(.wide) .week-look-pick { position: absolute; right: 0; top: calc(100% + 6px); z-index: 5; background: var(--surface); border: .5px solid var(--sep); border-radius: 14px; padding: 10px; box-shadow: var(--shadow); width: 230px; }
+.week-look-pick .seg [aria-pressed="true"] { color: var(--o); }

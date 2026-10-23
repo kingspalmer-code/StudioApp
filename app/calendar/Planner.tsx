@@ -7,7 +7,7 @@ import ConfirmButton from "@/components/ConfirmButton";
 import TimeTracker from "@/components/TimeTracker";
 import { fmtClock, fmtMinutes, totalMinutes, type TimeLog } from "@/lib/hours";
 import { addDays, byRank, byTime, CARD_COLOURS, CARD_SIZES, dayName, hhmm, monthDays, monthName, onThisDay, planSpan, planWhen, REMIND_OPTIONS, shiftMonth, type PlanItem } from "@/lib/plan";
-import { blockTime, routineOn, type RoutineBlock } from "@/lib/routine";
+import { blockTime, ROUTINE_COLOUR, routineOn, type RoutineBlock } from "@/lib/routine";
 import { saveProfile } from "@/lib/supabase/client";
 import { addPlanItem, removePlanItem, updatePlanItem, type PlanPatch } from "./actions";
 import BrainDump from "./BrainDump";
@@ -358,7 +358,7 @@ export default function Planner({
                 const first = added.find((i) => i.on_date && i.on_date >= today);
                 if (first) { setSelected(first.on_date!); setMonth(first.on_date!.slice(0, 7)); }
               }}
-              onRoutine={(blocks) => saveRoutine([...routine, ...blocks.map((b) => ({ ...b, id: Math.random().toString(36).slice(2, 10) }))])}
+              onRoutine={(blocks) => saveRoutine([...routine, ...blocks.map((b) => ({ ...b, id: Math.random().toString(36).slice(2, 10), colour: ROUTINE_COLOUR, look: "fill" as const }))])}
             />
           )}
           <YourWeek routine={routine} onChange={saveRoutine} readOnly={readOnly} />
@@ -394,9 +394,12 @@ export default function Planner({
             {days.map((day) => {
               const list = onDay(day);
               const out = day.slice(0, 7) !== month;
-              const cls = ["cal-tile", out && "out", day === today && "today", day === selected && "sel", dropDay === day && "drop", day < today && "past"].filter(Boolean).join(" ");
+              // A weekly block colours its days: filled in, or outlined (Your week).
+              const block = routineOn(routine, day)[0];
+              const bc = block ? CARD_COLOURS.find((c) => c.key === block.colour) ?? CARD_COLOURS[5] : undefined;
+              const cls = ["cal-tile", out && "out", day === today && "today", day === selected && "sel", dropDay === day && "drop", day < today && "past", block && `wk-${block.look}`].filter(Boolean).join(" ");
               return (
-                <div key={day} className={cls} data-day={day} onClick={() => setSelected(day)}>
+                <div key={day} className={cls} data-day={day} onClick={() => setSelected(day)} style={bc ? ({ "--wk": bc.bg, "--wk-ink": bc.ink } as React.CSSProperties) : undefined}>
                   <span className="cal-num">
                     {day.endsWith("-01") && out ? new Date(day + "T12:00:00Z").toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" }) + " " : ""}
                     {Number(day.slice(8))}
