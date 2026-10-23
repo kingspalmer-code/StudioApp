@@ -27,6 +27,8 @@ import { signDeliveries, type Delivery, type Draft, type DraftFile } from "@/lib
 import SaveForm from "@/components/SaveForm";
 import Submit from "@/components/Submit";
 import FrameChanged from "@/components/FrameChanged";
+import { Suspense } from "react";
+import JumpTo from "./JumpTo";
 import { signedUrls } from "@/lib/signed";
 import JobHours from "@/components/JobHours";
 import { TIME_COLUMNS, type TimeLog } from "@/lib/hours";
@@ -164,7 +166,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
 
   const jobNotes = (notes ?? []).filter((n) => !n.draft_id);
   const noteRow = (n: Note) => (
-    <div className={`row stack${n.kind === "approval" ? " note-approval" : ""}`} key={n.id}>
+    <div className={`row stack${n.kind === "approval" ? " note-approval" : ""}`} key={n.id} data-at={n.created_at}>
       <span className="k">{n.author_name || n.author_email} · {formatDate(n.created_at)}</span>
       <div className="copy">{n.kind === "approval" ? "✓ Approved this draft" : n.body}</div>
     </div>
@@ -194,7 +196,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           const said = (notes ?? []).filter((n) => n.draft_id === d.id);
           const approval = said.find((n) => n.kind === "approval");
           return (
-            <section className="draft" key={d.id} aria-label={`Draft ${round}`}>
+            <section className="draft" key={d.id} aria-label={`Draft ${round}`} data-at={d.created_at}>
               <div className="draft-head">
                 <b>Draft {round}</b>
                 <span className="when">{formatDate(d.created_at)}</span>
@@ -225,6 +227,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   return (
     <Shell {...shell}>
       <FrameChanged at={Date.now()} />
+      <Suspense><JumpTo /></Suspense>
       <div style={{ maxWidth: 720 }}>
         {biz && (
           <p className="eyebrow" style={{ display: "flex", alignItems: "center", gap: 8, textTransform: "none", letterSpacing: 0 }}>
