@@ -236,7 +236,9 @@ function Card({
   const when = item.on_date ? planSpan(item, today) : "";
   const late = item.on_date && (item.end_date ?? item.on_date) < today;
   const left = steps.filter((s) => !s.done_at).length;
-  const show = item.size === "s" ? 0 : item.size === "m" ? 4 : 8;
+  // Every card shows what's in it: small ones the first few open steps, bigger ones more.
+  const show = item.size === "s" ? 3 : item.size === "m" ? 5 : 8;
+  const listed = [...steps.filter((s) => !s.done_at), ...steps.filter((s) => s.done_at)];
   return (
     <article
       className={`card size-${item.size}${c.key === "ink" ? " ink" : ""}${popping ? " pop" : ""}${lifted ? " lifted" : ""}${over ? " over" : ""}`}
@@ -259,10 +261,10 @@ function Card({
           {item.place}
         </a>
       )}
-      {item.notes && item.size !== "s" && <p className="card-notes">{item.notes}</p>}
+      {item.notes && (item.size !== "s" || !steps.length) && <p className="card-notes">{item.notes}</p>}
       {show > 0 && steps.length > 0 && (
         <ul className="card-steps">
-          {steps.slice(0, show).map((s) => (
+          {listed.slice(0, show).map((s) => (
             <li key={s.id} className={s.done_at ? "done" : ""}>
               <button type="button" disabled={readOnly || s.id < 0} onClick={(e) => { e.stopPropagation(); onStep(s); }} aria-label={s.done_at ? `Untick ${s.title}` : `Tick ${s.title}`}>
                 <i />
