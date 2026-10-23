@@ -226,7 +226,7 @@ input.dump-title:focus { outline: none; box-shadow: 0 1.5px 0 var(--o); }
 .week-add { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--tile); border-radius: 14px; padding: 10px; }
 .week-add > input { flex: 1 1 100%; border: 0; background: var(--surface); border-radius: 9px; padding: 8px 10px; font-size: 14px; }
 .week-add label { font-size: 12.5px; color: var(--label-2); display: flex; align-items: center; gap: 6px; }
-.week-add label input { border: 0; background: var(--surface); border-radius: 9px; padding: 6px 8px; font-size: 13px; }
+.week-add label input, .week-add label select { border: 0; background: var(--surface); color: var(--label); border-radius: 9px; padding: 6px 8px; font-size: 13px; }
 .week-add small { flex: 1 1 100%; font-size: 11.5px; color: var(--label-3); }
 .week-add button[type="submit"] { border: 0; background: var(--o); color: var(--o-ink); font-weight: 700; font-size: 13px; padding: 7px 14px; border-radius: 9px; cursor: pointer; margin-left: auto; }
 .week-add button[type="submit"]:disabled { opacity: .5; cursor: default; }
