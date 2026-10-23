@@ -926,6 +926,20 @@ html.in-app .nt-layer { top: var(--app-bar); }
 .nt-foot { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 18px; border-top: .5px solid var(--sep); }
 .nt-all-read { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; color: var(--label); }
 .nt-all-read svg { width: 18px; height: 18px; }
+/* The panel drops straight down from the bell (Bell.tsx measures where it is) and stops well short
+   of the bottom of the window, scrolling inside instead. */
+.nt-panel { position: fixed; top: var(--nt-top, calc(58px + env(safe-area-inset-top, 0px))); right: var(--nt-right, 12px); max-height: min(640px, calc(100dvh - var(--nt-top, 58px) - 24px)); }
+@media (max-width: 700px) { .nt-panel { top: var(--nt-top, calc(52px + env(safe-area-inset-top, 0px))); right: 8px; max-height: calc(100dvh - var(--nt-top, 52px) - 84px - env(safe-area-inset-bottom, 0px)); } }
+/* The whole card opens it, not just the words; archive and the unread dot sit on top. */
+.nt-item:not(.nt-stack) > .nt-open::after, .nt-stack > .nt-open::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.nt-stack.open > .nt-open::after { display: none; }
+.nt-item { cursor: pointer; }
+.nt-act { z-index: 1; }
+.nt-dot { pointer-events: none; }
+/* Opened from a notification: the note or draft it's about glows for a moment (JumpTo.tsx). */
+.jumped { animation: jumped 2.4s ease-out; }
+@keyframes jumped { 0%, 30% { box-shadow: inset 0 0 0 2px var(--accent); background-color: color-mix(in srgb, var(--accent) 14%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .jumped { animation-duration: 3s; animation-timing-function: steps(1, end); } }
 .nt-empty { text-align: center; color: var(--label-2); margin: 36px 0; }
 .nt-day { display: flex; align-items: center; gap: 8px; margin: 14px 6px 8px; font-size: 14px; color: var(--label-2); }
 .nt-count { display: inline-grid; place-items: center; min-width: 24px; height: 22px; padding: 0 7px; border-radius: 7px; background: var(--fill); color: var(--label); font-size: 12px; font-weight: 600; }
@@ -1049,7 +1063,6 @@ html.in-app .nt-layer { top: var(--app-bar); }
 .team-name { font-size: 20px; margin: 4px 4px 12px; }
 .invite-link { display: inline-flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 4px; font-size: 13px; }
 @media (max-width: 800px) { .cols.team { grid-template-columns: minmax(0, 1fr); } }
-@media (min-width: 701px) { html.in-app .has-rail .nt-panel { top: 8px; } }
 .staff-open { display: block; width: 100%; border: 0; background: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .check.waiting { --check: var(--orange); }
 .check:disabled { cursor: default; }
@@ -1685,17 +1698,22 @@ html.in-app .has-rail > .bar .bell-btn[aria-expanded="true"] { background: var(-
 html.app-glass { --win-tint: color-mix(in srgb, var(--bg) 55%, transparent); --side-tint: color-mix(in srgb, var(--surface-2) 22%, transparent); }
 html.app-glass, html.app-glass body { background: transparent; }
 html.app-glass body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: var(--win-tint); pointer-events: none; }
-html.app-glass .app-drag { background: transparent; border-bottom-color: transparent; }
+/* The strip along the top is see-through too, so the page scrolling up under back, forward,
+   Search and New is tinted and blurred out there, then fades in below it rather than stopping at a hard line. */
+html.app-glass { --top-tint: color-mix(in srgb, var(--bg) 72%, transparent); }
+html.app-glass .app-drag { background: var(--top-tint); border-bottom-color: transparent; -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
+html.app-glass .app-drag::after { content: ""; position: absolute; top: 100%; left: 0; right: 0; height: 22px; background: linear-gradient(to bottom, var(--top-tint), transparent); pointer-events: none; }
 @media (min-width: 701px) {
   html.app-glass body:has(.has-rail)::before { left: var(--rail-w); border-left: .5px solid var(--sep); }
   html.app-glass .has-rail > .bar { background: var(--side-tint); border-right: 0; }
   /* Like Finder: the sidebar runs up under the window buttons, and back, forward and the page
      title sit over the page, never across the sidebar's edge. */
-  html.app-glass body:has(.has-rail) .app-drag { background: linear-gradient(to right, var(--side-tint) var(--rail-w), transparent var(--rail-w)); }
+  html.app-glass body:has(.has-rail) .app-drag { background: linear-gradient(to right, var(--side-tint) var(--rail-w), var(--top-tint) var(--rail-w)); }
+  html.app-glass body:has(.has-rail) .app-drag::after { left: var(--rail-w); }
   html.app-glass body:has(.has-rail) .app-bar { padding-left: max(84px, calc(var(--rail-w) + 10px)); }
 }
 @media (prefers-reduced-transparency: reduce) {
-  html.app-glass { --win-tint: var(--bg); --side-tint: var(--surface-2); }
+  html.app-glass { --win-tint: var(--bg); --side-tint: var(--surface-2); --top-tint: var(--bg); }
 }
 .tell-chips .tell-biz { color: var(--label-2); font-weight: 400; }
 .tell-chips button[aria-pressed="true"] .tell-biz { color: inherit; opacity: .75; }

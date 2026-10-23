@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { CHANGED, CheckAllIcon, NotificationList, Tabs, useNotifications, type Tab } from "./Notifications";
@@ -16,6 +16,9 @@ export default function Bell() {
   const [tab, setTab] = useState<Tab>("unread");
   const [unread, setUnread] = useState(0);
   const [mounted, setMounted] = useState(false);
+  // Where the bell is, so the panel drops straight down from it wherever the bell sits.
+  const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
+  const button = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
 
   const recount = useCallback(async () => {
@@ -52,8 +55,17 @@ export default function Bell() {
   useEffect(() => {
     if (!open) return;
     const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const place = () => {
+      const r = button.current?.getBoundingClientRect();
+      if (r && r.width) setAnchor({ top: Math.round(r.bottom + 8), right: Math.max(8, Math.round(window.innerWidth - r.right)) });
+    };
+    place();
     window.addEventListener("keydown", esc);
-    return () => window.removeEventListener("keydown", esc);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("keydown", esc);
+      window.removeEventListener("resize", place);
+    };
   }, [open]);
 
   const close = () => setOpen(false);
@@ -61,6 +73,7 @@ export default function Bell() {
   return (
     <>
       <button
+        ref={button}
         type="button"
         className="bell-btn"
         onClick={() => setOpen((o) => !o)}
@@ -84,6 +97,7 @@ export default function Bell() {
                     className="nt-panel"
                     role="dialog"
                     aria-label="Notifications"
+                    style={anchor ? ({ "--nt-top": `${anchor.top}px`, "--nt-right": `${anchor.right}px` } as React.CSSProperties) : undefined}
                     initial={{ opacity: 0, y: -8, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -6, scale: 0.98 }}

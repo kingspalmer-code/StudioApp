@@ -101,7 +101,7 @@ function Actions({ items, feed, tab }: { items: Notification[]; feed: Feed; tab:
 }
 
 // One thing that happened, or the same person doing it again on the same job (shown once, with
-// each of their messages). Tapping it opens the job there.
+// each of their messages). Tapping anywhere on it opens the job at the note, draft or files it's about.
 function OneCard({ items, feed, tab, onOpen }: { items: Notification[]; feed: Feed; tab: Tab; onOpen?: () => void }) {
   const n = items[0];
   const [before, after] = phrase({ kind: n.kind, count: items.reduce((sum, x) => sum + x.count, 0) });

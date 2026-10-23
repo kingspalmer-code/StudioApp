@@ -51,12 +51,15 @@ export function phrase(n: Pick<Notification, "kind" | "count">): [string, string
 }
 
 // Where tapping it goes: the part of the job page it's about.
-export function hrefFor(n: Pick<Notification, "kind" | "ticket_id" | "staff_task_id" | "plan_item_id">) {
+// Notes and drafts also carry when it happened, so the job page can scroll to that exact one
+// (app/tickets/[id]/JumpTo.tsx).
+export function hrefFor(n: Pick<Notification, "kind" | "ticket_id" | "staff_task_id" | "plan_item_id" | "created_at">) {
   if (n.plan_item_id) return `/calendar?item=${n.plan_item_id}`;
   if (n.staff_task_id) return `/tasks/${n.staff_task_id}`;
   if (!n.ticket_id) return "/notifications";
   const spot = n.kind === "note" ? "#notes" : n.kind === "draft_note" || n.kind === "approval" || n.kind === "draft" ? "#drafts" : n.kind === "files" ? "#files" : "";
-  return `/tickets/${n.ticket_id}${spot}`;
+  const exact = ["note", "draft_note", "approval", "draft"].includes(n.kind) && n.created_at ? `?at=${encodeURIComponent(n.created_at)}` : "";
+  return `/tickets/${n.ticket_id}${exact}${spot}`;
 }
 
 const TZ = process.env.NEXT_PUBLIC_TIMEZONE || "Europe/London";
