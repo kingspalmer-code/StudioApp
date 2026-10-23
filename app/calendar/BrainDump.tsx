@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { planWhen, type PlanItem } from "@/lib/plan";
+import { addDays, planSpan, type PlanItem } from "@/lib/plan";
 import { blockTime, clashWith, daysLabel, type RoutineBlock } from "@/lib/routine";
 import { addBrainDump, readBrainDump, type DumpChange, type DumpItem, type DumpKind, type DumpRoutine } from "./brain";
 
@@ -14,11 +14,13 @@ type Change = DumpChange & { keep: boolean };
 // What's typed (and any preview not yet added) stays on this computer, so leaving To-do and
 // coming back doesn't lose it.
 const DRAFT_KEY = "oatcake-tell-draft";
-type Draft = { text: string; rows: Row[] | null; weekly: Weekly[]; changes: Change[] };
+type Draft = { text: string; rows: Row[] | null; weekly: Weekly[]; changes: Change[]; heard?: Heard };
+// What Oatcake understood, and anything it wants to check.
+type Heard = { summary: string; question: string | null };
 function loadDraft(): Draft | null {
   try {
     const d = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "null");
-    return d && typeof d.text === "string" ? { text: d.text, rows: Array.isArray(d.rows) ? d.rows : null, weekly: Array.isArray(d.weekly) ? d.weekly : [], changes: Array.isArray(d.changes) ? d.changes : [] } : null;
+    return d && typeof d.text === "string" ? { text: d.text, rows: Array.isArray(d.rows) ? d.rows : null, weekly: Array.isArray(d.weekly) ? d.weekly : [], changes: Array.isArray(d.changes) ? d.changes : [], heard: d.heard && typeof d.heard.summary === "string" ? d.heard : undefined } : null;
   } catch {
     return null;
   }
@@ -53,6 +55,7 @@ export default function BrainDump({
   const [rows, setRows] = useState<Row[] | null>(null);
   const [weekly, setWeekly] = useState<Weekly[]>([]);
   const [changes, setChanges] = useState<Change[]>([]);
+  const [heard, setHeard] = useState<Heard | undefined>();
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [reading, startReading] = useTransition();
@@ -66,22 +69,24 @@ export default function BrainDump({
       setRows(d.rows);
       setWeekly(d.weekly);
       setChanges(d.changes);
+      setHeard(d.heard);
     }
     loaded.current = true;
   }, []);
   useEffect(() => {
-    if (loaded.current) saveDraft({ text, rows, weekly, changes });
-  }, [text, rows, weekly, changes]);
+    if (loaded.current) saveDraft({ text, rows, weekly, changes, heard });
+  }, [text, rows, weekly, changes, heard]);
 
   function read() {
     setError("");
     setNote("");
     startReading(async () => {
-      const r = await readBrainDump(text, routine).catch(() => ({ error: "Couldn't reach Oatcake. Check your connection.", items: undefined, routine: undefined, changes: undefined }));
+      const r = await readBrainDump(text, routine).catch(() => ({ error: "Couldn't reach Oatcake. Check your connection.", items: undefined, routine: undefined, changes: undefined, summary: undefined, question: undefined }));
       if (r.error) return setError(r.error);
       setRows((r.items ?? []).map((i) => ({ ...i, keep: true })));
       setWeekly((r.routine ?? []).map((b) => ({ ...b, keep: true })));
       setChanges((r.changes ?? []).map((c) => ({ ...c, keep: true })));
+      setHeard(r.summary ? { summary: r.summary, question: r.question ?? null } : undefined);
     });
   }
 
@@ -100,10 +105,12 @@ export default function BrainDump({
     if (c.done) return "Tick it off";
     const bits: string[] = [];
     if (c.title && c.title !== item.title) bits.push(`Rename to “${c.title}”`);
+    if (c.group && c.group !== item.grp) bits.push(`Put in ${c.group}`);
+    if (c.place && c.place !== item.place) bits.push(`At ${c.place}`);
     if (c.clear_date) bits.push("Take it off the calendar");
-    else if (c.date || c.time) {
-      const date = c.date ?? item.on_date;
-      bits.push(date ? `Move to ${planWhen(date, c.time ?? item.at_time, today)}` : "Give it a day first to set a time");
+    else if (c.date || c.end_date || c.time) {
+      const on_date = c.date ?? item.on_date;
+      bits.push(on_date ? `Move to ${planSpan({ on_date, end_date: c.end_date ?? item.end_date, at_time: c.time ?? item.at_time }, today)}` : "Give it a day first to set a time");
     }
     return bits.join(" · ") || "No change";
   }
@@ -127,6 +134,7 @@ export default function BrainDump({
       setRows(null);
       setWeekly([]);
       setChanges([]);
+      setHeard(undefined);
       setText("");
     });
   }
@@ -161,6 +169,17 @@ export default function BrainDump({
             <span className="dump-label">Here&apos;s what Oatcake heard</span>
             <span className="dump-hint">Untick or change anything, then add.</span>
           </div>
+          {heard && (
+            <div className="dump-heard">
+              <p>{heard.summary}</p>
+              {heard.question && (
+                <p className="dump-question">
+                  {heard.question}{" "}
+                  <button type="button" className="dump-answer" onClick={() => { setRows(null); setWeekly([]); setChanges([]); setHeard(undefined); const q = heard.question; setText((t) => `${t.trimEnd()}\n\nOatcake asked: ${q}\nMy answer: `); }}>Answer ›</button>
+                </p>
+              )}
+            </div>
+          )}
           <ul className="dump-rows">
             {rows.map((r, n) => {
               const clash = r.kind !== "get" ? clashWith(routine, r.date, r.time) : undefined;
@@ -173,11 +192,17 @@ export default function BrainDump({
                       <select value={r.kind} onChange={(e) => change(n, { kind: e.target.value as DumpKind })} aria-label="Where it goes">
                         {(Object.keys(KIND_LABEL) as DumpKind[]).map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
                       </select>
-                      <input type="date" value={r.date ?? ""} onChange={(e) => change(n, { date: e.target.value || null, ...(e.target.value ? {} : { time: null }) })} aria-label="Day" />
+                      <input type="date" value={r.date ?? ""} onChange={(e) => change(n, { date: e.target.value || null, ...(e.target.value ? {} : { time: null, end_date: null }) })} aria-label="Day" />
                       <input type="time" value={r.time ?? ""} disabled={!r.date} onChange={(e) => change(n, { time: e.target.value || null })} aria-label="Time" />
+                      {r.date && r.kind !== "get" && (
+                        <label className="dump-until">
+                          until
+                          <input type="date" value={r.end_date ?? ""} min={addDays(r.date, 1)} onChange={(e) => change(n, { end_date: e.target.value > r.date! ? e.target.value : null })} aria-label="Until" />
+                        </label>
+                      )}
                     </div>
-                    {r.date && <small>{planWhen(r.date, r.time, today)}{r.notes ? ` · ${r.notes}` : ""}</small>}
-                    {!r.date && r.notes && <small>{r.notes}</small>}
+                    {r.date && <small>{planSpan({ on_date: r.date, end_date: r.end_date, at_time: r.time }, today)}{r.place ? ` · 📍 ${r.place}` : ""}{r.group ? ` · ${r.group}` : ""}{r.notes ? ` · ${r.notes}` : ""}</small>}
+                    {!r.date && (r.notes || r.place || r.group) && <small>{[r.place && `📍 ${r.place}`, r.group, r.notes].filter(Boolean).join(" · ")}</small>}
                     {clash && <small className="dump-clash">That&apos;s during {clash.label} ({blockTime(clash)}).</small>}
                   </div>
                 </li>
@@ -203,7 +228,7 @@ export default function BrainDump({
             ))}
           </ul>
           <div className="dump-foot">
-            <button type="button" className="dump-back" onClick={() => { setRows(null); setWeekly([]); setChanges([]); }} disabled={adding}>Back</button>
+            <button type="button" className="dump-back" onClick={() => { setRows(null); setWeekly([]); setChanges([]); setHeard(undefined); }} disabled={adding}>Back</button>
             <button type="button" className="dump-go" disabled={adding || total === 0} onClick={add}>
               {adding ? "Saving…" : keptChanges.length && !kept.length && !keptWeekly.length ? `Make ${total} change${total === 1 ? "" : "s"}` : keptChanges.length ? `Add and change ${total}` : `Add ${total}`}
             </button>

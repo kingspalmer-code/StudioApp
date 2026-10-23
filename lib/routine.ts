@@ -10,7 +10,12 @@ export type RoutineBlock = {
   // "08:00"; end is null for something at one time, like a train.
   start: string;
   end: string | null;
+  // How its days look on the calendar: a colour from CARD_COLOURS, filling the day or outlining it.
+  colour: string;
+  look: "fill" | "outline";
 };
+
+export const ROUTINE_COLOUR = "sky";
 
 export const DAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -26,7 +31,15 @@ export function readRoutine(v: unknown): RoutineBlock[] {
       const label = typeof r.label === "string" ? r.label.trim().slice(0, 60) : "";
       const days = Array.isArray(r.days) ? [...new Set(r.days.filter((d): d is number => Number.isInteger(d) && d >= 1 && d <= 7))].sort() : [];
       if (!label || !days.length || !isTime(r.start)) return null;
-      return { id: typeof r.id === "string" ? r.id : Math.random().toString(36).slice(2, 10), label, days, start: r.start, end: isTime(r.end) && r.end > r.start ? r.end : null };
+      return {
+        id: typeof r.id === "string" ? r.id : Math.random().toString(36).slice(2, 10),
+        label,
+        days,
+        start: r.start,
+        end: isTime(r.end) && r.end > r.start ? r.end : null,
+        colour: typeof r.colour === "string" && r.colour ? r.colour : ROUTINE_COLOUR,
+        look: r.look === "outline" ? "outline" : "fill",
+      };
     })
     .filter((b): b is RoutineBlock => b !== null)
     .slice(0, 30);
