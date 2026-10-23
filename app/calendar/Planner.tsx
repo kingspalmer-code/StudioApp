@@ -301,6 +301,22 @@ export default function Planner({
               routine={routine}
               today={today}
               focus={focusDump}
+              find={(id) => byId.get(id)}
+              onChange={(c) => {
+                if (c.remove) return remove(c.id);
+                if (c.done) return save(c.id, { done: true });
+                const item = byId.get(c.id);
+                const patch: PlanPatch = {};
+                if (c.title) patch.title = c.title;
+                if (c.clear_date) Object.assign(patch, { on_date: null, at_time: null });
+                else {
+                  if (c.date) patch.on_date = c.date;
+                  if (c.time && (c.date || item?.on_date)) patch.at_time = c.time;
+                }
+                if (Object.keys(patch).length) save(c.id, patch);
+                const day = patch.on_date ?? (patch.at_time ? item?.on_date : null);
+                if (day) { setSelected(day); setMonth(day.slice(0, 7)); }
+              }}
               onAdded={(added) => {
                 setItems((list) => [...list, ...added]);
                 const step = added.find((i) => i.parent_id !== null);
