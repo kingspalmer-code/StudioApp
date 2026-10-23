@@ -43,7 +43,7 @@ export async function addPlanItem(input: {
   return error ? { error: error.message } : { item: data };
 }
 
-export type PlanPatch = Partial<Pick<PlanItem, "title" | "notes" | "on_date" | "at_time" | "remind" | "ticket_id" | "owner" | "rank" | "parent_id">> & { done?: boolean };
+export type PlanPatch = Partial<Pick<PlanItem, "title" | "notes" | "on_date" | "end_date" | "at_time" | "remind" | "ticket_id" | "owner" | "rank" | "parent_id">> & { done?: boolean };
 
 export async function updatePlanItem(id: number, patch: PlanPatch): Promise<Result> {
   const { supabase } = await requireEditor(["designer", "staff"]);
@@ -55,6 +55,10 @@ export async function updatePlanItem(id: number, patch: PlanPatch): Promise<Resu
   }
   if ("notes" in patch) row.notes = clean(patch.notes, 4000);
   if ("on_date" in patch) row.on_date = dateOrNull(patch.on_date);
+  if ("end_date" in patch) row.end_date = dateOrNull(patch.end_date);
+  // Off the calendar means no last day either; a last day before the first one is dropped.
+  if ("on_date" in row && row.on_date === null) row.end_date = null;
+  if (typeof row.on_date === "string" && typeof row.end_date === "string" && row.end_date <= row.on_date) row.end_date = null;
   if ("at_time" in patch) row.at_time = timeOrNull(patch.at_time);
   if ("remind" in patch) row.remind = remindOrNull(patch.remind);
   if ("ticket_id" in patch) row.ticket_id = typeof patch.ticket_id === "number" ? patch.ticket_id : null;

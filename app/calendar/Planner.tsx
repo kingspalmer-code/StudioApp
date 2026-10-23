@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import ConfirmButton from "@/components/ConfirmButton";
 import TimeTracker from "@/components/TimeTracker";
 import { fmtClock, fmtMinutes, totalMinutes, type TimeLog } from "@/lib/hours";
-import { addDays, byRank, byTime, dayName, hhmm, monthDays, monthName, planWhen, REMIND_OPTIONS, shiftMonth, type PlanItem } from "@/lib/plan";
+import { addDays, byRank, byTime, dayName, hhmm, monthDays, monthName, onThisDay, planSpan, planWhen, REMIND_OPTIONS, shiftMonth, type PlanItem } from "@/lib/plan";
 import { blockTime, routineOn, type RoutineBlock } from "@/lib/routine";
 import { saveProfile } from "@/lib/supabase/client";
 import { addPlanItem, removePlanItem, updatePlanItem, type PlanPatch } from "./actions";
@@ -81,7 +81,7 @@ export default function Planner({
   const open = todos.filter((t) => !t.done_at);
   const done = todos.filter((t) => t.done_at).sort((a, b) => (b.done_at ?? "").localeCompare(a.done_at ?? ""));
   const dated = shown.filter((i) => i.on_date);
-  const onDay = (day: string) => dated.filter((i) => i.on_date === day).sort(byTime);
+  const onDay = (day: string) => dated.filter((i) => onThisDay(i, day)).sort(byTime);
 
   useEffect(() => {
     if (!error) return;
@@ -94,6 +94,12 @@ export default function Planner({
     if (readOnly || id < 0) return;
     const before = byId.get(id);
     if (!before) return;
+    // Something over several days keeps its length when it's moved, and loses its last day when
+    // it's taken off the calendar.
+    if ("on_date" in patch && !("end_date" in patch) && before.end_date) {
+      const span = before.on_date ? Math.round((Date.parse(before.end_date) - Date.parse(before.on_date)) / 86400000) : 0;
+      patch = { ...patch, end_date: patch.on_date && span > 0 ? addDays(patch.on_date, span) : null };
+    }
     const { done: isDone, ...fields } = patch;
     const next: PlanItem = { ...before, ...fields, ...(isDone === undefined ? {} : { done_at: isDone ? new Date().toISOString() : null }) };
     // Steps follow their to-do to another person or job.
@@ -126,6 +132,7 @@ export default function Planner({
       notes: "",
       rank,
       on_date: extra.day ?? null,
+      end_date: null,
       at_time: null,
       remind: 0,
       done_at: null,
@@ -272,7 +279,7 @@ export default function Planner({
     const mins = totalMinutes(logsFor(i));
     return [
       i.parent_id === null && i.ticket_id ? jobName[i.ticket_id] : "",
-      i.on_date ? planWhen(i.on_date, i.at_time, today) : "",
+      i.on_date ? planSpan(i, today) : "",
       mins ? fmtMinutes(mins) : "",
     ].filter(Boolean);
   };
@@ -311,6 +318,7 @@ export default function Planner({
                 if (c.clear_date) Object.assign(patch, { on_date: null, at_time: null });
                 else {
                   if (c.date) patch.on_date = c.date;
+                  if (c.end_date) patch.end_date = c.end_date;
                   if (c.time && (c.date || item?.on_date)) patch.at_time = c.time;
                 }
                 if (Object.keys(patch).length) save(c.id, patch);
@@ -474,7 +482,7 @@ export default function Planner({
                         <li key={s.id} className={dropBefore && dropBefore.parent === item.id && dropBefore.before === s.id ? "drop-before" : undefined}>
                           <Row
                             item={s}
-                            meta={s.on_date ? [planWhen(s.on_date, s.at_time, today)] : []}
+                            meta={s.on_date ? [planSpan(s, today)] : []}
                             lifted={drag?.id === s.id}
                             readOnly={readOnly}
                             onGrip={(e) => startPress(e, s.id)}
@@ -716,6 +724,10 @@ function Editor({
             Time
             <input type="time" value={hhmm(item.at_time)} disabled={off || !item.on_date} onChange={(e) => onSave({ at_time: e.target.value || null })} />
           </label>
+          <label>
+            Until
+            <input type="date" value={item.end_date ?? ""} min={item.on_date ? addDays(item.on_date, 1) : undefined} disabled={off || !item.on_date} onChange={(e) => onSave({ end_date: e.target.value || null })} />
+          </label>
           <div className="cal-quick">
             {[["Today", today], ["Tomorrow", addDays(today, 1)], ["Next week", addDays(today, 7)]].map(([label, d]) => (
               <button key={label} type="button" disabled={off} aria-pressed={item.on_date === d} onClick={() => onSave({ on_date: d })}>{label}</button>
@@ -770,7 +782,7 @@ function Editor({
                   <Check item={s} onToggle={() => onSaveStep(s.id, { done: !s.done_at })} disabled={readOnly} />
                   <button type="button" className="cal-open" onClick={() => onOpen(s.id)}>
                     {s.title}
-                    <small>{s.on_date ? planWhen(s.on_date, s.at_time, today) : "No date yet"}</small>
+                    <small>{s.on_date ? planSpan(s, today) : "No date yet"}</small>
                   </button>
                 </li>
               ))}

@@ -10,6 +10,8 @@ export type PlanItem = {
   notes: string;
   rank: number;
   on_date: string | null;
+  // The last day, for something over several days; null for one day.
+  end_date: string | null;
   // "14:30:00" as the database gives it, or null for any time that day.
   at_time: string | null;
   // Minutes before to remind, or null for no reminder.
@@ -18,7 +20,7 @@ export type PlanItem = {
   created_by: string;
 };
 
-export const PLAN_COLUMNS = "id, owner, parent_id, ticket_id, title, notes, rank, on_date, at_time, remind, done_at, created_by";
+export const PLAN_COLUMNS = "id, owner, parent_id, ticket_id, title, notes, rank, on_date, end_date, at_time, remind, done_at, created_by";
 
 export const REMIND_OPTIONS: { value: number | null; label: string }[] = [
   { value: null, label: "No reminder" },
@@ -71,6 +73,17 @@ export function planWhen(date: string | null, time: string | null, today = today
     : n === -1 ? "Yesterday"
     : new Date(date + "T12:00:00Z").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
   return time ? `${day} · ${hhmm(time)}` : day;
+}
+
+// Whether something is on a day, counting every day of one that runs over several.
+export const onThisDay = (i: Pick<PlanItem, "on_date" | "end_date">, day: string) =>
+  i.on_date === day || (i.on_date !== null && i.end_date !== null && i.on_date < day && day <= i.end_date);
+
+// "Fri 24 Oct – Mon 27 Oct", or planWhen for a single day.
+export function planSpan(i: Pick<PlanItem, "on_date" | "end_date" | "at_time">, today = todayIn()): string {
+  if (!i.on_date) return "";
+  if (!i.end_date || i.end_date <= i.on_date) return planWhen(i.on_date, i.at_time, today);
+  return `${planWhen(i.on_date, i.at_time, today)} – ${planWhen(i.end_date, null, today)}`;
 }
 
 // Calendar order within a day: timed things first by time, then the rest by priority.
