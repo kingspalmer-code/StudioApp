@@ -151,13 +151,13 @@ export default function BrainDump({
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && text.trim()) read(); }}
-            placeholder="Everything on your mind, however it comes out. Leather cleaner for my shoes, photoshoot Tuesday at 9, gig shoot 7th November, office Tue and Thu 8 till 4, move the HopRocket shoot to 8am…"
+            placeholder="What’s on your mind?"
             maxLength={4000}
             autoFocus={focus}
             disabled={reading}
           />
           <div className="dump-foot">
-            <span>{note || "Tip: use your keyboard's microphone to just talk."}</span>
+            <span>{note}</span>
             <button type="button" className="dump-go" disabled={!text.trim() || reading} onClick={read}>
               {reading ? "Sorting…" : "Sort it out"}
             </button>
