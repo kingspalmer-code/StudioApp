@@ -12,6 +12,12 @@ export type PlanItem = {
   on_date: string | null;
   // The last day, for something over several days; null for one day.
   end_date: string | null;
+  // How it looks on the cards board: a colour key (CARD_COLOURS), null to follow its group.
+  colour: string | null;
+  // The group it sits in on the board ("" for none), where it happens, and its card size.
+  grp: string;
+  place: string;
+  size: CardSize;
   // "14:30:00" as the database gives it, or null for any time that day.
   at_time: string | null;
   // Minutes before to remind, or null for no reminder.
@@ -20,7 +26,35 @@ export type PlanItem = {
   created_by: string;
 };
 
-export const PLAN_COLUMNS = "id, owner, parent_id, ticket_id, title, notes, rank, on_date, end_date, at_time, remind, done_at, created_by";
+export const PLAN_COLUMNS = "id, owner, parent_id, ticket_id, title, notes, rank, on_date, end_date, at_time, colour, grp, place, size, remind, done_at, created_by";
+
+export type CardSize = "s" | "m" | "l";
+export const CARD_SIZES: CardSize[] = ["s", "m", "l"];
+
+// The board's colours, after Kingsley's reference: soft lilac, olive, mint, lemon, hot orange, ink.
+export const CARD_COLOURS: { key: string; label: string; bg: string; ink: string }[] = [
+  { key: "lilac", label: "Lilac", bg: "#a49dc6", ink: "#16131c" },
+  { key: "lemon", label: "Lemon", bg: "#f2e63a", ink: "#17160a" },
+  { key: "orange", label: "Orange", bg: "#ff5a2a", ink: "#1a0d08" },
+  { key: "mint", label: "Mint", bg: "#dde7dc", ink: "#121612" },
+  { key: "olive", label: "Olive", bg: "#8f8a22", ink: "#141304" },
+  { key: "sky", label: "Sky", bg: "#9fc6e8", ink: "#0d1620" },
+  { key: "pink", label: "Pink", bg: "#f2a7c3", ink: "#1f0d14" },
+  { key: "ink", label: "Ink", bg: "#151413", ink: "#f4efe7" },
+];
+
+// A card's colour: its own, or one picked from its group's name so a group always matches.
+export function cardColour(i: Pick<PlanItem, "colour" | "grp" | "title">) {
+  const own = CARD_COLOURS.find((c) => c.key === i.colour);
+  if (own) return own;
+  const seed = i.grp || i.title;
+  let h = 0;
+  for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return CARD_COLOURS[h % (CARD_COLOURS.length - 1)];
+}
+
+// A link that opens the place in the phone's maps app.
+export const mapsLink = (place: string) => `https://maps.apple.com/?q=${encodeURIComponent(place)}`;
 
 export const REMIND_OPTIONS: { value: number | null; label: string }[] = [
   { value: null, label: "No reminder" },

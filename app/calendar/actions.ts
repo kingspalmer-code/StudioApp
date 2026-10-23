@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { parseQuickAdd } from "@/lib/quickadd";
 import { requireEditor } from "@/lib/session";
-import { PLAN_COLUMNS, type PlanItem } from "@/lib/plan";
+import { CARD_COLOURS, CARD_SIZES, PLAN_COLUMNS, type CardSize, type PlanItem } from "@/lib/plan";
 
 // Every change on the calendar page is made straight away on screen; these save it. Each returns
 // the saved row (or an error) so the page can put things back if the save didn't go through.
@@ -18,6 +18,7 @@ export async function addPlanItem(input: {
   title: string;
   parent_id?: number | null;
   ticket_id?: number | null;
+  grp?: string;
   owner?: string;
   on_date?: string | null;
   at_time?: string | null;
@@ -32,6 +33,7 @@ export async function addPlanItem(input: {
       title,
       parent_id: input.parent_id ?? null,
       ticket_id: input.ticket_id ?? null,
+      ...(input.grp ? { grp: clean(input.grp, 60) } : {}),
       owner: input.owner || member.email,
       on_date: dateOrNull(input.on_date),
       at_time: timeOrNull(input.at_time),
@@ -43,7 +45,7 @@ export async function addPlanItem(input: {
   return error ? { error: error.message } : { item: data };
 }
 
-export type PlanPatch = Partial<Pick<PlanItem, "title" | "notes" | "on_date" | "end_date" | "at_time" | "remind" | "ticket_id" | "owner" | "rank" | "parent_id">> & { done?: boolean };
+export type PlanPatch = Partial<Pick<PlanItem, "title" | "notes" | "on_date" | "end_date" | "at_time" | "colour" | "grp" | "place" | "size" | "remind" | "ticket_id" | "owner" | "rank" | "parent_id">> & { done?: boolean };
 
 export async function updatePlanItem(id: number, patch: PlanPatch): Promise<Result> {
   const { supabase } = await requireEditor(["designer", "staff"]);
@@ -56,6 +58,10 @@ export async function updatePlanItem(id: number, patch: PlanPatch): Promise<Resu
   if ("notes" in patch) row.notes = clean(patch.notes, 4000);
   if ("on_date" in patch) row.on_date = dateOrNull(patch.on_date);
   if ("end_date" in patch) row.end_date = dateOrNull(patch.end_date);
+  if ("colour" in patch) row.colour = CARD_COLOURS.some((c) => c.key === patch.colour) ? patch.colour : null;
+  if ("grp" in patch) row.grp = clean(patch.grp, 60);
+  if ("place" in patch) row.place = clean(patch.place, 200);
+  if ("size" in patch) row.size = CARD_SIZES.includes(patch.size as CardSize) ? patch.size : "m";
   // Off the calendar means no last day either; a last day before the first one is dropped.
   if ("on_date" in row && row.on_date === null) row.end_date = null;
   if (typeof row.on_date === "string" && typeof row.end_date === "string" && row.end_date <= row.on_date) row.end_date = null;

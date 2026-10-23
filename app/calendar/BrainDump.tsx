@@ -105,6 +105,8 @@ export default function BrainDump({
     if (c.done) return "Tick it off";
     const bits: string[] = [];
     if (c.title && c.title !== item.title) bits.push(`Rename to “${c.title}”`);
+    if (c.group && c.group !== item.grp) bits.push(`Put in ${c.group}`);
+    if (c.place && c.place !== item.place) bits.push(`At ${c.place}`);
     if (c.clear_date) bits.push("Take it off the calendar");
     else if (c.date || c.end_date || c.time) {
       const on_date = c.date ?? item.on_date;
@@ -199,8 +201,8 @@ export default function BrainDump({
                         </label>
                       )}
                     </div>
-                    {r.date && <small>{planSpan({ on_date: r.date, end_date: r.end_date, at_time: r.time }, today)}{r.notes ? ` · ${r.notes}` : ""}</small>}
-                    {!r.date && r.notes && <small>{r.notes}</small>}
+                    {r.date && <small>{planSpan({ on_date: r.date, end_date: r.end_date, at_time: r.time }, today)}{r.place ? ` · 📍 ${r.place}` : ""}{r.group ? ` · ${r.group}` : ""}{r.notes ? ` · ${r.notes}` : ""}</small>}
+                    {!r.date && (r.notes || r.place || r.group) && <small>{[r.place && `📍 ${r.place}`, r.group, r.notes].filter(Boolean).join(" · ")}</small>}
                     {clash && <small className="dump-clash">That&apos;s during {clash.label} ({blockTime(clash)}).</small>}
                   </div>
                 </li>

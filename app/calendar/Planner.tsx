@@ -6,11 +6,12 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import ConfirmButton from "@/components/ConfirmButton";
 import TimeTracker from "@/components/TimeTracker";
 import { fmtClock, fmtMinutes, totalMinutes, type TimeLog } from "@/lib/hours";
-import { addDays, byRank, byTime, dayName, hhmm, monthDays, monthName, onThisDay, planSpan, planWhen, REMIND_OPTIONS, shiftMonth, type PlanItem } from "@/lib/plan";
+import { addDays, byRank, byTime, CARD_COLOURS, CARD_SIZES, dayName, hhmm, monthDays, monthName, onThisDay, planSpan, planWhen, REMIND_OPTIONS, shiftMonth, type PlanItem } from "@/lib/plan";
 import { blockTime, routineOn, type RoutineBlock } from "@/lib/routine";
 import { saveProfile } from "@/lib/supabase/client";
 import { addPlanItem, removePlanItem, updatePlanItem, type PlanPatch } from "./actions";
 import BrainDump from "./BrainDump";
+import Cards from "./Cards";
 import YourWeek from "./YourWeek";
 
 type Job = { id: number; title: string };
@@ -69,6 +70,17 @@ export default function Planner({
   const [error, setError] = useState("");
   const [drag, setDrag] = useState<Drag | null>(null);
   const [routine, setRoutine] = useState(initialRoutine);
+  // Cards (the board) or the list and calendar; and how the cards are arranged. Kept on this computer.
+  const [view, setView] = useState<"cards" | "list">("cards");
+  const [arrange, setArrange] = useState<"groups" | "days">("groups");
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("oatcake-todo-view") === "list") setView("list");
+      if (localStorage.getItem("oatcake-todo-arrange") === "days") setArrange("days");
+    } catch {}
+  }, []);
+  const pickView = (v: "cards" | "list") => { setView(v); try { localStorage.setItem("oatcake-todo-view", v); } catch {} };
+  const pickArrange = (a: "groups" | "days") => { setArrange(a); try { localStorage.setItem("oatcake-todo-arrange", a); } catch {} };
   const [, startTransition] = useTransition();
   const tempId = useRef(-1);
 
@@ -117,7 +129,7 @@ export default function Planner({
     });
   }
 
-  function add(title: string, extra: { parent?: PlanItem; day?: string; job?: Job } = {}) {
+  function add(title: string, extra: { parent?: PlanItem; day?: string; job?: Job; grp?: string } = {}) {
     if (readOnly || !title.trim()) return;
     const parent = extra.parent;
     const siblings = items.filter((i) => i.parent_id === (parent?.id ?? null));
@@ -133,6 +145,10 @@ export default function Planner({
       rank,
       on_date: extra.day ?? null,
       end_date: null,
+      colour: null,
+      grp: parent?.grp ?? extra.grp ?? "",
+      place: "",
+      size: "m",
       at_time: null,
       remind: 0,
       done_at: null,
@@ -141,7 +157,7 @@ export default function Planner({
     setItems((list) => [...list, draft]);
     if (parent) setExpanded((s) => new Set(s).add(parent.id));
     startTransition(async () => {
-      const r = await addPlanItem({ title: draft.title, parent_id: draft.parent_id, ticket_id: draft.ticket_id, owner, on_date: draft.on_date, rank }).catch(() => ({ error: "Couldn't add that. Check your connection.", item: undefined }));
+      const r = await addPlanItem({ title: draft.title, parent_id: draft.parent_id, ticket_id: draft.ticket_id, owner, on_date: draft.on_date, rank, grp: draft.grp }).catch(() => ({ error: "Couldn't add that. Check your connection.", item: undefined }));
       if (r.error || !r.item) {
         setError(r.error || "Couldn't add that.");
         setItems((list) => list.filter((i) => i.id !== draft.id));
@@ -292,8 +308,16 @@ export default function Planner({
           <h1 className="cal-title">To-do<span>.</span></h1>
           <p className="cal-sub">{todayCount ? `${todayCount} thing${todayCount === 1 ? "" : "s"} on today` : "Nothing on today"} · {open.length} to-do{open.length === 1 ? "" : "s"}</p>
         </div>
-        <div className="cal-big" aria-label={`Today is ${dayName(today)}`}>
-          {Number(dd)}<span>/{Number(mm)}</span>
+        <div className="cal-head-r">
+          <div className="seg cal-view" role="group" aria-label="Show as">
+            <button type="button" aria-pressed={view === "cards"} onClick={() => pickView("cards")}>Cards</button>
+            <button type="button" aria-pressed={view === "list"} onClick={() => pickView("list")}>Calendar &amp; list</button>
+          </div>
+          {view === "list" && (
+            <div className="cal-big" aria-label={`Today is ${dayName(today)}`}>
+              {Number(dd)}<span>/{Number(mm)}</span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -319,6 +343,8 @@ export default function Planner({
                 else {
                   if (c.date) patch.on_date = c.date;
                   if (c.end_date) patch.end_date = c.end_date;
+                  if (c.group) patch.grp = c.group;
+                  if (c.place) patch.place = c.place;
                   if (c.time && (c.date || item?.on_date)) patch.at_time = c.time;
                 }
                 if (Object.keys(patch).length) save(c.id, patch);
@@ -350,6 +376,7 @@ export default function Planner({
         </div>
       )}
 
+      {view === "list" ? (
       <div className="cal-body">
         <section className="cal-month" aria-label={monthName(month)}>
           <div className="cal-nav">
@@ -525,6 +552,19 @@ export default function Planner({
           )}
         </section>
       </div>
+      ) : (
+        <Cards
+          items={shown}
+          today={today}
+          jobName={jobName}
+          readOnly={readOnly}
+          arrange={arrange}
+          onArrange={pickArrange}
+          onSave={save}
+          onOpen={(id) => setEditing(id)}
+          onAdd={(title, grp) => add(title, { grp })}
+        />
+      )}
 
       {editingItem && (
         <Editor
@@ -532,6 +572,7 @@ export default function Planner({
           item={editingItem}
           parent={editingItem.parent_id ? byId.get(editingItem.parent_id) : undefined}
           steps={editingItem.parent_id ? [] : stepsOf(editingItem.id)}
+          groups={[...new Set(items.map((i) => i.grp).filter(Boolean))].sort()}
           jobs={jobs}
           team={team}
           me={me}
@@ -652,6 +693,7 @@ function Editor({
   item,
   parent,
   steps,
+  groups,
   jobs,
   team,
   me,
@@ -668,6 +710,7 @@ function Editor({
   item: PlanItem;
   parent?: PlanItem;
   steps: PlanItem[];
+  groups: string[];
   jobs: Job[];
   team: Person[];
   me: string;
@@ -683,6 +726,8 @@ function Editor({
 }) {
   const [title, setTitle] = useState(item.title);
   const [notes, setNotes] = useState(item.notes);
+  const [grp, setGrp] = useState(item.grp);
+  const [place, setPlace] = useState(item.place);
   useEffect(() => {
     const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", esc);
@@ -728,6 +773,32 @@ function Editor({
             Until
             <input type="date" value={item.end_date ?? ""} min={item.on_date ? addDays(item.on_date, 1) : undefined} disabled={off || !item.on_date} onChange={(e) => onSave({ end_date: e.target.value || null })} />
           </label>
+          <label>
+            Where
+            <input value={place} disabled={off} maxLength={200} placeholder="A place or address" onChange={(e) => setPlace(e.target.value)} onBlur={() => place !== item.place && onSave({ place })} onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} />
+          </label>
+          {!parent && (
+            <div className="wide cal-card-fields">
+              <label>
+                Group
+                <input value={grp} disabled={off} maxLength={60} list="cal-groups" placeholder="Like London trip" onChange={(e) => setGrp(e.target.value)} onBlur={() => grp.trim() !== item.grp && onSave({ grp: grp.trim() })} onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} />
+                <datalist id="cal-groups">{groups.map((g) => <option key={g} value={g} />)}</datalist>
+              </label>
+              <div className="cal-sizes" role="group" aria-label="Card size">
+                <span>Size</span>
+                {CARD_SIZES.map((z) => (
+                  <button key={z} type="button" disabled={off} aria-pressed={item.size === z} onClick={() => onSave({ size: z })}>{z === "s" ? "Small" : z === "m" ? "Medium" : "Big"}</button>
+                ))}
+              </div>
+              <div className="cal-swatches" role="group" aria-label="Colour">
+                <span>Colour</span>
+                <button type="button" disabled={off} aria-pressed={item.colour === null} className="auto" onClick={() => onSave({ colour: null })} title="Match its group">Auto</button>
+                {CARD_COLOURS.map((c) => (
+                  <button key={c.key} type="button" disabled={off} aria-pressed={item.colour === c.key} style={{ background: c.bg }} onClick={() => onSave({ colour: c.key })} aria-label={c.label} title={c.label} />
+                ))}
+              </div>
+            </div>
+          )}
           <div className="cal-quick">
             {[["Today", today], ["Tomorrow", addDays(today, 1)], ["Next week", addDays(today, 7)]].map(([label, d]) => (
               <button key={label} type="button" disabled={off} aria-pressed={item.on_date === d} onClick={() => onSave({ on_date: d })}>{label}</button>
