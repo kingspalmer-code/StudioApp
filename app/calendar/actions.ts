@@ -61,7 +61,7 @@ export async function updatePlanItem(id: number, patch: PlanPatch): Promise<Resu
   if ("colour" in patch) row.colour = CARD_COLOURS.some((c) => c.key === patch.colour) ? patch.colour : null;
   if ("grp" in patch) row.grp = clean(patch.grp, 60);
   if ("place" in patch) row.place = clean(patch.place, 200);
-  if ("size" in patch) row.size = CARD_SIZES.includes(patch.size as CardSize) ? patch.size : "m";
+  if ("size" in patch) row.size = CARD_SIZES.includes(patch.size as CardSize) ? patch.size : "s";
   // Off the calendar means no last day either; a last day before the first one is dropped.
   if ("on_date" in row && row.on_date === null) row.end_date = null;
   if (typeof row.on_date === "string" && typeof row.end_date === "string" && row.end_date <= row.on_date) row.end_date = null;

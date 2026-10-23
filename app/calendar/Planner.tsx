@@ -148,7 +148,7 @@ export default function Planner({
       colour: null,
       grp: parent?.grp ?? extra.grp ?? "",
       place: "",
-      size: "m",
+      size: "s",
       at_time: null,
       remind: 0,
       done_at: null,
