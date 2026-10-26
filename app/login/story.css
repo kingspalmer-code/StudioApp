@@ -136,10 +136,10 @@
 .st-knob svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 .st-hand { position: absolute; z-index: 1; margin: 0; font: 400 20px/1.15 "Bradley Hand", "Segoe Print", "Comic Neue", "Chalkboard SE", cursive; color: var(--st-ink); max-width: 9em; }
 .st-hand-a { left: 0; top: 2%; transform: rotate(-6deg); }
-.st-hand-b { right: 0; bottom: 14%; transform: rotate(5deg); text-align: right; }
+.st-hand-b { right: 0; bottom: calc(12% + 86px); transform: rotate(5deg); text-align: right; }
 .st-arrow { position: absolute; width: 120px; height: 80px; fill: none; stroke: var(--st-ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .st-arrow-a { left: 6%; top: 9%; }
-.st-arrow-b { right: 4%; bottom: 22%; }
+.st-arrow-b { right: 4%; bottom: 12%; }
 @media (max-width: 860px) {
   .st-note { grid-template-columns: minmax(0, 1fr); }
   .st-note-stage { gap: 14px; padding: 0; }

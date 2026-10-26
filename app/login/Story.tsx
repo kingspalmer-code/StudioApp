@@ -344,25 +344,18 @@ function Notebook() {
   return (
     <section className="st-note">
       <Rise className="st-note-copy">
-        <p className="st-kick">
-          <Spark /> Tactile, not technical
-        </p>
-        <h2>
-          Feels like a notebook.
-          <br />
-          Works like a business.
-        </h2>
-        <p className="st-small">Slide to log a habit, drag a card to Thursday, tick a job along. Little physical moves instead of forms with forty boxes.</p>
+        <h2>Habits that bend when life does.</h2>
+        <p className="st-small">Slide to log a glass of water, tick off a run, and pick goals that fit your week. Miss a few and Oatcake offers an easier goal, not a guilt trip.</p>
       </Rise>
       <div className="st-note-stage">
-        <p className="st-hand st-hand-a">tap it, don&apos;t type it</p>
+        <p className="st-hand st-hand-a">misses never reset your streak</p>
         <Scribble className="st-arrow st-arrow-a" d="M8 10 C 40 6, 80 20, 104 62 M 92 58 L 104 64 L 106 50" />
         <Rise>
           <Phone>
             <HabitsScreen />
           </Phone>
         </Rise>
-        <p className="st-hand st-hand-b">no red. ever.</p>
+        <p className="st-hand st-hand-b">just slide it</p>
         <Scribble className="st-arrow st-arrow-b" d="M112 12 C 80 10, 40 26, 16 60 M 14 46 L 15 61 L 29 58" />
       </div>
     </section>
