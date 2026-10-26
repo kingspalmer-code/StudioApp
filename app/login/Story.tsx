@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from "motion/react";
-import { useRef } from "react";
+import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform, type MotionValue } from "motion/react";
+import { useRef, useState } from "react";
 import OatcakeBiscuit from "@/components/OatcakeBiscuit";
 import { NavIcon } from "@/components/NavIcons";
 
@@ -9,9 +9,8 @@ import { NavIcon } from "@/components/NavIcons";
 // orange poster, big coloured rows a feature each, a habits phone with hand-drawn notes, the
 // business tools, and a short letter to finish. The phones copy the real screens but are drawn in
 // code with made-up content, so nobody's real jobs end up on the open web.
-// Things only fade and rise in as they arrive. Nothing is tied to the scroll position except the
-// one line of words, because iPhone Safari resizes the page as its bar hides and that made
-// scroll-linked phones jump.
+// Things fade and rise in as they arrive. Only the line of words is tied to the scroll position;
+// iPhone Safari resizes the page as its bar hides, which made scroll-linked phones jump.
 // Hidden in the Mac app and on Home Screen icons (story.css), where the sign-in is all you want.
 
 const ease = [0.2, 0.8, 0.2, 1] as const;
@@ -166,7 +165,22 @@ function TellScreen() {
   );
 }
 
+// The headline gets a screen to itself and stays put while you scroll; once it has had a moment
+// the phones rise in over it, poster style, and drop away again if you scroll back up. The scroll
+// only flips them on or off and the move itself plays on its own clock, so Safari's bar resizing
+// the page can't make them jump.
 function Poster() {
+  const stage = useRef<HTMLDivElement>(null);
+  const still = useReducedMotion();
+  const [up, setUp] = useState(false);
+  const { scrollYProgress } = useScroll({ target: stage, offset: ["start start", "end end"] });
+  useMotionValueEvent(scrollYProgress, "change", (v) => setUp((was) => (was ? v > 0.2 : v > 0.32)));
+  const show = up || !!still;
+  const phone = (side: "a" | "b") => ({
+    initial: false as const,
+    animate: show ? { opacity: 1, y: 0, rotate: side === "a" ? -9 : 8 } : { opacity: 0, y: 420, rotate: side === "a" ? -2 : 2 },
+    transition: { type: "spring" as const, stiffness: 120, damping: 20, delay: show && side === "b" ? 0.12 : 0 },
+  });
   return (
     <section className="st-poster">
       <div className="st-wrap">
@@ -176,25 +190,25 @@ function Poster() {
           </p>
           <p className="st-small">For life and work. Oatcake is a calm home for your day, your jobs and your clients. Shaped around busy lives, with a gentle nudge to stop for a moment and get things organised.</p>
         </Rise>
-        <Rise className="st-huge-wrap" delay={0.1}>
-          <h2 className="st-huge">
+      </div>
+      <div ref={stage} className="st-stage">
+        <div className="st-sticky">
+          <motion.h2 className="st-huge" animate={{ opacity: show ? 0.92 : 1 }} transition={{ duration: 0.6 }}>
             <span>Productivity</span>
             <span>doesn&apos;t need</span>
             <span>to be boring.</span>
-          </h2>
-        </Rise>
-      </div>
-      <div className="st-phones">
-        <Rise rotate={-5} delay={0.05}>
-          <Phone>
-            <TodoScreen />
-          </Phone>
-        </Rise>
-        <Rise rotate={6} delay={0.2} className="st-phones-b">
-          <Phone>
-            <TellScreen />
-          </Phone>
-        </Rise>
+          </motion.h2>
+          <motion.div className="st-float-phone a" {...phone("a")}>
+            <Phone>
+              <TodoScreen />
+            </Phone>
+          </motion.div>
+          <motion.div className="st-float-phone b" {...phone("b")}>
+            <Phone>
+              <TellScreen />
+            </Phone>
+          </motion.div>
+        </div>
       </div>
       <div className="st-wrap">
         <Rise>
@@ -227,6 +241,9 @@ function Line() {
           <Word key={i} word={w} i={i} progress={scrollYProgress} />
         ))}
       </h2>
+      <Rise className="st-line-sub" delay={0.2}>
+        So your brain can be a little quieter.
+      </Rise>
     </section>
   );
 }

@@ -1,6 +1,6 @@
 /* Under the sign-in: the scroll-down story of what Oatcake is (Story.tsx). Loud and colourful on
    purpose, unlike the calm app itself. */
-.st { --st-ink: #14110f; --st-orange: #ff5a36; --st-app: #17110f; --st-app-2: #241c19; --st-cream: #f3e9dc; overflow: hidden; color: var(--st-ink); }
+.st { --st-ink: #14110f; --st-orange: #ff5a36; --st-app: #17110f; --st-app-2: #241c19; --st-cream: #f3e9dc; overflow-x: clip; color: var(--st-ink); }
 .st h2, .st h3 { font-family: var(--font-title); font-weight: 700; margin: 0; }
 .st-wrap { max-width: 1100px; margin: 0 auto; }
 .st-kick { display: flex; align-items: center; gap: 8px; font: 700 clamp(26px, 3.4vw, 40px)/1.05 var(--font-title); margin: 0 0 16px; letter-spacing: -.01em; }
@@ -66,20 +66,27 @@
 .st-tell-ask span { font-size: 11.5px; padding: 6px 10px; border-radius: 99px; background: rgba(243,233,220,.1); }
 .st-add { align-self: stretch; text-align: center; background: var(--st-cream); color: var(--st-ink); border-radius: 99px; padding: 10px; font-weight: 600; font-size: 13px; }
 
-/* 1. The orange poster: the headline first, phones under it. */
+/* 1. The orange poster: the headline holds the screen, then the phones rise over it. */
 .st-poster { background: var(--st-orange); padding: 14vh 16px 14vh; }
-.st-huge-wrap { margin-top: 9vh; }
+.st-stage { height: 230svh; margin: 4vh -16px 0; }
+.st-sticky { position: sticky; top: 0; height: 100svh; display: grid; place-items: center; overflow: hidden; }
+.st-huge { grid-area: 1 / 1; font-size: clamp(40px, 9.6vw, 148px) !important; line-height: .9; letter-spacing: -.02em; text-transform: uppercase; color: var(--st-ink); padding: 0 16px; }
 .st-huge span { display: block; white-space: nowrap; }
-.st-huge { font-size: clamp(40px, 9.6vw, 148px) !important; line-height: .9; letter-spacing: -.02em; text-transform: uppercase; color: var(--st-ink); }
-.st-phones { display: flex; justify-content: center; align-items: flex-start; gap: clamp(24px, 6vw, 90px); margin: 9vh auto 10vh; max-width: 1100px; }
-.st-phones-b { margin-top: 90px; }
+.st-float-phone { grid-area: 1 / 1; position: relative; }
+.st-float-phone.a { left: -170px; top: 40px; }
+.st-float-phone.b { left: 190px; top: 110px; }
+@media (max-height: 820px) { .st-float-phone .st-phone { zoom: .82; } }
 @media (max-width: 720px) {
-  .st-phones { flex-direction: column; align-items: center; gap: 40px; }
-  .st-phones-b { margin-top: 0; }
+  .st-sticky { place-items: start center; }
+  .st .st-huge { margin-top: 16svh; font-size: 11vw; }
+  .st-float-phone .st-phone { zoom: .62; }
+  .st-float-phone.a { left: -64px; top: calc(16svh + 70px); }
+  .st-float-phone.b { left: 66px; top: calc(16svh + 150px); }
 }
 
 /* 2. One line, lit a word at a time. */
 .st-line-sec { background: #17110f; color: var(--oat-cream); padding: 22vh 16px; }
+.st-line-sub { max-width: 1040px; margin: 28px auto 0; font-size: clamp(18px, 2vw, 26px); color: color-mix(in srgb, var(--oat-cream) 60%, transparent); }
 .st-line-sec h2 { max-width: 1040px; margin: 0 auto; font-size: clamp(34px, 6vw, 78px); line-height: 1.06; letter-spacing: -.01em; }
 
 /* 3. Big coloured rows. */
