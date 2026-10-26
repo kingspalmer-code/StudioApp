@@ -210,14 +210,6 @@ function Poster() {
           </motion.div>
         </div>
       </div>
-      <div className="st-wrap">
-        <Rise>
-          <p className="st-kick">
-            <Spark /> Get it out of your head!
-          </p>
-          <p className="st-small">Brain dumps, scribbles, half-thoughts at 2am. No more lost notebooks with three pages used. Keep your rambling thoughts in one place and let them work for you.</p>
-        </Rise>
-      </div>
     </section>
   );
 }
@@ -263,7 +255,7 @@ function Line() {
 // One big coloured row per part of the day-to-day side.
 const ROWS = [
   { t: "Today", s: "Three things, not forty", d: "Pick up to three. The rest waits quietly in Still on your plate.", c: "#ffd45c", icon: "/today" },
-  { t: "Tell Oatcake", s: "Brain dump, sorted", d: "Say it messy. It comes back as to-dos, dates and a shopping list.", c: "#c8b8b1", icon: "/admin/support" },
+  { t: "Tell Oatcake", s: "Get it out of your head", d: "Brain dumps, scribbles, half-thoughts at 2am. Keep your rambling thoughts in one place and let them work for you.", c: "#c8b8b1", icon: "/admin/support" },
   { t: "To-do", s: "Cards you can move", d: "Colour-coded cards you drag between days, with a calendar when you need one.", c: "#9ec3e6", icon: "/calendar" },
   { t: "Habits", s: "Set your own bar", d: "Slide to log. Pick goals that fit your week, and ease off when life happens.", c: "#ffbdee", icon: "/habits" },
   { t: "Focus", s: "One thing, one timer", d: "A count-up clock that keeps you company and logs the time for you.", c: "#c6f432", icon: "/apps/job-time" },

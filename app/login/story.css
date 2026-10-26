@@ -67,7 +67,7 @@
 .st-add { align-self: stretch; text-align: center; background: var(--st-cream); color: var(--st-ink); border-radius: 99px; padding: 10px; font-weight: 600; font-size: 13px; }
 
 /* 1. The orange poster: the headline holds the screen, then the phones rise over it. */
-.st-poster { background: var(--st-orange); padding: 14vh 16px 14vh; }
+.st-poster { background: var(--st-orange); padding: 14vh 16px 0; }
 .st-stage { height: 230svh; margin: 4vh -16px 0; }
 .st-sticky { position: sticky; top: 0; height: 100svh; display: grid; place-items: center; overflow: hidden; }
 .st-huge { grid-area: 1 / 1; font-size: clamp(40px, 9.6vw, 148px) !important; line-height: .9; letter-spacing: -.02em; text-transform: uppercase; color: var(--st-ink); padding: 0 16px; }
