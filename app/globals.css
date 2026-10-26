@@ -364,6 +364,11 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 
 /* Titles, headline numbers and business names use the Oatcake title face. */
 .large, .stat b, .biz h4, .smart-tile b { font-family: var(--font-title); letter-spacing: 0; }
+/* Pages with their own title styles: To-do (cards + calendar), Habits, job hours. :root lifts these
+   above the page stylesheets, which load later and reset the face with a font shorthand. */
+:root :is(.cal-title, .cal-big, .cards-h, .hero-day b, .hero-done b, .hero-next b, .tt-total b,
+  .hb-title, .hb-dark-title, .hb-empty h2, .hb-landed h2, .hb-log-title, .hb-ease-goal,
+  .hb-dial-num, .hb-money-box, .hb-tile b, .bt-hero-text b, .bt-mini-num) { font-family: var(--font-title); letter-spacing: 0; }
 
 /* iPhone zooms the page into any field smaller than 16px, so touch screens get 16px fields. */
 @media (hover: none) and (pointer: coarse) { input, select, textarea { font-size: 16px !important; } }
