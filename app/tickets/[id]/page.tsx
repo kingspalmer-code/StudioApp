@@ -23,6 +23,7 @@ import { createDocument } from "@/app/documents/actions";
 import { docName, gbp, round2, STATUS_LABEL } from "@/lib/documents";
 import { asDoc } from "@/lib/docs-server";
 import Deliveries from "@/components/Deliveries";
+import Thumb from "@/components/Thumb";
 import { signDeliveries, type Delivery, type Draft, type DraftFile } from "@/lib/deliveries";
 import SaveForm from "@/components/SaveForm";
 import Submit from "@/components/Submit";
@@ -382,7 +383,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                   {files!.map((f, i) =>
                     signed[i]?.signedUrl ? (
                       <a key={f.id} href={signed[i].signedUrl} target="_blank" rel="noreferrer">
-                        {IMAGE.test(f.name) && <img src={signed[i].signedUrl} alt="" />}
+                        {IMAGE.test(f.name) && <Thumb bucket="inspiration" path={f.path} full={signed[i].signedUrl} />}
                         {f.name}
                       </a>
                     ) : null

@@ -53,7 +53,7 @@ export async function openFile(id: number): Promise<JobFile | null> {
       rows: g.fields.map((f) => ({ label: f.label, value: showValue(f, valueOf(t, f)), long: f.kind === "longtext" })),
     })),
     docs: docs.map((d) => ({ id: d.id, name: docName(d), status: STATUS_LABEL[d.status], total: gbp(d.total), issued: formatDate(d.issued_on) })),
-    images: signed.filter((d) => isImage(d)).map((d) => ({ name: d.name, view: d.view, download: d.download })),
+    images: signed.filter((d) => isImage(d)).map((d) => ({ name: d.name, path: d.path, view: d.view, download: d.download })),
     others: signed.filter((d) => !isImage(d)).map((d) => ({ name: d.name, size: fileSize(d.size), download: d.download })),
     refs: (refs ?? []).map((f) => ({ name: f.name, view: /\.(png|jpe?g|gif|webp|svg)$/i.test(f.name) ? refUrls[f.path] ?? null : null })),
     notes: (notes ?? []).map((n) => ({ who: n.author_name || n.author_email, when: formatDate(n.created_at), body: n.body, approval: n.kind === "approval" })),

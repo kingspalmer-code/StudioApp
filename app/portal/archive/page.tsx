@@ -6,6 +6,7 @@ import { formatDate, isDone } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
 import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
 import type { Ticket } from "@/lib/types";
+import Thumb from "@/components/Thumb";
 
 // Every finished project for this business as a gallery, newest first, to look back on or download again.
 export default async function ArchivePage({ searchParams }: { searchParams: Promise<{ year?: string; type?: string; business?: string }> }) {
@@ -59,7 +60,7 @@ export default async function ArchivePage({ searchParams }: { searchParams: Prom
             {shown.map((t) => (
               <Link key={t.id} href={`/tickets/${t.id}`} className="gallery-card">
                 <span className="gallery-img">
-                  {covers[t.id]?.url ? <img src={covers[t.id]!.url!} alt="" loading="lazy" /> : <span>{t.type}</span>}
+                  {covers[t.id]?.path ? <Thumb bucket="deliveries" path={covers[t.id]!.path!} full={covers[t.id]!.url} /> : <span>{t.type}</span>}
                 </span>
                 <b>{t.title}</b>
                 <small className="when">{formatDate(t.when)}{covers[t.id]?.count ? ` · ${covers[t.id]!.count} file${covers[t.id]!.count > 1 ? "s" : ""}` : ""}</small>

@@ -15,6 +15,7 @@ import { logEvents, notYetFinished, tellRequesters } from "@/lib/finished";
 import { finalStage, PRIORITIES, reviewStage } from "@/lib/priority";
 import { isMyBusiness, isSelf, MY_BUSINESS, SELF_PREFIX, slugify } from "@/lib/workspace";
 import type { Role, Status } from "@/lib/types";
+import { withPreviews } from "@/lib/preview";
 
 export async function signOut() {
   const supabase = await createClient();
@@ -131,7 +132,7 @@ export async function saveDetails(id: number, formData: FormData) {
 export async function deleteTicket(id: number) {
   const { supabase } = await requireEditor(["designer"], "requests");
   const { data: files } = await supabase.from("ticket_files").select("path").eq("ticket_id", id);
-  if (files?.length) await supabase.storage.from("inspiration").remove(files.map((f) => f.path));
+  if (files?.length) await supabase.storage.from("inspiration").remove(withPreviews(files.map((f) => f.path)));
   await supabase.from("tickets").delete().eq("id", id);
   revalidatePath("/", "layout");
   redirect("/queue");
@@ -153,7 +154,7 @@ export async function deleteTickets(ids: number[]) {
   const { supabase } = await requireEditor(["designer"], "requests");
   if (!ids.length) return;
   const { data: files } = await supabase.from("ticket_files").select("path").in("ticket_id", ids);
-  if (files?.length) await supabase.storage.from("inspiration").remove(files.map((f) => f.path));
+  if (files?.length) await supabase.storage.from("inspiration").remove(withPreviews(files.map((f) => f.path)));
   await supabase.from("tickets").delete().in("id", ids);
   revalidatePath("/", "layout");
 }

@@ -7,6 +7,7 @@ import { formatDate, isDone } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
 import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
 import type { Ticket } from "@/lib/types";
+import Thumb from "@/components/Thumb";
 
 // Every finished piece of work someone can see, newest first: the studio and managers see every
 // business, a client sees their own businesses. Read-only: opening one shows its files to view or
@@ -73,7 +74,7 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
           {shown.map((t) => (
             <Link key={t.id} href={`/tickets/${t.id}`} className="gallery-card">
               <span className="gallery-img">
-                {covers[t.id]?.url ? <img src={covers[t.id]!.url!} alt="" loading="lazy" /> : <span>{t.type}</span>}
+                {covers[t.id]?.path ? <Thumb bucket="deliveries" path={covers[t.id]!.path!} full={covers[t.id]!.url} /> : <span>{t.type}</span>}
               </span>
               <b>{t.title}</b>
               <small className="when gallery-biz">

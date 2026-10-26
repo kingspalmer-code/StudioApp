@@ -7,6 +7,7 @@ import { groupFields } from "@/lib/fields";
 import { todayISO } from "@/lib/priority";
 import { createClient } from "@/lib/supabase/client";
 import { sendLinkRequest, type LinkForm } from "./actions";
+import { uploadPreview } from "@/lib/preview";
 
 const MAX_FILE_MB = 25;
 const MAX_FILES = 10;
@@ -57,6 +58,7 @@ export default function RequestLinkForm({ slug, form, name, email }: { slug: str
             for (const file of files) {
               const path = `${folder}/${Date.now()}-${file.name.replace(/[^\w.\-]+/g, "_")}`;
               const up = folder ? await supabase.storage.from("inspiration").upload(path, file) : { error: new Error("no folder") };
+              if (!up.error) await uploadPreview(supabase, "inspiration", path, file);
               const att = up.error ? up : await supabase.rpc("attach_link_file", { p_ticket: res.ticketId, p_path: path, p_name: file.name });
               if (att.error) failed.push(file.name);
             }

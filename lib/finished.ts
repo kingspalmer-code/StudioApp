@@ -5,6 +5,7 @@ import { firstTime, pushReady, sendAlert } from "@/lib/push";
 import type { WorkspaceKind } from "@/lib/types";
 import type { Terms } from "@/lib/workspace";
 import { tellCustomers } from "@/lib/customers";
+import { previewPath, withPreviews } from "./preview";
 
 // A job reached the last stage, or was sent to the client for review: email the client or manager
 // who sent it, and alert their phone if they've turned alerts on. Only jobs someone sent from their
@@ -198,10 +199,13 @@ export async function tellDraft(supabase: SupabaseClient, ticketId: number, draf
   // Images show in the email (their links last a week); links and other files are listed.
   const list = files ?? [];
   const images = list.filter((f) => f.path && f.mime.startsWith("image/")).slice(0, 3);
+  // The small preview is sent when there is one, so each email open doesn't download the full file.
   const { data: signed } = images.length
-    ? await supabase.storage.from("deliveries").createSignedUrls(images.map((f) => f.path!), 7 * 24 * 3600)
+    ? await supabase.storage.from("deliveries").createSignedUrls(withPreviews(images.map((f) => f.path!)), 7 * 24 * 3600)
     : { data: [] };
-  const pics = (signed ?? []).filter((x) => x.signedUrl).map((x) => `<img src="${x.signedUrl}" alt="" style="display:block;max-width:100%;border-radius:10px;margin:0 0 12px">`);
+  const signedFor = (path: string) => (signed ?? []).find((x) => x.path === path && x.signedUrl)?.signedUrl;
+  const shown = images.map((f) => signedFor(previewPath(f.path!)) ?? signedFor(f.path!)).filter(Boolean);
+  const pics = shown.map((url) => `<img src="${url}" alt="" style="display:block;max-width:100%;border-radius:10px;margin:0 0 12px">`);
   const others = list.filter((f) => !images.includes(f)).map((f) => (f.url ? `<li><a href="${esc(f.url)}">${esc(f.name)}</a></li>` : `<li>${esc(f.name)}</li>`));
   const extra = pics.join("\n") + (others.length ? `<ul style="margin:0 0 14px;padding-left:18px">${others.join("")}</ul>` : "");
 

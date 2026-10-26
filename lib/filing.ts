@@ -38,7 +38,7 @@ export type JobFile = {
   finished: string;
   details: { title: string | null; rows: { label: string; value: string; long: boolean }[] }[];
   docs: { id: number; name: string; status: string; total: string; issued: string }[];
-  images: { name: string; view: string | null; download: string | null }[];
+  images: { name: string; path: string | null; view: string | null; download: string | null }[];
   others: { name: string; size: string; download: string | null }[];
   refs: { name: string; view: string | null }[];
   notes: { who: string; when: string; body: string; approval: boolean }[];

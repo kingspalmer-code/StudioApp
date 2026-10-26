@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { feedPickle } from "@/app/queue/pet";
 import { GOLDEN_COST, type PetView } from "@/lib/pet";
 import { createClient } from "@/lib/supabase/client";
+import Thumb from "./Thumb";
 
 const pixel = Silkscreen({ weight: "400", subsets: ["latin"] });
 
@@ -15,7 +16,7 @@ const pixel = Silkscreen({ weight: "400", subsets: ["latin"] });
 // work and this week's tally. Two show at a time; the button
 // on the right picks which, and dragging a handle swaps them round. Kept on this computer.
 export type WeekDay = { date: string; label: string; today: boolean; jobs: { id: number; title: string; color: string }[] };
-export type ReelItem = { id: number; title: string; url: string };
+export type ReelItem = { id: number; title: string; url: string | null; path: string };
 // due and late are null when the workspace works without dates.
 export type WeekStats = { delivered: number; due: number | null; late: number | null };
 
@@ -163,7 +164,7 @@ function Reel({ items }: { items: ReelItem[] }) {
     <div className="reel">
       {items.map((r) => (
         <Link key={r.id} href={`/tickets/${r.id}`} title={r.title}>
-          <img src={r.url} alt={r.title} loading="lazy" />
+          <Thumb bucket="deliveries" path={r.path} full={r.url} alt={r.title} />
         </Link>
       ))}
     </div>
