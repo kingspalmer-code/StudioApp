@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ConfirmButton from "./ConfirmButton";
+import Thumb from "./Thumb";
 import { DELIVERY_MAX_MB, fileSize, isImage, isVideo, type Delivery, type Signed } from "@/lib/deliveries";
+import { uploadPreview, withPreviews } from "@/lib/preview";
 
 const ext = (name: string) => (/\.([a-z0-9]{1,5})$/i.exec(name)?.[1] ?? "file").toUpperCase();
 
@@ -46,6 +48,7 @@ export default function Deliveries({
         failed.push(f.name);
         continue;
       }
+      await uploadPreview(supabase, "deliveries", path, f);
       const { error: e2 } = await supabase.from("ticket_deliveries").insert({ ticket_id: ticketId, path, name: f.name, size: f.size, mime: f.type });
       if (e2) failed.push(f.name);
     }
@@ -78,7 +81,7 @@ export default function Deliveries({
     const supabase = createClient();
     // A file sent as final from a draft stays on that draft, so only the finished copy goes.
     const onDraft = f.path ? (await supabase.from("ticket_draft_files").select("id", { count: "exact", head: true }).eq("path", f.path)).count : 0;
-    if (f.path && !onDraft) await supabase.storage.from("deliveries").remove([f.path]);
+    if (f.path && !onDraft) await supabase.storage.from("deliveries").remove(withPreviews([f.path]));
     await supabase.from("ticket_deliveries").delete().eq("id", f.id);
     router.refresh();
   }
@@ -104,10 +107,10 @@ export default function Deliveries({
           {files.map((f) => (
             <div key={f.id} className="deliv">
               <a className="deliv-preview" href={f.view ?? undefined} target="_blank" rel="noreferrer">
-                {f.view && f.path && isImage(f) ? (
+                {f.path && (isImage(f) || isVideo(f)) && !/svg/i.test(f.mime + f.name) ? (
+                  <Thumb bucket="deliveries" path={f.path} full={f.view} video={isVideo(f)} canMake={canEdit} />
+                ) : f.view && f.path && isImage(f) ? (
                   <img src={f.view} alt="" loading="lazy" />
-                ) : f.view && f.path && isVideo(f) ? (
-                  <video src={f.view} muted playsInline preload="metadata" />
                 ) : (
                   <span className="deliv-ext">{f.url ? "LINK" : ext(f.name)}</span>
                 )}

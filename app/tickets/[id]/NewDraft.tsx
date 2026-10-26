@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { DELIVERY_MAX_MB, fileSize } from "@/lib/deliveries";
 import { tellAboutDraft } from "./actions";
+import { uploadPreview } from "@/lib/preview";
 
 // The studio sharing a draft for the client's notes: a short message, and files or a link.
 // Drafts stay off the galleries until one is sent as final.
@@ -58,6 +59,7 @@ export default function NewDraft({ ticketId, businessId, round, clientName }: { 
       const safe = f.name.replace(/[^\w.\-]+/g, "_").slice(-120);
       const path = `${businessId}/${ticketId}/drafts/${draft.id}/${crypto.randomUUID().slice(0, 8)}-${safe}`;
       const up = await supabase.storage.from("deliveries").upload(path, f, { contentType: f.type || undefined });
+      if (!up.error) await uploadPreview(supabase, "deliveries", path, f);
       const row = up.error ? up : await supabase.from("ticket_draft_files").insert({ draft_id: draft.id, path, name: f.name, size: f.size, mime: f.type });
       if (row.error) failed.push(f.name);
       else added++;

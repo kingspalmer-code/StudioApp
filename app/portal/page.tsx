@@ -14,6 +14,7 @@ import NewRequestForm from "./NewRequestForm";
 import Walkthrough from "@/components/Walkthrough";
 import { startPreview } from "@/app/actions";
 import Submit from "@/components/Submit";
+import Thumb from "@/components/Thumb";
 
 export default async function PortalPage({ searchParams }: { searchParams: Promise<{ tour?: string; business?: string; follow?: string; new?: string }> }) {
   const { tour, business, follow, new: fresh } = await searchParams;
@@ -166,7 +167,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
               {finished.slice(0, 6).map((t) => (
                 <Link key={t.id} href={`/tickets/${t.id}`} className="gallery-card">
                   <span className="gallery-img">
-                    {covers[t.id]?.url ? <img src={covers[t.id]!.url!} alt="" loading="lazy" /> : <span>{t.type}</span>}
+                    {covers[t.id]?.path ? <Thumb bucket="deliveries" path={covers[t.id]!.path!} full={covers[t.id]!.url} /> : <span>{t.type}</span>}
                   </span>
                   <b>{t.title}</b>
                   <small className="when">{several && !only ? `${byId[t.business_id]?.name} · ` : ""}{formatDate(t.delivered_at ?? t.deadline ?? t.updated_at)}{covers[t.id]?.count ? ` · ${covers[t.id]!.count} file${covers[t.id]!.count > 1 ? "s" : ""}` : ""}</small>

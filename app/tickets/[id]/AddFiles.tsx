@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { alertNewFiles } from "@/app/portal/actions";
+import { uploadPreview } from "@/lib/preview";
 
 const MAX_FILE_MB = 25;
 
@@ -31,6 +32,7 @@ export default function AddFiles({ ticketId, businessId, isClient }: { ticketId:
         failed.push(f.name);
         continue;
       }
+      await uploadPreview(supabase, "inspiration", path, f);
       const { error } = await supabase.from("ticket_files").insert({ ticket_id: ticketId, path, name: f.name });
       if (error) failed.push(f.name);
     }

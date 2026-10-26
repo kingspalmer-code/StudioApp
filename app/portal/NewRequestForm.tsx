@@ -12,6 +12,7 @@ import { coreFields, isContact, type CoreField } from "@/lib/core-fields";
 import type { Business, JobType } from "@/lib/types";
 import { isMyBusiness, MY_BUSINESS, SELF_PREFIX, slugify } from "@/lib/workspace";
 import TellPicker, { type TellPerson } from "@/components/TellPicker";
+import { uploadPreview } from "@/lib/preview";
 
 const MAX_FILE_MB = 25;
 const names = (ps: { name: string }[]) => ps.map((p) => p.name).join(", ").replace(/, ([^,]*)$/, " and $1");
@@ -193,7 +194,10 @@ export default function NewRequestForm({
       const path = `${business_id}/${ticket.id}/${Date.now()}-${safe}`;
       const up = await supabase.storage.from("inspiration").upload(path, file);
       if (up.error) failed.push(file.name);
-      else await supabase.from("ticket_files").insert({ ticket_id: ticket.id, path, name: file.name });
+      else {
+        await uploadPreview(supabase, "inspiration", path, file);
+        await supabase.from("ticket_files").insert({ ticket_id: ticket.id, path, name: file.name });
+      }
     }
 
     setBusy(false);

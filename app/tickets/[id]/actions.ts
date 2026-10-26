@@ -6,6 +6,7 @@ import { logEvents, notYetFinished, tellDraft, tellRequesters, tellShared } from
 import type { Draft, DraftFile } from "@/lib/deliveries";
 import { finalStage, reviewStage } from "@/lib/priority";
 import { requireEditor } from "@/lib/session";
+import { withPreviews } from "@/lib/preview";
 
 async function draftOf(ticketId: number, draftId: number) {
   const session = await requireEditor(["designer"], "requests");
@@ -51,7 +52,7 @@ export async function removeDraft(ticketId: number, draftId: number): Promise<st
   const gone = paths.filter((p) => !keep.has(p));
   const { error } = await supabase.from("ticket_drafts").delete().eq("id", draftId);
   if (error) return `Couldn't remove it: ${error.message}`;
-  if (gone.length) await supabase.storage.from("deliveries").remove(gone);
+  if (gone.length) await supabase.storage.from("deliveries").remove(withPreviews(gone));
   revalidatePath(`/tickets/${ticketId}`);
   revalidatePath("/portal");
 }

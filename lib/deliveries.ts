@@ -36,21 +36,23 @@ export async function signDeliveries<T extends Pick<Delivery, "path" | "url" | "
   return rows.map((d) => ({ ...d, view: d.path ? view[d.path] ?? null : d.url, download: d.path ? download[d.path] ?? null : d.url }));
 }
 
-// For galleries: the first finished image on each job, and how many files it has.
+// For galleries: the first finished image on each job, and how many files it has. Shown with its
+// preview (components/Thumb), the url being the full picture for files from before previews.
+export type Cover = { url: string | null; path: string | null; count: number };
 export async function coversFor(supabase: SupabaseClient, ticketIds: number[]) {
-  const covers: Record<number, { url: string | null; count: number }> = {};
+  const covers: Record<number, Cover> = {};
   if (!ticketIds.length) return covers;
   const { data } = await supabase.from("ticket_deliveries").select("*").in("ticket_id", ticketIds).order("created_at").returns<Delivery[]>();
   const first: Record<number, Delivery> = {};
   for (const d of data ?? []) {
-    covers[d.ticket_id] ??= { url: null, count: 0 };
+    covers[d.ticket_id] ??= { url: null, path: null, count: 0 };
     covers[d.ticket_id].count++;
     if (d.path && isImage(d) && !first[d.ticket_id]) first[d.ticket_id] = d;
   }
   const paths = Object.values(first).map((d) => d.path!);
   if (paths.length) {
     const byPath = await signedUrls(supabase, "deliveries", paths);
-    for (const [id, d] of Object.entries(first)) covers[Number(id)].url = byPath[d.path!] ?? null;
+    for (const [id, d] of Object.entries(first)) Object.assign(covers[Number(id)], { url: byPath[d.path!] ?? null, path: d.path });
   }
   return covers;
 }

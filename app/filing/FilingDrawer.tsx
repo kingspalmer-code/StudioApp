@@ -6,6 +6,7 @@ import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNo
 import { createPortal } from "react-dom";
 import { monthName, type FiledJob, type FiledMonth, type JobFile } from "@/lib/filing";
 import { formatDate, money } from "@/lib/priority";
+import Thumb from "@/components/Thumb";
 import { openFile } from "./actions";
 
 // A card-file drawer, after Kingsley's line-drawn references: month dividers with filled tabs,
@@ -260,7 +261,7 @@ function FileContents({ file }: { file: JobFile }) {
           <div className="fd-prints">
             {file.images.map((im, i) => (
               <a key={i} className="fd-print" href={im.view ?? im.download ?? "#"} target="_blank" rel="noreferrer" style={{ "--r": `${[-1.6, 1.1, -0.6, 1.8, -1.2][i % 5]}deg` } as CSSProperties}>
-                {im.view ? <img src={im.view} alt={im.name} loading="lazy" /> : <span>{im.name}</span>}
+                {im.path && !/svg$/i.test(im.name) ? <Thumb bucket="deliveries" path={im.path} full={im.view} alt={im.name} /> : im.view ? <img src={im.view} alt={im.name} loading="lazy" /> : <span>{im.name}</span>}
               </a>
             ))}
           </div>

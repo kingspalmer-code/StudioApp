@@ -46,6 +46,6 @@ export async function loadWidgets(
     coversFor(supabase, recent.map((t) => t.id)),
     pet ? visitPet(supabase, pet.earned, pet.base, pet.owner) : Promise.resolve(null),
   ]);
-  const reel = recent.filter((t) => covers[t.id]?.url).slice(0, 6).map((t) => ({ id: t.id, title: t.title, url: covers[t.id]!.url! }));
+  const reel = recent.filter((t) => covers[t.id]?.path).slice(0, 6).map((t) => ({ id: t.id, title: t.title, url: covers[t.id]!.url, path: covers[t.id]!.path! }));
   return { week, reel, pet: petView, tally: { delivered: deliveredWeek, due: ctx.noDates ? null : open.filter((t) => t.deadline && t.deadline <= sunday).length, late } };
 }
