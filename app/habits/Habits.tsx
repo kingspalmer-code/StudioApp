@@ -9,7 +9,7 @@ import { flashSaved } from "@/components/Saved";
 import { addDays, monthDays, monthName, shiftMonth } from "@/lib/plan";
 import {
   HABIT_COLOURS, HABIT_ICONS, PARTS, STARTERS, WEEKDAYS,
-  amountLabel, dayOf, easeNudge, indexLogs, isScheduled, mondayOf, paceLabel, perDayLabel, periodStart, statsFor,
+  amountLabel, dayOf, paint, easeNudge, indexLogs, isScheduled, mondayOf, paceLabel, perDayLabel, periodStart, statsFor,
   type Goal, type Habit, type HabitLog, type HabitStats, type Nudge, type Starter,
 } from "@/lib/habits";
 import { addHabit, answerEase, clearDay, logHabit, removeHabit, updateHabit, type HabitInput } from "./actions";
@@ -235,7 +235,7 @@ export default function Habits({ initial, initialLogs, today, readOnly, openId, 
               <>
                 <div className="hb-chips" role="tablist" aria-label="Habit">
                   {habits.map((h) => (
-                    <button key={h.id} type="button" role="tab" aria-selected={focusHabit?.id === h.id} style={{ ["--c" as string]: h.colour }} onClick={() => setFocus(h.id)}>
+                    <button key={h.id} type="button" role="tab" aria-selected={focusHabit?.id === h.id} style={paint(h.colour)} onClick={() => setFocus(h.id)}>
                       <HabitIcon name={h.icon} size={15} />{h.name}
                     </button>
                   ))}
@@ -333,7 +333,7 @@ function TellOatcake({ have, onAdd, onClose }: { have: string[]; onAdd: (ideas: 
           <h2><OatcakeBiscuit small className="hb-tell-mark" />{found.summary || "Here's what Oatcake set up"}</h2>
           <div className="hb-ideas">
             {found.habits.map((h, i) => (
-              <button key={i} type="button" className="hb-idea" aria-pressed={!off.has(i)} style={{ ["--c" as string]: h.colour }} onClick={() => setOff((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n; })}>
+              <button key={i} type="button" className="hb-idea" aria-pressed={!off.has(i)} style={paint(h.colour)} onClick={() => setOff((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n; })}>
                 <span className="hb-ic"><HabitIcon name={h.icon} /></span>
                 <span className="hb-card-main">
                   <b>{h.name}</b>
@@ -367,7 +367,7 @@ function Empty({ readOnly, onStarter, onOwn }: { readOnly: boolean; onStarter: (
         <>
           <div className="hb-starters">
             {STARTERS.map((s) => (
-              <button key={s.name} type="button" disabled={adding === s.name} style={{ ["--c" as string]: s.colour }} onClick={async () => { setAdding(s.name); await onStarter(s); setAdding(null); }}>
+              <button key={s.name} type="button" disabled={adding === s.name} style={paint(s.colour)} onClick={async () => { setAdding(s.name); await onStarter(s); setAdding(null); }}>
                 <span className="hb-ic"><HabitIcon name={s.icon} /></span>
                 <span><b>{s.name}</b><small>{paceLabel(s)}</small></span>
               </button>
@@ -413,7 +413,7 @@ function HabitCard({ h, s, days, today, onOpen }: { h: Habit; s: HabitStats; day
   } else if (h.kind === "money") end = <span className="hb-state pill">£{h.per_day}</span>;
   else end = <span className="hb-state" />;
   return (
-    <button type="button" className={`hb-card${t.done ? " is-done" : ""}`} style={{ ["--c" as string]: h.colour }} onClick={onOpen}>
+    <button type="button" className={`hb-card${t.done ? " is-done" : ""}`} style={paint(h.colour)} onClick={onOpen}>
       <span className="hb-ic"><HabitIcon name={h.icon} /></span>
       <span className="hb-card-main">
         <b>{h.name}</b>
@@ -430,7 +430,7 @@ function EaseCard({ h, n, onAnswer }: { h: Habit; n: Nudge; onAnswer: (take: boo
   const answer = async (take: boolean) => { setBusy(true); await onAnswer(take); };
   const goal = n.kind === "ease" && h.kind === "count" && n.goal.per_day !== h.per_day ? `${h.unit ? amountLabel(h, n.goal.per_day) : `${n.goal.per_day}×`} a day` : paceLabel(n.goal);
   return (
-    <div className="hb-ease" style={{ ["--c" as string]: h.colour }}>
+    <div className="hb-ease" style={paint(h.colour)}>
       <p className="hb-eyebrow">{n.kind === "ease" ? "A kinder goal?" : "Step back up?"}</p>
       <h3><HabitIcon name={h.icon} size={18} />{n.kind === "ease" ? `${h.name} missed ${n.misses} times lately` : `${h.name} is going well`}</h3>
       <p>{n.kind === "ease"
@@ -480,7 +480,7 @@ function Slider({ h, onDone, onSkip, doneText = "slide to log", disabled }: { h:
   const half = track.current ? (track.current.getBoundingClientRect().width - knob) / 2 - 4 : 1;
   const share = x / (half || 1);
   return (
-    <div ref={track} className={`hb-slide${disabled ? " off" : ""}`} style={{ ["--c" as string]: h.colour }}>
+    <div ref={track} className={`hb-slide${disabled ? " off" : ""}`} style={paint(h.colour)}>
       {haptic}
       {onSkip && <span className="hb-slide-l" style={{ opacity: 1 - Math.max(0, share) * 1.4 }}>‹ skip today</span>}
       <span className="hb-slide-r" style={{ opacity: 1 + Math.min(0, share) * 1.4 }}>{doneText} ›</span>
@@ -622,7 +622,7 @@ function LogSheet({ h, s, date, today, day, readOnly, onClose, onLog, onUndo, on
   if (after === "done")
     return (
       <Sheet onClose={onClose} label={`${h.name} logged`}>
-        <div className="hb-landed" style={{ ["--c" as string]: h.colour }}>
+        <div className="hb-landed" style={paint(h.colour)}>
           <OatcakeBiscuit eating className="hb-landed-mark" />
           <h2>{h.kind === "session" ? `Nice ${h.name.toLowerCase()}` : `${h.name}, done`}</h2>
           <p>{s.streak + 1} {s.unit === "wk" ? "weeks" : "days"} and counting. An oatcake for Pickle.</p>
@@ -642,7 +642,7 @@ function LogSheet({ h, s, date, today, day, readOnly, onClose, onLog, onUndo, on
   if (after === "skip")
     return (
       <Sheet onClose={onClose} label={`${h.name} skipped`}>
-        <div className="hb-landed" style={{ ["--c" as string]: h.colour }}>
+        <div className="hb-landed" style={paint(h.colour)}>
           <h2>Skipped {when}</h2>
           <p>Your streak's safe. Rest counts too.</p>
         </div>
@@ -651,7 +651,7 @@ function LogSheet({ h, s, date, today, day, readOnly, onClose, onLog, onUndo, on
 
   return (
     <Sheet onClose={onClose} label={`Log ${h.name}`}>
-      <div className="hb-log" style={{ ["--c" as string]: h.colour }}>
+      <div className="hb-log" style={paint(h.colour)}>
         <p className="hb-eyebrow">{finished ? (day.done ? "Logged" : "Skipped") : `Log it · ${when}`}</p>
         <h2 className="hb-log-title"><span className="hb-ic"><HabitIcon name={h.icon} /></span>{h.name}</h2>
         <p className="hb-log-sub">{paceLabel(h)}{h.freq === "times" ? ` · ${s.periodDone} of ${s.periodGoal} so far` : ""}</p>
@@ -741,7 +741,7 @@ function Editor({ h, onClose, onSave, onRemove }: { h: Habit | null; onClose: ()
   }
   return (
     <Sheet onClose={onClose} label={h ? `Edit ${h.name}` : "New habit"}>
-      <form className="hb-form" onSubmit={save} style={{ ["--c" as string]: f.colour }}>
+      <form className="hb-form" onSubmit={save} style={paint(f.colour ?? HABIT_COLOURS[0])}>
         <h2>{h ? "Edit habit" : "New habit"}</h2>
         <input className="hb-name" placeholder="What's the habit?" value={f.name ?? ""} maxLength={80} autoFocus={!h} onChange={(e) => set({ name: e.target.value })} />
 
@@ -754,7 +754,7 @@ function Editor({ h, onClose, onSave, onRemove }: { h: Habit | null; onClose: ()
           </div>
           <div className="hb-colours">
             {HABIT_COLOURS.map((c) => (
-              <button key={c} type="button" aria-label={`Colour ${c}`} aria-pressed={f.colour === c} style={{ background: c }} onClick={() => set({ colour: c })} />
+              <button key={c} type="button" aria-label={`Colour ${c}`} aria-pressed={f.colour === c} style={{ background: paint(c)["--c"] }} onClick={() => set({ colour: c })} />
             ))}
           </div>
         </fieldset>
@@ -851,15 +851,19 @@ function WeekView({ habits, stats, byHabit, today, onPick, bare }: { habits: Hab
     <div className="hb-dark">
       <h2 className="hb-dark-title">This week</h2>
       <p className="hb-dark-sub">{hit === habits.length ? "Every goal hit. Lovely." : `${hit} of ${habits.length} goals hit so far.`}</p>
-      <div className="hb-pills">
+      <div className="hb-goals">
         {habits.map((h) => {
-          const w = stats.get(h.id)!.week;
+          const st = stats.get(h.id)!;
+          const goal = Math.max(1, Math.min(14, st.periodGoal));
+          const got = Math.min(goal, st.periodDone);
           return (
-            <button key={h.id} type="button" className="hb-pill" onClick={() => onPick(h.id)} aria-label={`${h.name}: ${Math.round(w * 100)}% this week`}>
-              <span className="hb-pill-track">
-                <i style={{ height: `${Math.max(w, 0.16) * 100}%`, background: h.colour, opacity: w ? 1 : 0.35 }}>{Math.round(w * 100)}%</i>
+            <button key={h.id} type="button" className="hb-goal" style={paint(h.colour)} onClick={() => onPick(h.id)} aria-label={`${h.name}: ${got} of ${goal}`}>
+              <span className="hb-ic"><HabitIcon name={h.icon} size={18} /></span>
+              <span>
+                <span className="hb-goal-top"><b>{h.name}</b><small>{paceLabel(h)}</small></span>
+                <span className="hb-segs" aria-hidden="true">{Array.from({ length: goal }, (_, i) => <i key={i} className={i < got ? "on" : ""} />)}</span>
               </span>
-              <span className="hb-pill-label"><HabitIcon name={h.icon} size={15} /><span>{h.name}</span></span>
+              <span className={`hb-goal-n${got >= goal ? " hit" : ""}`}>{got}/{goal}</span>
             </button>
           );
         })}
@@ -907,7 +911,7 @@ function MonthView({ h, s, days, today, onDay, bare }: { h: Habit; s: HabitStats
   const cells = monthDays(month);
   const earliest = addDays(today, -14);
   return (
-    <div className="hb-month" style={{ ["--c" as string]: h.colour }}>
+    <div className="hb-month" style={paint(h.colour)}>
       <div className="hb-month-nav">
         <button type="button" aria-label="Previous month" onClick={() => setMonth(shiftMonth(month, -1))}>‹</button>
         <h3>{monthName(month)}</h3>
@@ -953,7 +957,7 @@ function YearView({ h, s, days, today, bare, weeks = 26 }: { h: Habit; s: HabitS
   }
   const fmt = (d: string) => new Date(d + "T12:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
   return (
-    <div className="hb-dark" style={{ ["--c" as string]: h.colour }}>
+    <div className="hb-dark" style={paint(h.colour)}>
       <div className="hb-year">
         <div className="hb-year-days">{WEEKDAYS.map((w, i) => <span key={i}>{w}</span>)}</div>
         <div className="hb-year-grid" style={{ gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))` }}>
@@ -1012,7 +1016,7 @@ function Bento({ habits, stats, byHabit, today, due, doneCount, focus, onFocus, 
           const days = byHabit.get(h.id);
           const start = addDays(monday, -7 * 11);
           return (
-            <button key={h.id} type="button" className="bt bt-mini" aria-pressed={focus?.id === h.id} style={{ ["--c" as string]: h.colour }} onClick={() => onFocus(h.id)}>
+            <button key={h.id} type="button" className="bt bt-mini" aria-pressed={focus?.id === h.id} style={paint(h.colour)} onClick={() => onFocus(h.id)}>
               <span className="bt-mini-head"><span className="hb-ic"><HabitIcon name={h.icon} size={18} /></span><b>{h.name}</b></span>
               <span className="bt-mini-num">{s.streak}<small>{s.unit === "wk" ? " wk" : " day"}{s.streak === 1 ? "" : "s"}</small></span>
               <span className="bt-mini-grid" aria-hidden="true">
@@ -1026,7 +1030,7 @@ function Bento({ habits, stats, byHabit, today, due, doneCount, focus, onFocus, 
                 <span>{paceLabel(h)}</span>
                 <span>{s.periodDone}/{s.periodGoal}</span>
               </span>
-              <span className="hb-bar"><i style={{ width: `${s.periodGoal ? Math.min(1, s.periodDone / s.periodGoal) * 100 : 0}%`, background: h.colour }} /></span>
+              <span className="hb-bar"><i style={{ width: `${s.periodGoal ? Math.min(1, s.periodDone / s.periodGoal) * 100 : 0}%`, background: "var(--c)" }} /></span>
             </button>
           );
         })}
@@ -1035,7 +1039,7 @@ function Bento({ habits, stats, byHabit, today, due, doneCount, focus, onFocus, 
       {focus && fs && (
         <>
           <div className="bt bt-month"><MonthView key={focus.id} h={focus} s={fs} days={byHabit.get(focus.id)} today={today} onDay={onDay} bare /></div>
-          <div className="bt bt-year" style={{ ["--c" as string]: focus.colour }}>
+          <div className="bt bt-year" style={paint(focus.colour)}>
             <h3 className="bt-year-title"><HabitIcon name={focus.icon} size={16} />{focus.name} · the year</h3>
             <YearView key={focus.id} h={focus} s={fs} days={byHabit.get(focus.id)} today={today} bare weeks={52} />
             <HabitTiles h={focus} s={fs} />

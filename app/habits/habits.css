@@ -1,7 +1,8 @@
 /* Habits page. Each habit carries its own colour as --c; everything else keeps Oatcake's browns.
    Progress zoomed out sits on a dark card, after the references Kingsley picked. */
 .hb { max-width: 1120px; margin: 0 auto; --hb-card: var(--surface); }
-.hb .hb-ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; flex: none; color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); }
+/* Habit colours are the To-do cards' palette (lib/plan.ts CARD_COLOURS): --c fills, --ci is the ink on top. */
+.hb .hb-ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; flex: none; color: var(--ci); background: var(--c); box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
 
 .hb-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 4px 0 14px; }
 .hb-date { margin: 0 0 4px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--label-2); font-weight: 600; }
@@ -45,17 +46,17 @@
 .hb-card-main small { font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--label-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hb-dots { display: flex; gap: 3px; margin-top: 4px; }
 .hb-dots i { width: 10px; height: 10px; border-radius: 3px; background: var(--fill); }
-.hb-dots i.on { background: var(--c); }
+.hb-dots i.on { background: var(--c); box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
 .hb-dots i.part { background: color-mix(in srgb, var(--c) 40%, transparent); }
 .hb-dots i.skip, .hb-dots i.miss { background: repeating-linear-gradient(135deg, var(--label-3) 0 1.5px, transparent 1.5px 3.5px); opacity: .6; }
 .hb-dots i.skip { opacity: .35; }
 .hb-dots i.now { box-shadow: inset 0 0 0 1.5px var(--c); background: none; }
 
 .hb-state { width: 38px; height: 38px; border-radius: 50%; border: 2.5px solid var(--sep); display: grid; place-items: center; flex: none; font-size: 12px; font-weight: 700; color: var(--label-2); }
-.hb-state.done { background: var(--c); border-color: var(--c); color: #fff; }
+.hb-state.done { background: var(--c); border-color: var(--c); color: var(--ci); }
 .hb-state.skip { width: auto; border-radius: 99px; padding: 0 10px; height: 28px; border-width: 1.5px; font-size: 11px; }
 .hb-state.pill { width: auto; border-radius: 99px; padding: 0 10px; height: 30px; border-width: 1.5px; color: var(--label); }
-.hb-state.count { border: 0; position: relative; color: var(--c); }
+.hb-state.count { border: 0; position: relative; color: var(--label); }
 .hb-state.count::before { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 2.5px color-mix(in srgb, var(--c) 22%, transparent); }
 .hb-state.count span { position: relative; width: 31px; height: 31px; border-radius: 50%; background: var(--hb-card); display: grid; place-items: center; }
 
@@ -85,7 +86,7 @@
 /* Kinder goal. */
 .hb-ease { background: var(--surface); border-radius: 20px; padding: 16px; margin: 0 0 12px; box-shadow: var(--shadow); border-left: 4px solid var(--c); }
 .hb-ease h3 { display: flex; gap: 8px; align-items: center; margin: 6px 0 4px; font-size: 16px; }
-.hb-ease h3 svg { color: var(--c); }
+.hb-ease h3 svg { color: var(--label); }
 .hb-ease p { margin: 0; color: var(--label-2); font-size: 13.5px; line-height: 1.45; }
 .hb-ease .hb-ease-goal { margin: 12px 0 2px; font: 700 26px/1.1 var(--font-display); color: var(--label); letter-spacing: -.02em; }
 .hb-ease-btns { display: flex; gap: 8px; margin-top: 12px; }
@@ -118,15 +119,15 @@
 
 .hb-feel { display: flex; gap: 6px; justify-content: center; margin: 10px 0; }
 .hb-feel button { border: 1px solid var(--sep); background: var(--surface-2); border-radius: 99px; padding: 8px 16px; font: inherit; font-size: 13px; color: var(--label); cursor: pointer; }
-.hb-feel button[aria-checked="true"] { background: var(--c); border-color: var(--c); color: #fff; }
+.hb-feel button[aria-checked="true"] { background: var(--c); border-color: var(--c); color: var(--ci); }
 .hb-note { width: 100%; border: 0; background: var(--fill); border-radius: 12px; padding: 11px 12px; font: inherit; font-size: 14px; color: var(--label); margin-top: 6px; }
 
 .hb-taps { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; margin: 16px 0 4px; }
-.hb-tap { position: relative; width: 44px; height: 60px; border: 2px solid var(--c); border-top-width: 0; border-radius: 4px 4px 14px 14px; background: none; color: var(--c); overflow: hidden; cursor: pointer; display: grid; place-items: center; }
+.hb-tap { position: relative; width: 44px; height: 60px; border: 2px solid var(--c); border-top-width: 0; border-radius: 4px 4px 14px 14px; background: none; color: var(--label-2); overflow: hidden; cursor: pointer; display: grid; place-items: center; }
 .hb-tap.labelled { width: auto; min-width: 88px; height: 56px; border-top-width: 2px; border-radius: 16px; padding: 0 12px; }
 .hb-tap-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: var(--c); transition: height .35s cubic-bezier(.2,.9,.3,1.2); }
 .hb-tap.on .hb-tap-fill { height: 100%; }
-.hb-tap.on { color: #fff; }
+.hb-tap.on { color: var(--ci); }
 .hb-tap > svg, .hb-tap-label { position: relative; font-weight: 600; font-size: 13px; }
 .hb-tap:disabled { cursor: default; opacity: .75; }
 
@@ -142,7 +143,7 @@
 .hb-slide-r { right: 20px; background: linear-gradient(90deg, rgba(243,233,220,.35) 0%, #fff 50%, rgba(243,233,220,.35) 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: hb-shine 2.4s linear infinite; }
 @keyframes hb-shine { from { background-position: 200% 0; } to { background-position: 0 0; } }
 .hb-slide-fill { position: absolute; top: 5px; bottom: 5px; border-radius: 99px; background: color-mix(in srgb, var(--c) 55%, transparent); pointer-events: none; }
-.hb-knob { position: absolute; left: calc(50% - 32px); top: 5px; width: 64px; height: 56px; border-radius: 99px; background: linear-gradient(180deg, #fff, #e9dfd2); color: var(--c); box-shadow: 0 2px 8px rgba(0,0,0,.4); display: grid; place-items: center; cursor: grab; touch-action: none; transition: transform .35s cubic-bezier(.2,1.4,.4,1); }
+.hb-knob { position: absolute; left: calc(50% - 32px); top: 5px; width: 64px; height: 56px; border-radius: 99px; background: var(--c); color: var(--ci); box-shadow: 0 2px 8px rgba(0,0,0,.4); display: grid; place-items: center; cursor: grab; touch-action: none; transition: transform .35s cubic-bezier(.2,1.4,.4,1); }
 .hb-knob.dragging { transition: none; cursor: grabbing; }
 .hb-knob:focus-visible { outline: 3px solid color-mix(in srgb, var(--c) 60%, transparent); outline-offset: 2px; }
 .hb-haptic { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
@@ -160,7 +161,7 @@
 .hb-form legend { font-size: 12px; font-weight: 600; color: var(--label-2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
 .hb-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; }
 .hb-icons button { height: 40px; border-radius: 12px; border: 0; background: var(--fill); color: var(--label-2); display: grid; place-items: center; cursor: pointer; }
-.hb-icons button[aria-pressed="true"] { background: var(--c); color: #fff; }
+.hb-icons button[aria-pressed="true"] { background: var(--c); color: var(--ci); }
 .hb-colours { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .hb-colours button { width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer; }
 .hb-colours button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--label); }
@@ -177,21 +178,27 @@
 .hb-remind { display: inline-flex; gap: 10px; align-items: center; }
 .hb-weekdays { display: flex; gap: 6px; margin-top: 10px; }
 .hb-weekdays button { flex: 1; height: 40px; border-radius: 50%; border: 0; background: var(--fill); font-weight: 600; color: var(--label-2); cursor: pointer; aspect-ratio: 1; }
-.hb-weekdays button[aria-pressed="true"] { background: var(--c); color: #fff; }
+.hb-weekdays button[aria-pressed="true"] { background: var(--c); color: var(--ci); }
 .hb-times { display: flex; gap: 8px; align-items: center; margin-top: 10px; font-size: 14px; }
 .hb-form-btns { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 20px; }
 .hb-form-btns .btn[type="submit"] { margin-left: auto; border-radius: 99px; padding: 12px 26px; }
 
 /* Zoomed out: always a dark card. */
-.hb-dark { --dk: #120d0c; --dk-2: #1e1715; --dk-ink: #f3e9dc; --dk-ink-2: rgba(243,233,220,.6); background: var(--dk); color: var(--dk-ink); border-radius: 24px; padding: 18px; }
+.hb-dark { color-scheme: dark; --dk: #120d0c; --dk-2: #1e1715; --dk-ink: #f3e9dc; --dk-ink-2: rgba(243,233,220,.6); background: var(--dk); color: var(--dk-ink); border-radius: 24px; padding: 18px; }
 .hb-dark-title { margin: 0; font: 700 26px/1.1 var(--font-display); letter-spacing: -.02em; }
 .hb-dark-sub { margin: 4px 0 0; font-size: 13px; color: var(--dk-ink-2); }
-.hb-pills { display: flex; gap: 8px; margin: 18px 0 8px; }
-.hb-pill { flex: 1; min-width: 0; border: 0; background: none; padding: 0; cursor: pointer; color: var(--dk-ink-2); font: inherit; }
-.hb-pill-track { display: flex; align-items: flex-end; height: 220px; border-radius: 99px; background: repeating-linear-gradient(135deg, rgba(243,233,220,.07) 0 4px, transparent 4px 8px); }
-.hb-pill-track i { width: 100%; border-radius: 99px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12px; font-style: normal; font-size: 11px; font-weight: 700; color: #fff; transition: height .6s cubic-bezier(.2,.9,.25,1); }
-.hb-pill-label { display: flex; flex-direction: column; align-items: center; gap: 3px; margin-top: 8px; font-size: 11px; }
-.hb-pill-label span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The week: a bar per habit, cut into its goal (2 pieces for 2× a week, 7 for every day). */
+.hb-goals { display: grid; gap: 14px; margin: 18px 0 4px; }
+.hb-goal { display: grid; grid-template-columns: 34px minmax(0, 1fr) 38px; gap: 12px; align-items: center; border: 0; background: none; padding: 0; font: inherit; color: var(--dk-ink); text-align: left; cursor: pointer; }
+.hb-goal .hb-ic { width: 34px; height: 34px; border-radius: 10px; }
+.hb-goal-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 7px; }
+.hb-goal-top b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hb-goal-top small { font-size: 11.5px; color: var(--dk-ink-2); white-space: nowrap; }
+.hb-segs { display: flex; gap: 4px; height: 12px; }
+.hb-segs i { flex: 1; border-radius: 6px; background: rgba(243,233,220,.09); transition: background .3s; }
+.hb-segs i.on { background: var(--c); }
+.hb-goal-n { font-size: 13px; font-weight: 700; text-align: right; color: var(--dk-ink-2); font-variant-numeric: tabular-nums; }
+.hb-goal-n.hit { color: var(--dk-ink); }
 .hb-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 .hb-tile { background: var(--dk-2, #1e1715); color: var(--dk-ink, #f3e9dc); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; min-height: 118px; }
 .hb-tile small { display: inline-flex; gap: 5px; align-items: center; font-size: 12px; color: var(--dk-ink-2, rgba(243,233,220,.6)); }
@@ -203,9 +210,9 @@
 
 .hb-chips { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 10px; scrollbar-width: none; }
 .hb-chips button { display: inline-flex; gap: 6px; align-items: center; flex: none; border: 0; border-radius: 99px; padding: 8px 12px; background: var(--surface); color: var(--label); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 2px rgba(56,42,37,.06); }
-.hb-chips button svg { color: var(--c); }
-.hb-chips button[aria-selected="true"] { background: var(--c); color: #fff; }
-.hb-chips button[aria-selected="true"] svg { color: #fff; }
+.hb-chips button svg { color: var(--label-2); }
+.hb-chips button[aria-selected="true"] { background: var(--c); color: var(--ci); }
+.hb-chips button[aria-selected="true"] svg { color: var(--ci); }
 
 .hb-month { background: var(--surface); border-radius: 24px; padding: 16px; box-shadow: var(--shadow); }
 .hb-month .hb-tiles { --dk-2: #1e1715; }
@@ -218,7 +225,7 @@
 .hb-day { aspect-ratio: 1; border-radius: 50%; border: 0; background: var(--surface-2); font: inherit; font-size: 13px; font-weight: 600; color: var(--label); display: grid; place-items: center; cursor: pointer; box-shadow: inset 0 0 0 1px var(--sep); }
 .hb-day:disabled { cursor: default; }
 .hb-day.out { opacity: .3; }
-.hb-day.on { background: var(--c); color: #fff; box-shadow: none; }
+.hb-day.on { background: var(--c); color: var(--ci); box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
 .hb-day.miss { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--label) 16%, transparent) 0 3px, transparent 3px 6px); color: var(--label-2); }
 .hb-day.skip { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--label) 8%, transparent) 0 3px, transparent 3px 6px); color: var(--label-3); }
 .hb-day.today { box-shadow: inset 0 0 0 2px var(--c); }
@@ -266,9 +273,6 @@
 
   .bt-week { grid-area: week; align-self: stretch; }
   .bt-week .hb-dark { height: 100%; display: flex; flex-direction: column; }
-  .bt-week .hb-pills { flex: 1; margin-bottom: 0; }
-  .bt-week .hb-pill { display: flex; flex-direction: column; }
-  .bt-week .hb-pill-track { flex: 1; height: auto; min-height: 130px; }
 
   .bt-minis { grid-area: minis; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
   .bt-mini { border: 0; font: inherit; color: var(--label); text-align: left; background: var(--surface); box-shadow: 0 1px 2px rgba(56,42,37,.06); padding: 14px; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: transform .12s, box-shadow .12s; }
@@ -277,11 +281,11 @@
   .bt-mini-head { display: flex; gap: 10px; align-items: center; min-width: 0; }
   .bt-mini-head b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bt-mini .hb-ic { width: 32px; height: 32px; border-radius: 10px; }
-  .bt-mini-num { font: 700 38px/1 var(--font-display); letter-spacing: -.04em; color: var(--c); }
+  .bt-mini-num { font: 700 38px/1 var(--font-display); letter-spacing: -.04em; color: var(--label); }
   .bt-mini-num small { font: 500 14px var(--font); letter-spacing: 0; color: var(--label-2); }
   .bt-mini-grid { display: grid; grid-template-rows: repeat(7, 1fr); grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-flow: column; gap: 2px; }
   .bt-mini-grid i { aspect-ratio: 1; border-radius: 2px; background: var(--fill); }
-  .bt-mini-grid i.on { background: var(--c); }
+  .bt-mini-grid i.on { background: var(--c); box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
   .bt-mini-grid i.part { background: color-mix(in srgb, var(--c) 40%, transparent); }
   .bt-mini-grid i.f { background: none; }
   .bt-mini-foot { display: flex; justify-content: space-between; font-size: 12px; color: var(--label-2); }
@@ -289,7 +293,7 @@
 
   .bt-month { grid-area: month; }
   .bt-month .hb-day { font-size: 12px; }
-  .bt-year { grid-area: year; background: #120d0c; color: #f3e9dc; padding: 16px; --dk-ink-2: rgba(243,233,220,.6); --dk-2: #1e1715; --dk-ink: #f3e9dc; }
+  .bt-year { color-scheme: dark; grid-area: year; background: #120d0c; color: #f3e9dc; padding: 16px; --dk-ink-2: rgba(243,233,220,.6); --dk-2: #1e1715; --dk-ink: #f3e9dc; }
   .bt-year-title { display: flex; gap: 8px; align-items: center; margin: 2px 2px 12px; font: 700 18px var(--font-display); letter-spacing: -.01em; }
   .bt-year .hb-dark { padding: 0; background: none; border-radius: 0; }
   .bt-year .hb-year-grid { gap: 2px; }
