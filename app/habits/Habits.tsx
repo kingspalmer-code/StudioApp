@@ -589,7 +589,7 @@ function LogSheet({ h, s, date, today, day, readOnly, onClose, onLog, onUndo, on
   const [taps, setTaps] = useState(0);
   const [feel, setFeel] = useState<HabitLog["feel"]>(null);
   const [note, setNote] = useState("");
-  const [after, setAfter] = useState<"done" | "skip" | null>(null);
+  const [after, setAfter] = useState<"done" | "skip" | "more" | null>(null);
   const isToday = date === today;
   const when = isToday ? "today" : new Date(date + "T12:00:00Z").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
   const already = Math.min(h.per_day, Math.round(day.amount));
@@ -602,6 +602,13 @@ function LogSheet({ h, s, date, today, day, readOnly, onClose, onLog, onUndo, on
     if (h.kind === "money") extra = { amount, note };
     setAfter("done");
     const ok = await onLog("done", extra);
+    if (ok) setTimeout(onClose, 1500);
+    else setAfter(null);
+  }
+  // A count that's already met can keep going: each slide adds one more (an eighth glass of water).
+  async function more() {
+    setAfter("more");
+    const ok = await onLog("done", { amount: 1 });
     if (ok) setTimeout(onClose, 1500);
     else setAfter(null);
   }
@@ -618,7 +625,17 @@ function LogSheet({ h, s, date, today, day, readOnly, onClose, onLog, onUndo, on
         <div className="hb-landed" style={{ ["--c" as string]: h.colour }}>
           <OatcakeBiscuit eating className="hb-landed-mark" />
           <h2>{h.kind === "session" ? `Nice ${h.name.toLowerCase()}` : `${h.name}, done`}</h2>
-          <p>{s.streak + 1} {s.unit === "wk" ? "weeks" : "days"} and counting.</p>
+          <p>{s.streak + 1} {s.unit === "wk" ? "weeks" : "days"} and counting. An oatcake for Pickle.</p>
+        </div>
+      </Sheet>
+    );
+  if (after === "more")
+    return (
+      <Sheet onClose={onClose} label={`${h.name} logged`}>
+        <div className="hb-landed" style={{ ["--c" as string]: h.colour }}>
+          <OatcakeBiscuit eating className="hb-landed-mark" />
+          <h2>{amountLabel(h, Math.round(day.amount) + 1) || `${Math.round(day.amount) + 1}`} {when}</h2>
+          <p>{Math.round(day.amount) + 1 - h.per_day} over your {h.per_day}. Going above and beyond.</p>
         </div>
       </Sheet>
     );
@@ -642,6 +659,10 @@ function LogSheet({ h, s, date, today, day, readOnly, onClose, onLog, onUndo, on
         {finished ? (
           <div className="hb-log-done">
             {day.done && <p>{day.logs.filter((l) => l.status === "done").map((l) => [l.amount != null && h.kind !== "count" ? amountLabel(h, Number(l.amount)) : "", l.feel ? FEELS.find((f) => f.key === l.feel)?.label : "", l.note].filter(Boolean).join(" · ")).filter(Boolean).join(", ") || "Done"}</p>}
+            {day.done && h.kind === "count" && (
+              <p className="hb-hint">{Math.round(day.amount)} of {h.per_day}{day.amount > h.per_day ? `, ${Math.round(day.amount - h.per_day)} extra` : ""}. Did more? Slide to add one.</p>
+            )}
+            {!readOnly && day.done && h.kind === "count" && <Slider h={h} onDone={more} doneText="slide to add one more" />}
             {!readOnly && <button type="button" className="btn plain" onClick={() => { onUndo(); onClose(); }}>Undo {when}</button>}
           </div>
         ) : (

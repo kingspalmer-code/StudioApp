@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { finalStage, todayISO, type Ctx } from "./priority";
+import { dayOf, indexLogs, LOG_COLUMNS, type Habit, type HabitLog } from "./habits";
 import type { Member } from "./types";
 
 // Pickle, the pixel pet above the queue (components/QueueWidgets.tsx; table: pets, migration 027).
@@ -58,11 +59,32 @@ export function petView(row: PetRow, delivered: number, now = Date.now()): PetVi
   };
 }
 
-// What fills this person's tin: jobs delivered for the studio, requests sent for everyone else.
+// What fills this person's tin: jobs delivered for the studio, requests sent for everyone else,
+// plus their own habits and to-dos (bonusOatcakes).
 export async function oatcakesEarned(supabase: SupabaseClient, member: Member, ctx: Ctx): Promise<number> {
   const q = supabase.from("tickets").select("id", { count: "exact", head: true });
-  const { count } = await (member.role === "designer" ? q.eq("status", finalStage(ctx)) : q.eq("created_by", member.email));
-  return count ?? 0;
+  const [{ count }, bonus] = await Promise.all([
+    member.role === "designer" ? q.eq("status", finalStage(ctx)) : q.eq("created_by", member.email),
+    bonusOatcakes(supabase, member.email),
+  ]);
+  return (count ?? 0) + bonus;
+}
+
+// Habits and to-dos started earning from this day, so older to-dos don't tip a heap into the tin at once.
+const BONUS_FROM = "2026-10-26";
+
+// An oatcake for each day a habit was done (its goal met), and for each to-do ticked off on the
+// To-do page (the to-do itself, not its steps). Your own only; a business's shared Pickle doesn't get these.
+export async function bonusOatcakes(supabase: SupabaseClient, email: string): Promise<number> {
+  const [{ data: habits }, { data: logs }, { count: todos }] = await Promise.all([
+    supabase.from("habits").select("id, kind, per_day").eq("gone", false).returns<Pick<Habit, "id" | "kind" | "per_day">[]>(),
+    supabase.from("habit_logs").select(LOG_COLUMNS).eq("gone", false).eq("status", "done").gte("on_date", BONUS_FROM).limit(20000).returns<HabitLog[]>(),
+    supabase.from("plan_items").select("id", { count: "exact", head: true }).eq("owner", email).is("parent_id", null).eq("gone", false).gte("done_at", BONUS_FROM),
+  ]);
+  const byHabit = indexLogs(logs ?? []);
+  let days = 0;
+  for (const h of habits ?? []) for (const day of byHabit.get(h.id)?.values() ?? []) if (dayOf(h as Habit, day).done) days++;
+  return days + (todos ?? 0);
 }
 
 // Clients and managers start with every request they've already sent in the tin (at least the
