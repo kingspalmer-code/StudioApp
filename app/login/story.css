@@ -1,0 +1,129 @@
+/* Under the sign-in: the scroll-down story of what Oatcake is (Story.tsx). Loud and colourful on
+   purpose, unlike the calm app itself. */
+.st { --st-ink: #14110f; --st-navy: #152238; --st-orange: #ff5a36; overflow: hidden; color: var(--st-ink); }
+.st h2, .st h3 { font-family: var(--font-title); font-weight: 700; margin: 0; }
+.st-kick { display: flex; align-items: center; gap: 8px; font: 700 clamp(26px, 3.4vw, 40px)/1 var(--font-title); margin: 0 0 18px; letter-spacing: -.01em; }
+.st-spark { width: .5em; height: .5em; fill: currentColor; flex: none; }
+.st-small { font-size: clamp(16px, 1.4vw, 18px); line-height: 1.55; margin: 0; max-width: 30em; text-wrap: pretty; }
+
+/* A nudge at the foot of the sign-in that there's more below. */
+.st-cue { position: absolute; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 13px; color: color-mix(in srgb, var(--oat-cream) 55%, transparent); }
+.st-cue:hover { color: var(--oat-cream); }
+.st-cue svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; animation: st-bob 2.2s ease-in-out infinite; }
+@keyframes st-bob { 50% { transform: translateY(4px); } }
+
+/* Phones drawn in CSS. */
+.st-phone { width: 300px; aspect-ratio: 300 / 620; border-radius: 48px; background: #0d0d0f; padding: 10px; box-shadow: 0 0 0 1.5px #3a3a40 inset, 0 50px 90px -30px rgba(20,10,5,.55); flex: none; }
+.st-screen { height: 100%; border-radius: 39px; overflow: hidden; background: var(--st-navy); padding: 12px 10px; display: flex; flex-direction: column; }
+.st-status { display: flex; align-items: center; justify-content: space-between; padding: 4px 18px 10px; color: #fff; font-size: 13px; font-weight: 600; }
+.st-status i { width: 86px; height: 24px; border-radius: 99px; background: #000; margin-right: 36px; }
+
+/* Colour blocks joined by notches (the navy shows through between them). */
+.st-bento { display: grid; gap: 6px; flex: 1; align-content: start; }
+.st-bento .b { position: relative; border-radius: 22px; padding: 14px 16px; color: var(--st-navy); font-weight: 600; font-size: 14px; }
+.st-bento .b small { display: block; font-size: 11px; font-weight: 600; opacity: .7; margin-bottom: 4px; }
+.st-bento .b > b { font: 700 24px/1.05 var(--font-title); }
+.st-bento .lime { background: #c6f432; }
+.st-bento .pink { background: #ffc8ec; }
+.st-bento .sky { background: #5aaee6; }
+.st-bento .mint { background: #b7f2dc; }
+.st-bento .row { display: flex; align-items: center; gap: 10px; border-radius: 99px; padding: 10px 14px; text-decoration: line-through; }
+.st-bento .notch::before { content: ""; position: absolute; left: 50%; top: -12px; width: 46px; height: 18px; margin-left: -23px; border-radius: 0 0 10px 10px; background: inherit; box-shadow: 0 -6px 0 var(--st-navy); }
+.st-bento .dark-pill { background: transparent; color: #fff; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.3); border-radius: 99px; padding: 10px 14px; text-align: center; }
+.st-timer { font: 700 52px/1 var(--font-display) !important; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.st-line { display: flex; align-items: center; gap: 10px; margin: 8px 0 0; }
+.st-check { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid currentColor; display: grid; place-items: center; }
+.st-check.on { background: var(--st-navy); }
+.st-check svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.st-cardscreen { background: #17110f; margin: -12px -10px; padding: 12px 10px; flex: 1; }
+.st-phone-b .st-screen { background: #17110f; }
+.st-dump { background: #2e2420; color: #f3e9dc; border-radius: 18px; padding: 12px 14px; font-size: 13.5px; line-height: 1.45; margin-top: 4px; }
+.st-dump small { display: block; font-size: 11px; font-weight: 600; opacity: .55; margin-bottom: 4px; }
+.st-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.st-card { position: relative; min-height: 112px; border-radius: 18px; padding: 12px 12px 36px; color: #14110f; font-weight: 700; font-size: 15px; line-height: 1.15; }
+.st-card i { position: absolute; right: 10px; bottom: 10px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid #14110f; }
+
+/* 1. The orange poster: huge words with the phones over them. */
+.st-poster { background: var(--st-orange); padding: 14vh 16px 12vh; }
+.st-poster-top, .st-poster-foot { max-width: 1040px; margin: 0 auto; }
+.st-poster-foot { display: flex; justify-content: flex-start; margin-top: 4vh; }
+.st-poster-stage { position: relative; max-width: 1200px; margin: 8vh auto 0; min-height: 900px; display: grid; place-items: center; }
+.st-huge { position: absolute; inset: 50% 0 auto; transform: translateY(-50%); display: grid; font-size: clamp(56px, 12.5vw, 176px) !important; line-height: .9; letter-spacing: -.02em; text-transform: uppercase; color: var(--st-ink); text-align: center; }
+.st-phone-a { position: relative; z-index: 1; margin-left: -260px; margin-top: -120px; }
+.st-phone-b { position: absolute; z-index: 2; left: calc(50% + 20px); top: 200px; }
+@media (max-width: 760px) {
+  .st-poster-stage { min-height: 900px; place-items: start center; margin-top: 6vh; }
+  .st-huge { inset: 0 0 auto; transform: none; font-size: 11.4vw !important; }
+  .st-phone-a { margin: 190px 0 0 -110px; width: 220px; }
+  .st-phone-b { left: auto; right: 0; top: 400px; width: 210px; }
+  .st-phone .st-timer { font-size: 40px !important; }
+}
+
+/* 2. One line, lit a word at a time. */
+.st-line-sec { background: #17110f; color: var(--oat-cream); padding: 22vh 16px; }
+.st-line-sec h2 { max-width: 1040px; margin: 0 auto; font-size: clamp(36px, 6.2vw, 80px); line-height: 1.06; letter-spacing: -.01em; }
+
+/* 3. Big coloured rows. */
+.st-rows { background: #ececec; padding: 12vh 16px; }
+.st-row { max-width: 1200px; margin: 0 auto; }
+.st-row-in { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 300px) auto; align-items: center; gap: 0 clamp(14px, 2.4vw, 32px); padding: clamp(18px, 3vw, 34px) clamp(16px, 3vw, 36px); }
+.st-row:first-child .st-row-in { border-radius: 30px 30px 0 0; }
+.st-row:last-child .st-row-in { border-radius: 0 0 30px 30px; }
+.st-num { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,.08); font-weight: 700; font-size: 18px; }
+.st-row h3 { font-size: clamp(44px, 8vw, 112px); line-height: .95; letter-spacing: -.02em; }
+.st-row-text { display: grid; gap: 4px; border-left: 1px solid rgba(0,0,0,.15); padding-left: 16px; }
+.st-row-text b { font-size: 15px; }
+.st-row-text span { font-size: 14px; line-height: 1.45; opacity: .65; }
+.st-row-icon svg { width: clamp(44px, 5vw, 72px); height: clamp(44px, 5vw, 72px); display: block; }
+@media (max-width: 760px) {
+  .st-row-in { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .st-row-text { grid-column: 1 / -1; border: 0; padding: 12px 0 0; }
+  .st-row-icon { grid-row: 1; grid-column: 3; }
+}
+
+/* 4. The notebook phone with hand-drawn notes. */
+.st-note { background: #f3eee6; padding: 16vh 16px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: center; max-width: 1200px; margin: 0 auto; box-shadow: 0 0 0 100vmax #f3eee6; clip-path: inset(0 -100vmax); }
+.st-note h2 { font-size: clamp(38px, 5.4vw, 68px); line-height: 1; letter-spacing: -.01em; margin-bottom: 18px; text-wrap: balance; }
+.st-note-stage { position: relative; display: grid; place-items: center; padding: 60px 0; }
+.st-phone-c { transform: rotate(3deg); }
+.st-kind { margin: 0; font-size: 14px; line-height: 1.35; }
+.st-pills { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+.st-pills span { text-align: center; padding: 8px; border-radius: 99px; box-shadow: inset 0 0 0 1.5px var(--st-navy); font-size: 13px; }
+.st-pills span.on { background: var(--st-navy); color: #fff; }
+.st-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-top: 6px; }
+.st-grid i { aspect-ratio: 1; border-radius: 4px; background: rgba(21,34,56,.14); }
+.st-grid i.on { background: var(--st-navy); }
+.st-bento .slide { display: flex; align-items: center; gap: 12px; border-radius: 99px; padding: 6px 16px 6px 6px; }
+.st-knob { width: 40px; height: 40px; border-radius: 50%; background: var(--st-navy); display: grid; place-items: center; }
+.st-knob svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.st-hand { position: absolute; z-index: 1; margin: 0; font: 400 19px/1.15 "Bradley Hand", "Segoe Print", "Comic Neue", "Chalkboard SE", cursive; color: var(--st-ink); max-width: 9em; }
+.st-hand-a { left: 0; top: 4%; transform: rotate(-6deg); }
+.st-hand-b { right: 0; bottom: 18%; transform: rotate(5deg); text-align: right; }
+.st-arrow { position: absolute; width: 120px; height: 80px; fill: none; stroke: var(--st-ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.st-arrow-a { left: 4%; top: 12%; }
+.st-arrow-b { right: 6%; bottom: 26%; }
+@media (max-width: 860px) {
+  .st-note { grid-template-columns: minmax(0, 1fr); }
+  .st-note-stage { gap: 14px; padding: 0; }
+  .st-hand { position: static; max-width: none; }
+  .st-hand-a { order: -1; }
+  .st-arrow { display: none; }
+}
+
+/* 5. A short letter to finish. */
+.st-letter { background: #eceffd; padding: 16vh 16px 14vh; text-align: center; }
+.st-letter > div { max-width: 560px; margin: 0 auto; }
+.st-letter .st-biscuit { width: 96px; height: 96px; color: #2a12c8; --oat-fill: #d6d9fb; margin: 0 auto 20px; display: block; }
+.st-made { font: 400 15px/1.6 ui-monospace, "SF Mono", Menlo, monospace; color: #8d8fd8; margin: 0 0 40px; }
+.st-made span { background: #c9caf3; color: #2a12c8; padding: 4px 12px; border-radius: 99px; }
+.st-mono { font: 400 17px/1.5 ui-monospace, "SF Mono", Menlo, monospace; color: var(--st-ink); }
+.st-mono p { margin: 0 0 20px; }
+.st-blue { color: #2a12c8; }
+.st-start { display: block; margin: 40px auto 0; max-width: 420px; background: #2a12c8; color: #fff; border-radius: 10px; padding: 18px; font: 500 16px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .06em; }
+.st-start:hover { background: #200da6; }
+.st-signin { display: inline-block; margin-top: 18px; font: 400 14px/1 ui-monospace, "SF Mono", Menlo, monospace; color: #2a12c8; text-decoration: underline; text-underline-offset: 3px; }
+
+/* The Mac app and Home Screen icons only want the sign-in. */
+.in-app .st, .in-app .st-cue { display: none; }
+@media (display-mode: standalone) { .st, .st-cue { display: none; } }
