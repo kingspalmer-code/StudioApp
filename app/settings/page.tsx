@@ -13,7 +13,7 @@ export default async function SettingsPage() {
 
   const all = [
     { href: "/settings/workspace", title: "Workspace", sub: `${workspace.name} · ${modeTitle(workspace.kind)}` },
-    ...(shell.viewing ? [] : [{ href: "/settings/menu", title: "Menu", sub: "Which buttons show on your phone and computer" }]),
+    ...(shell.viewing ? [] : [{ href: "/settings/menu", title: "Menu", sub: `${shell.mode === "work" ? "Just work" : "Life and work"}. Which buttons show on your phone and computer` }]),
     ...(workspace.kind === "trade"
       ? [{ href: "/settings/request-link", title: "Request link", sub: workspace.requests_open ? "On: anyone with the link can ask for a job" : "Off" }]
       : []),

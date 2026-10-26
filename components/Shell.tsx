@@ -18,7 +18,8 @@ import TabBar from "./TabBar";
 import Tracker from "./Tracker";
 import { OatcakeMark } from "./OatcakeLogo";
 import { jobsPage, termsFor } from "@/lib/workspace";
-import { alwaysOnComputer, onPhoneTab, ordered, WORK_PREFIXES } from "@/lib/menu";
+import { alwaysOnComputer, onPhoneTab, ordered, WORK_PREFIXES, type HomeMode } from "@/lib/menu";
+import NewHome from "./NewHome";
 import WorkTabs from "./WorkTabs";
 import Submit from "@/components/Submit";
 import { allows } from "@/lib/access";
@@ -35,7 +36,7 @@ export const ADMIN_PAGES: NavLink[] = [
   { href: "/admin/workspaces", label: "Workspaces" },
 ];
 
-export function pagesFor(member: Member, workspace: Workspace, viewing: boolean, isAdmin: boolean): { title: string; links: NavLink[] }[] {
+export function pagesFor(member: Member, workspace: Workspace, viewing: boolean, isAdmin: boolean, mode: HomeMode = "life"): { title: string; links: NavLink[] }[] {
   const terms = termsFor(workspace.kind);
   const owner = member.role === "designer" && !member.staff;
   const a = member.access;
@@ -43,8 +44,10 @@ export function pagesFor(member: Member, workspace: Workspace, viewing: boolean,
   const parts = owner || allows(a, "settings");
   const icon = "/settings";
   return [
-    // The business side's own pages, so any of them can be pinned straight onto the sidebar.
-    { title: "Work", links: owner || member.staff ? workLinks(member, workspace).filter((l) => l.href !== "/queue") : [] },
+    // The business side's own pages, so any of them can be pinned straight onto the sidebar. With
+    // "Just work" they're all in the menu already, and Today and Habits wait here instead.
+    { title: "Work", links: (owner && mode === "life") || member.staff ? workLinks(member, workspace).filter((l) => l.href !== "/queue") : [] },
+    { title: "Life", links: owner && mode === "work" ? [{ href: "/today", label: "Today" }, { href: "/habits", label: "Habits" }] : [] },
     {
       title: "Settings",
       links: settings
@@ -77,7 +80,7 @@ export function pagesFor(member: Member, workspace: Workspace, viewing: boolean,
   ].filter((g) => g.links.length > 0);
 }
 
-export function linksFor(member: Member, workspace: Workspace, viewing: boolean): NavLink[] {
+export function linksFor(member: Member, workspace: Workspace, viewing: boolean, mode: HomeMode = "life"): NavLink[] {
   const terms = termsFor(workspace.kind);
   const main = { href: "/queue", label: jobsPage(workspace.kind) };
   // Managers can look at the queue, every job in it and the gallery of finished work; nothing there lets them change anything.
@@ -131,6 +134,20 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
   // Settings is a section of its own, last, so it's always a click away (it used to hide behind your account).
   const settings = { href: "/settings", label: "Settings" };
   if (viewing) return [main, { href: "/overview", label: "Overview" }, ...clientsOf(workspace), { href: "/gallery", label: "Gallery" }, filing, { href: "/apps", label: "Apps" }, settings];
+  // "Just work": the menu as it was before Today, for people who use Oatcake purely for client work.
+  if (mode === "work")
+    return [
+      main,
+      { href: "/overview", label: "Overview" },
+      { href: "/portal", label: `New ${terms.job}` },
+      ...clientsOf(workspace),
+      todo,
+      { href: "/gallery", label: "Gallery" },
+      filing,
+      { href: "/apps", label: "Apps" },
+      { href: "/team", label: "Team" },
+      settings,
+    ];
   // The owner's sections follow the day: Today, To-do, the + (New on phones, which opens the
   // create sheet with somewhere to jot anything down), Habits, then Work, which holds the business
   // side (jobs, clients, finished work, the team) behind one button with a strip along the top.
@@ -186,6 +203,8 @@ export default function Shell({
   hidden = { computer: [], order: [] },
   palette = null,
   boxes = "raised",
+  mode = "life",
+  askMode = false,
   preview,
   children,
 }: {
@@ -211,13 +230,16 @@ export default function Shell({
   palette?: string[] | null;
   // Whether boxes float above the page or sit pressed into it (Colours).
   boxes?: BoxStyle;
+  // Today first or Jobs first (lib/menu.ts HomeMode), and whether to ask which, once.
+  mode?: HomeMode;
+  askMode?: boolean;
   preview?: Business;
   children: React.ReactNode;
 }) {
   // Clients see their own business's identity; the workspace owner and manager see Oatcake.
   const biz = member.role === "client" ? businesses.find((b) => b.id === member.business_id) : undefined;
   const brand = biz ? brandFor(biz) : undefined;
-  const links = linksFor(member, workspace, viewing);
+  const links = linksFor(member, workspace, viewing, mode);
   // Anyone with more than one section gets the sidebar rail on bigger screens (the tab bar on phones).
   const rail = links.length > 1;
   // The sidebar leaves out what the owner has switched off. The first section always stays, and
@@ -225,7 +247,7 @@ export default function Shell({
   // The sidebar is in the order the owner dragged it into; the ones that always stay are marked so
   // Edit sidebar won't let them be dragged out.
   // Pages pinned from further in (a Settings section, an app, an admin page) join the sections.
-  const pages = viewing || preview ? [] : pagesFor(member, workspace, viewing, isAdmin);
+  const pages = viewing || preview ? [] : pagesFor(member, workspace, viewing, isAdmin, mode);
   const known = new Map([...links, ...pages.flatMap((g) => g.links)].map((l) => [l.href, l]));
   const pick = (hrefs: string[]) => [...new Set(hrefs)].map((h) => known.get(h)).filter((l) => l !== undefined);
   const pins = pick(hidden.pins ?? []).filter((l) => !links.includes(l));
@@ -245,7 +267,8 @@ export default function Shell({
   const newHref = isClient ? "/portal?new=1" : undefined;
   const terms = termsFor(workspace.kind);
   // The strip along the top of the pages under Work.
-  const work = member.role === "designer" && !viewing && !preview ? workLinks(member, workspace) : [];
+  // "Just work" has every work page in the menu already, so no strip.
+  const work = member.role === "designer" && !viewing && !preview && mode === "life" ? workLinks(member, workspace) : [];
 
   return (
     <div className={[brand ? "brand-theme" : "", rail ? "has-rail" : ""].filter(Boolean).join(" ") || undefined}>
@@ -331,6 +354,8 @@ export default function Shell({
         )}
       </main>
       <TabBar links={phoneLinks} more={moreLinks} canCreate={canCreate} />
+      {/* Owners from before Today arrived: Life and work, or Just work, asked once. */}
+      {askMode && !viewing && !preview && !readOnly && <NewHome />}
       {canCreate && (
         <CreateMenu
           kind={workspace.kind}
