@@ -2,7 +2,7 @@
 // way of logging; a day is logged by sliding right, or skipped by sliding left. Misses never reset
 // anything: they show as soft hatched days, and after a couple the page offers an easier goal.
 // Shared by the page, its actions and the nudges (push_due_habits counts periods the same way).
-import { addDays } from "./plan";
+import { CARD_COLOURS, addDays } from "./plan";
 
 export type HabitKind = "session" | "count" | "money";
 export type HabitFreq = "daily" | "days" | "times";
@@ -63,7 +63,20 @@ export const HABIT_ICONS: Record<string, string> = {
   spark: "M12 3v5M12 16v5M3 12h5M16 12h5M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6",
 };
 
-export const HABIT_COLOURS = ["#d9822b", "#94508f", "#3a6ea5", "#2f8a86", "#7c9a3a", "#8a6a5c", "#c8456b", "#5856a6"];
+// The same colours as the To-do cards (lilac, lemon, orange, mint, olive, sky, pink, ink).
+export const HABIT_COLOURS = CARD_COLOURS.map((c) => c.bg);
+// Habits made before the switch kept the first palette's colours; each maps to its nearest card colour.
+const EARLIER: Record<string, string> = {
+  "#d9822b": "#ff5a2a", "#94508f": "#a49dc6", "#3a6ea5": "#9fc6e8", "#2f8a86": "#dde7dc",
+  "#7c9a3a": "#8f8a22", "#8a6a5c": "#151413", "#c8456b": "#f2a7c3", "#5856a6": "#a49dc6",
+};
+// A habit's colour as CSS variables: --c to fill with, --ci for the ink on top. Ink flips to cream
+// on dark backgrounds (light-dark follows the color-scheme of wherever it's drawn).
+export function paint(colour: string): Record<string, string> {
+  const card = CARD_COLOURS.find((c) => c.bg === colour) ?? CARD_COLOURS.find((c) => c.bg === EARLIER[colour]) ?? CARD_COLOURS[2];
+  if (card.key === "ink") return { "--c": `light-dark(${card.bg}, ${card.ink})`, "--ci": `light-dark(${card.ink}, ${card.bg})` };
+  return { "--c": card.bg, "--ci": card.ink };
+}
 
 export const PARTS: { key: HabitPart; label: string; icon: string }[] = [
   { key: "morning", label: "Morning", icon: "sun" },
@@ -75,12 +88,12 @@ export const PARTS: { key: HabitPart; label: string; icon: string }[] = [
 // Ready-made habits to start from, each pitched gently ("start comfortably").
 export type Starter = Omit<Habit, "id" | "rank" | "created_at" | "eased_from" | "ease_asked_on" | "remind_at">;
 export const STARTERS: Starter[] = [
-  { name: "Running", kind: "session", icon: "run", colour: "#d9822b", unit: "km", per_day: 1, labels: [], freq: "times", days: [], times_per: 2, period_weeks: 1, part: "morning" },
-  { name: "Yoga", kind: "session", icon: "yoga", colour: "#94508f", unit: "min", per_day: 1, labels: [], freq: "times", days: [], times_per: 1, period_weeks: 1, part: "any" },
-  { name: "Drink water", kind: "count", icon: "water", colour: "#3a6ea5", unit: "glasses", per_day: 6, labels: [], freq: "daily", days: [], times_per: 1, period_weeks: 1, part: "any" },
-  { name: "Brush teeth", kind: "count", icon: "teeth", colour: "#2f8a86", unit: "", per_day: 2, labels: ["Morning", "Night"], freq: "daily", days: [], times_per: 1, period_weeks: 1, part: "any" },
-  { name: "3 healthy meals", kind: "count", icon: "meal", colour: "#7c9a3a", unit: "", per_day: 3, labels: ["Breakfast", "Lunch", "Dinner"], freq: "daily", days: [], times_per: 1, period_weeks: 1, part: "any" },
-  { name: "Spend under £20", kind: "money", icon: "money", colour: "#8a6a5c", unit: "£", per_day: 20, labels: [], freq: "days", days: [0, 1, 2, 3, 4], times_per: 1, period_weeks: 1, part: "evening" },
+  { name: "Running", kind: "session", icon: "run", colour: "#ff5a2a", unit: "km", per_day: 1, labels: [], freq: "times", days: [], times_per: 2, period_weeks: 1, part: "morning" },
+  { name: "Yoga", kind: "session", icon: "yoga", colour: "#a49dc6", unit: "min", per_day: 1, labels: [], freq: "times", days: [], times_per: 1, period_weeks: 1, part: "any" },
+  { name: "Drink water", kind: "count", icon: "water", colour: "#9fc6e8", unit: "glasses", per_day: 6, labels: [], freq: "daily", days: [], times_per: 1, period_weeks: 1, part: "any" },
+  { name: "Brush teeth", kind: "count", icon: "teeth", colour: "#dde7dc", unit: "", per_day: 2, labels: ["Morning", "Night"], freq: "daily", days: [], times_per: 1, period_weeks: 1, part: "any" },
+  { name: "3 healthy meals", kind: "count", icon: "meal", colour: "#8f8a22", unit: "", per_day: 3, labels: ["Breakfast", "Lunch", "Dinner"], freq: "daily", days: [], times_per: 1, period_weeks: 1, part: "any" },
+  { name: "Spend under £20", kind: "money", icon: "money", colour: "#f2e63a", unit: "£", per_day: 20, labels: [], freq: "days", days: [0, 1, 2, 3, 4], times_per: 1, period_weeks: 1, part: "evening" },
 ];
 
 export const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
