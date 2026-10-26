@@ -43,7 +43,7 @@ function savedShown(): Key[] {
 }
 
 // `petBusiness` makes Pickle that business's shared pet (a client's Overview).
-export default function QueueWidgets({ week, reel, pet, tally, earnHint = "Deliver a job to earn an oatcake", petBusiness }: { week: WeekDay[] | null; reel: ReelItem[]; pet: PetView | null; tally: WeekStats; earnHint?: string; petBusiness?: string }) {
+export default function QueueWidgets({ week, reel, pet, tally, earnHint = "Deliver a job, do a habit or finish a to-do to earn an oatcake", petBusiness }: { week: WeekDay[] | null; reel: ReelItem[]; pet: PetView | null; tally: WeekStats; earnHint?: string; petBusiness?: string }) {
   const [shown, setShown] = useState<Key[]>(DEFAULT);
   const [menu, setMenu] = useState(false);
   const [dragging, setDragging] = useState<Key | null>(null);
