@@ -80,12 +80,13 @@ export async function revoke(refreshToken: string) {
 const word = (s: string) => (/^[\x20-\x7e]*$/.test(s) ? s : `=?UTF-8?B?${Buffer.from(s, "utf8").toString("base64")}?=`);
 const lines = (b64: string) => b64.replace(/.{1,76}/g, "$&\r\n");
 
-type Mail = { fromName: string; from: string; to: string; replyTo?: string; subject: string; text: string; html: string; attachment: { filename: string; content: Buffer } };
+export type Mail = { fromName: string; from: string; to: string; replyTo?: string; subject: string; text: string; html: string; attachment?: { filename: string; content: Buffer; type?: string } };
 
 function mime(m: Mail) {
   const mixed = `mixed_${randomBytes(8).toString("hex")}`;
   const alt = `alt_${randomBytes(8).toString("hex")}`;
-  const file = m.attachment.filename.replace(/["\r\n]/g, "");
+  const file = m.attachment?.filename.replace(/["\r\n]/g, "") ?? "";
+  const type = (m.attachment?.type || "application/octet-stream").replace(/[^\w.+\/-]/g, "");
   return [
     `From: ${word(m.fromName.replace(/["\r\n]/g, ""))} <${m.from}>`,
     `To: ${m.to}`,
@@ -108,12 +109,16 @@ function mime(m: Mail) {
     "",
     lines(Buffer.from(m.html, "utf8").toString("base64")),
     `--${alt}--`,
-    `--${mixed}`,
-    `Content-Type: application/pdf; name="${file}"`,
-    `Content-Disposition: attachment; filename="${file}"`,
-    "Content-Transfer-Encoding: base64",
-    "",
-    lines(m.attachment.content.toString("base64")),
+    ...(m.attachment
+      ? [
+          `--${mixed}`,
+          `Content-Type: ${type}; name="${word(file)}"`,
+          `Content-Disposition: attachment; filename="${word(file)}"`,
+          "Content-Transfer-Encoding: base64",
+          "",
+          lines(m.attachment.content.toString("base64")),
+        ]
+      : []),
     `--${mixed}--`,
     "",
   ].join("\r\n");

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ConfirmButton from "./ConfirmButton";
+import FileMenu, { FileMenuButton } from "./FileMenu";
 import Thumb from "./Thumb";
 import { DELIVERY_MAX_MB, fileSize, isImage, isVideo, type Delivery, type Signed } from "@/lib/deliveries";
 import { uploadPreview, withPreviews } from "@/lib/preview";
@@ -18,12 +19,15 @@ export default function Deliveries({
   businessId,
   files,
   canEdit,
+  canEmail = canEdit,
   clientName,
 }: {
   ticketId: number;
   businessId: string;
   files: Shown[];
   canEdit: boolean;
+  // The studio emails files from its own address (components/FileMenu).
+  canEmail?: boolean;
   clientName: string;
 }) {
   const router = useRouter();
@@ -105,7 +109,14 @@ export default function Deliveries({
       {files.length > 0 && (
         <div className="deliv-grid">
           {files.map((f) => (
-            <div key={f.id} className="deliv">
+            <FileMenu
+              key={f.id}
+              className="deliv"
+              ticketId={ticketId}
+              canEmail={canEmail}
+              onRemove={canEdit ? () => remove(f) : undefined}
+              file={{ name: f.name, bucket: "deliveries", path: f.path, url: f.url, view: f.view, download: f.download, image: Boolean(f.path && isImage(f)) }}
+            >
               <a className="deliv-preview" href={f.view ?? undefined} target="_blank" rel="noreferrer">
                 {f.path && (isImage(f) || isVideo(f)) && !/svg/i.test(f.mime + f.name) ? (
                   <Thumb bucket="deliveries" path={f.path} full={f.view} video={isVideo(f)} canMake={canEdit} />
@@ -118,6 +129,7 @@ export default function Deliveries({
               <div className="deliv-meta">
                 <span className="deliv-name" title={f.name}>{f.name}</span>
                 <span className="when">{f.url ? "Link" : fileSize(f.size)}</span>
+                <FileMenuButton />
               </div>
               <div className="deliv-actions">
                 {f.download && (
@@ -129,7 +141,7 @@ export default function Deliveries({
                   <ConfirmButton label="Remove" ask="Remove it?" yes="Remove" onConfirm={() => remove(f)} />
                 )}
               </div>
-            </div>
+            </FileMenu>
           ))}
         </div>
       )}

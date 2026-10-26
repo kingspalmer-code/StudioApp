@@ -1423,8 +1423,8 @@ a.rail-new, a.app-bar-pill { text-decoration: none; }
 /* Edit sidebar (right-click the sidebar, components/SidebarEdit.tsx): the buttons jiggle a little
    to show they can be moved, removed ones wait underneath to be put back, and Done saves. */
 .ctx-menu { position: fixed; z-index: 90; min-width: 170px; padding: 5px; border-radius: 10px; background: var(--surface); border: .5px solid var(--sep); box-shadow: 0 10px 30px rgba(0,0,0,.18); }
-.ctx-menu button { display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 10px; border: 0; border-radius: 6px; background: none; color: var(--label); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
-.ctx-menu button:hover, .ctx-menu button:focus-visible { background: var(--accent); color: var(--accent-ink); outline: none; }
+.ctx-menu button[role=menuitem] { display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 10px; border: 0; border-radius: 6px; background: none; color: var(--label); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.ctx-menu button[role=menuitem]:hover, .ctx-menu button[role=menuitem]:focus-visible { background: var(--accent); color: var(--accent-ink); outline: none; }
 .ctx-menu svg { width: 17px; height: 17px; flex: none; }
 .rail-edit { display: none; }
 @media (min-width: 701px) {
@@ -1828,3 +1828,37 @@ html.in-app .pal-layer { top: var(--app-bar); }
 .pal-boxes { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 600; color: var(--label-2); }
 @media (prefers-reduced-transparency: reduce) { .pal-panel { background: var(--surface-2); -webkit-backdrop-filter: none; backdrop-filter: none; } }
 @media (prefers-reduced-motion: reduce) { html.oc-retheme, html.oc-retheme * { transition: none !important; } }
+
+/* A job file's menu (components/FileMenu.tsx): right-click, hold on a phone, or the ⋯ button.
+   The same glass as the sidebar's menu; on a phone it rises from the bottom as a sheet. */
+.file-target { display: contents; }
+.deliv, .files a { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.deliv.menu-open { box-shadow: 0 0 0 2px var(--accent); }
+.file-more { padding: 4px 7px; }
+.deliv-meta:has(.file-more) { grid-template-columns: minmax(0, 1fr) auto; column-gap: 6px; }
+.deliv-meta .file-more { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.file-more svg { width: 16px; height: 16px; display: block; }
+.file-menu { min-width: 220px; max-width: min(320px, calc(100vw - 16px)); animation: file-menu-in .14s ease-out; transform-origin: top left; }
+.file-menu hr { border: 0; height: .5px; margin: 4px 8px; background: var(--glass-line); }
+.file-menu hr:first-child, .file-menu hr + hr, .file-menu hr:last-child { display: none; }
+.ctx-menu.file-menu button[role=menuitem].danger { color: var(--red); }
+.ctx-menu.file-menu button[role=menuitem].danger:hover, .ctx-menu.file-menu button[role=menuitem].danger:focus-visible { background: var(--red); color: #fff; }
+.file-menu.is-form { width: 300px; }
+.file-mail { display: grid; gap: 8px; padding: 8px 8px 6px; }
+.file-mail b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-mail input, .file-mail textarea { width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: .5px solid var(--sep); background: var(--surface); color: var(--label); font: inherit; font-size: 14px; resize: vertical; }
+.file-mail .when { font-size: 12px; }
+.file-mail .error { font-size: 13px; margin: 0; }
+.file-mail-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px; }
+.file-menu-title { padding: 6px 12px 8px; font-size: 13px; font-weight: 600; color: var(--label-2); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-menu-backdrop { position: fixed; inset: 0; z-index: 89; background: rgba(23,17,15,.28); animation: file-fade .18s ease-out; }
+.file-menu.sheet-like { left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); top: auto; min-width: 0; max-width: none; width: auto; padding: 6px; border-radius: 20px; animation: file-sheet-in .24s cubic-bezier(.2,.9,.3,1); }
+.file-menu.sheet-like button[role=menuitem] { padding: 12px 14px; font-size: 16px; border-radius: 12px; }
+.file-menu.sheet-like button[role=menuitem]:hover { background: none; color: var(--label); }
+.file-menu.sheet-like button[role=menuitem]:active { background: var(--glass-press); }
+.file-menu.sheet-like button[role=menuitem].danger:hover { color: var(--red); }
+.file-menu.sheet-like .file-mail input, .file-menu.sheet-like .file-mail textarea { font-size: 16px; }
+@keyframes file-menu-in { from { opacity: 0; transform: scale(.96); } }
+@keyframes file-sheet-in { from { transform: translateY(110%); } }
+@keyframes file-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .file-menu, .file-menu.sheet-like, .file-menu-backdrop { animation: none; } }
