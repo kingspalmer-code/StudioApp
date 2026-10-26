@@ -209,7 +209,7 @@ function Poster() {
 }
 
 // The line lights up a word at a time as you scroll past it.
-const LINE = "Your brain has a lot of tabs open. Oatcake keeps them somewhere safe, and helps you set your own standard, then gently hold yourself to it.".split(" ");
+const LINE = "Your brain has a lot of tabs open. Oatcake keeps them somewhere safe.".split(" ");
 
 function Word({ word, i, progress }: { word: string; i: number; progress: MotionValue<number> }) {
   const start = (i / LINE.length) * 0.8;
