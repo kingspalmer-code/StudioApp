@@ -14,7 +14,7 @@ import { dueOf, dueWithin, formatDate, isAtRisk, isDone, money, sortQueue, start
 import type { requireMember } from "@/lib/session";
 import type { ListTicket } from "@/lib/types";
 import { loadWidgets } from "@/lib/widgets";
-import { withMine } from "@/lib/workspace";
+import { jobsPage, withMine } from "@/lib/workspace";
 
 type Session = Awaited<ReturnType<typeof requireMember>>;
 export type Block = { id: BlockId; label: string; hint: string; half?: boolean; node: ReactNode };
@@ -179,7 +179,7 @@ export async function homeBlocks({
     const showFilter = workspace.kind !== "solo" && businesses.length > 1 && businesses.length <= 8;
     const toolbar = (
       <>
-        <p className="eyebrow">{trade ? terms.Jobs : "Queue"}</p>
+        <p className="eyebrow">{jobsPage(workspace.kind)}</p>
         <nav className="seg" aria-label="Layout" data-tour="layout">
           <ViewSwitch href={href("list", biz)} view="list" current={view !== "board"} remember={!session.shell.viewing}>Priority list</ViewSwitch>
           <ViewSwitch href={href("board", biz)} view="board" current={view === "board"} remember={!session.shell.viewing}>Board</ViewSwitch>

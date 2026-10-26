@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { jobsPage } from "@/lib/workspace";
 import Shell from "@/components/Shell";
 import FrameChanged from "@/components/FrameChanged";
 import SaveForm from "@/components/SaveForm";
@@ -141,7 +142,7 @@ export default async function JobFormPage() {
         </div>
         <p className="foot">
           Every {terms.job} needs these, so only {core.filter((c) => c.canHide).map((c) => c.defaultLabel.toLowerCase()).join(", ").replace(/, ([^,]*)$/, " and $1")} can be hidden. A hidden importance means Standard.
-          {` A hidden needed by means ${terms.jobs} have no due date: none shows anywhere and the queue goes by importance and order added. Dates already saved come back if you show it again.`}
+          {` A hidden needed by means ${terms.jobs} have no due date: none shows anywhere and the ${jobsPage(workspace.kind)} list goes by importance and order added. Dates already saved come back if you show it again.`}
           {core.some((c) => isContact(c.key)) && ` Show the contact details you want to ask for (phone, email, address). Rename them to suit, say "Mobile" or "Work email". They save onto the ${terms.client}.`}
         </p>
 

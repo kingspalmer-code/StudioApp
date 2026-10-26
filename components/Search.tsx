@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import { jobsPage } from "@/lib/workspace";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -41,7 +42,7 @@ function readQuery(q: string, jobWord: string, clientWord: string) {
 }
 
 const PAGES = (kind: WorkspaceKind, Job: string): Omit<Hit, "kind" | "key">[] => [
-  { title: kind === "studio" ? "Queue" : `${Job}s`, href: "/queue", words: "queue jobs requests projects up next home list", tags: [] },
+  { title: jobsPage(kind), href: "/queue", words: "queue jobs requests projects up next home list", tags: [] },
   { title: "Overview", href: "/overview", words: "overview stats numbers money earnings chart report", tags: [] },
   ...(kind === "solo" ? [{ title: "Gallery", href: "/gallery", words: "gallery finished work portfolio", tags: [] }] : [
     { title: kind === "trade" ? "Customers" : "Businesses", href: "/customers", words: "customers clients businesses contacts", tags: [] },

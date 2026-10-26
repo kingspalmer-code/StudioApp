@@ -107,7 +107,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
     return (
       <Shell {...shell}>
         <h1 className="large">{followUp ? "Follow-up request" : "New request"}</h1>
-        <p className="sub">{followUp ? `Ask ${owner} for more on "${from!.title}". It joins the queue as a new request, linked to the finished one.` : `Send ${owner} a request. It joins the queue, and you can follow it in the overview.`}</p>
+        <p className="sub">{followUp ? `Ask ${owner} for more on "${from!.title}". It joins their list as a new request, linked to the finished one.` : `Send ${owner} a request. It joins their list, and you can follow it in the overview.`}</p>
         <div style={{ maxWidth: 640 }}>
           <NewRequestForm businesses={myBizes} defaultName={member.full_name} isDesigner={false} types={ctx.types} fields={formFields} trade={trade} ownerName={owner} helper={helper} followUp={followUp} core={core} />
         </div>
