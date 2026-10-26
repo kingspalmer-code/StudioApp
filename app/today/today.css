@@ -1,0 +1,95 @@
+/* Today (app/today): one calm column. The capture box, today's few things, what's waiting from
+   earlier days (folded), habits beside Pickle, then what's next at work. */
+.today { max-width: 760px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; }
+.td-head { display: grid; gap: 4px; margin-top: 8px; }
+.td-date { margin: 0; color: var(--label-2); font-size: 14px; }
+.td-title { margin: 0; font: 700 38px/1.05 var(--font-display); letter-spacing: -.03em; text-wrap: balance; }
+
+.td-section { display: grid; gap: 10px; min-width: 0; }
+.td-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.td-section h2 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--label-2); }
+.td-link { font-size: 13px; color: var(--label-2); }
+.td-done-count { font-size: 13px; font-weight: 600; color: var(--green); }
+.td-empty { margin: 0; padding: 18px; border-radius: var(--r); background: var(--surface-2); color: var(--label-2); }
+.td-more, .td-foot { margin: 0 4px; font-size: 13px; color: var(--label-2); }
+.td-foot { text-align: center; }
+.td-boss { justify-self: start; font-size: 14px; font-weight: 600; padding: 8px 12px; border-radius: 10px; background: var(--fill); color: var(--label); }
+
+.td-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.td-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); transition: opacity .3s, transform .3s; }
+.td-list.quiet .td-item { box-shadow: none; background: var(--surface-2); }
+.td-item.offer { background: transparent; box-shadow: none; border: 1.5px dashed var(--sep); }
+.td-item.pop { opacity: 0; transform: scale(.97); }
+.td-item-body { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.td-item-title { color: var(--label); font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.td-item-meta { font-size: 13px; color: var(--label-2); }
+.td-item-meta:empty { display: none; }
+.td-item-btns { display: flex; align-items: center; gap: 12px; flex: none; }
+.td-item-btns .link { font-size: 13px; color: var(--label-2); font-weight: 500; }
+.td-tick { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--label-3); background: none; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.td-tick svg { width: 16px; height: 16px; fill: none; stroke: var(--green); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transition: opacity .15s; }
+.td-tick:hover svg, .td-item.pop .td-tick svg { opacity: 1; }
+.td-item.pop .td-tick { border-color: var(--green); }
+.td-offer-dot { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 2px dashed var(--label-3); }
+
+.td-plate-head { all: unset; cursor: pointer; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.td-plate-head span { font-size: 13px; color: var(--label-2); }
+.td-plate-head:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 4px; border-radius: 8px; }
+
+.td-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+.td-pet .widget { height: 150px; overflow: hidden; }
+.td-habits { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.td-habits li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--c, var(--surface)); color: var(--ci, var(--label)); }
+.td-habits li.done { opacity: .7; }
+.td-habit-name { flex: 1; min-width: 0; font-weight: 600; }
+.td-habit-btn { border: 0; border-radius: 9px; padding: 6px 12px; background: color-mix(in srgb, currentColor 14%, transparent); color: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.td-habit-btn b { margin-left: 4px; }
+.td-habit-done { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; }
+.td-habit-done svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+
+.td-reset { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; padding: 14px 16px; border-radius: 14px; background: var(--oat-fill); }
+.td-reset > div:first-child { display: grid; gap: 2px; min-width: 0; }
+.td-reset span { font-size: 14px; color: var(--label-2); }
+.td-reset-btns { display: flex; align-items: center; gap: 14px; }
+.td-reset-btns .link { color: var(--label-2); font-weight: 500; font-size: 14px; }
+
+/* Focus mode and the weekly reset share one quiet full-screen sheet. */
+.focus-layer { position: fixed; inset: 0; z-index: 60; background: var(--bg); display: grid; place-items: center; overflow-y: auto;
+  padding: calc(24px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.focus-card { width: 100%; max-width: 560px; display: grid; gap: 16px; }
+.focus-eyebrow { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--label-2); }
+.focus-title { margin: 0; font: 700 36px/1.1 var(--font-display); text-wrap: balance; overflow-wrap: anywhere; }
+.focus-notes { margin: 0; color: var(--label-2); font-size: 16px; white-space: pre-wrap; }
+.focus-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.focus-steps li { display: flex; align-items: center; gap: 10px; font-size: 16px; }
+.focus-steps li.done span { color: var(--label-3); text-decoration: line-through; }
+.focus-steps button { flex: none; width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--label-3); background: none; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.focus-steps button svg { width: 15px; height: 15px; fill: none; stroke: var(--green); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.focus-steps li.done button { border-color: var(--green); }
+.focus-steps li.done button svg { opacity: 1; }
+.focus-clock { display: grid; justify-items: center; gap: 6px; padding: 26px 0 10px; color: var(--label); }
+.focus-clock b { font-size: 54px; line-height: 1; font-variant-numeric: tabular-nums; }
+.focus-clock span { color: var(--label-2); font-size: 14px; }
+.focus-biscuit { width: 64px; height: 64px; }
+.focus-btns { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.focus-btns .btn { padding: 13px 22px; }
+
+.reset-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.reset-head .link { color: var(--label-2); font-weight: 500; }
+.reset-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.reset-list.done li { padding: 8px 12px; border-radius: 10px; background: var(--surface-2); }
+.reset-list .more { color: var(--label-2); font-size: 14px; padding: 4px 12px; background: none; }
+.reset-list.pickable button { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; border: 0; border-radius: 12px; padding: 12px 14px; background: var(--surface); cursor: pointer; font-size: 15px; }
+.reset-list.pickable button small { color: var(--label-2); font-size: 13px; flex: none; }
+.reset-list.pickable button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.reset-list.pickable button[aria-pressed="true"] small { color: inherit; }
+.reset-list.pickable button:disabled { opacity: .45; cursor: default; }
+
+@media (max-width: 640px) {
+  .td-title { font-size: 32px; }
+  .td-grid { grid-template-columns: 1fr; }
+  .td-item { flex-wrap: wrap; }
+  .td-item-btns { width: 100%; justify-content: flex-end; }
+  .focus-title { font-size: 30px; }
+}
+@media (prefers-reduced-motion: reduce) { .td-item { transition: none; } }

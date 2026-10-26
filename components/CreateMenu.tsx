@@ -5,17 +5,17 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { createDocument } from "@/app/documents/actions";
-import { quickAddToDo } from "@/app/calendar/actions";
 import { createClient } from "@/lib/supabase/client";
 import type { WorkspaceKind } from "@/lib/types";
+import Capture from "./Capture";
 import { CREATE_EVENT, takePending } from "./panel-events";
-import { flashSaved } from "./Saved";
 
-// Create new: one grid of everything you can make in Oatcake. A sheet from the bottom on phones,
-// a panel beside the rail's + on bigger screens. "N" opens it on a keyboard, then a letter picks.
+// The + : somewhere to jot anything down first (Capture), then a grid of everything you can make
+// in Oatcake. A sheet from the bottom on phones, a panel beside the rail's + on bigger screens.
+// "N" opens it on a keyboard; away from the box, a letter picks a tile.
 export { openCreate } from "./panel-events";
 
-type Step = "grid" | "quote" | "invoice" | "task";
+type Step = "grid" | "quote" | "invoice";
 type Job = { id: number; title: string; business_id: string };
 type Tile = { key: string; label: string; icon: React.ReactNode } & ({ href: string } | { step: Step });
 
@@ -24,7 +24,6 @@ const ICON = {
   request: <><path d="M5 4h14v12H9l-4 4z" /><path d="M9 9h6M9 12h4" /></>,
   quote: <><path d="M7 3h7l4 4v14H7z" /><path d="M14 3v4h4M10 12h5M10 16h3" /></>,
   invoice: <><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" /><path d="M9 8h6M9 12h6M9 16h3" /></>,
-  task: <><rect x="4" y="4" width="16" height="16" rx="4" /><path d="m8.5 12 2.5 2.5 4.5-5" /></>,
   client: <><circle cx="10" cy="8" r="3.5" /><path d="M3.5 20v-1A4.5 4.5 0 0 1 8 14.5h4A4.5 4.5 0 0 1 16.5 19v1M19 8v6M16 11h6" /></>,
   invite: <><path d="M4 6h16v12H4z" /><path d="m4 7 8 6 8-6" /></>,
 };
@@ -34,11 +33,13 @@ export default function CreateMenu({
   Job,
   Client,
   clientNames,
+  brain = false,
 }: {
   kind: WorkspaceKind;
   Job: string;
   Client: string;
   clientNames: Record<string, string>;
+  brain?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("grid");
@@ -55,7 +56,6 @@ export default function CreateMenu({
     { key: Job[0].toLowerCase(), label: Job, icon: trade ? ICON.job : ICON.request, href: "/portal" },
     { key: "q", label: "Quote", icon: ICON.quote, step: "quote" },
     { key: "i", label: "Invoice", icon: ICON.invoice, step: "invoice" },
-    { key: "t", label: "To-do", icon: ICON.task, step: "task" },
     // Working alone there are no customers to add and nobody to invite.
     ...(solo ? [] : [
       { key: Client[0].toLowerCase(), label: Client, icon: ICON.client, href: "/customers#add" },
@@ -106,6 +106,9 @@ export default function CreateMenu({
         return;
       }
       if (step !== "grid" || e.metaKey || e.ctrlKey || e.altKey) return;
+      // Typing in the jot box isn't picking a tile.
+      const el = e.target as HTMLElement | null;
+      if (el && /^(INPUT|TEXTAREA)$/.test(el.tagName)) return;
       const t = tiles.find((t) => t.key === e.key.toLowerCase());
       if (t) {
         e.preventDefault();
@@ -142,7 +145,9 @@ export default function CreateMenu({
   if (step === "grid") {
     body = (
       <>
-        <h2 className="ct-title">Create new</h2>
+        <h2 className="ct-title">Jot it down</h2>
+        <Capture brain={brain} onAdded={() => { close(); router.refresh(); }} />
+        <h3 className="ct-sub">Or make something</h3>
         <div className="ct-grid">
           {tiles.map((t) => (
             <button key={t.label} type="button" className="ct-tile" onClick={() => pick(t)}>
@@ -152,31 +157,6 @@ export default function CreateMenu({
             </button>
           ))}
         </div>
-      </>
-    );
-  } else if (step === "task") {
-    body = (
-      <>
-        <h2 className="ct-title">{back}New to-do</h2>
-        <form
-          className="ct-task"
-          action={(fd) =>
-            start(async () => {
-              await quickAddToDo(fd);
-              close();
-              flashSaved("Added to your To-do");
-              router.refresh();
-            })
-          }
-        >
-          <input name="title" placeholder='Try "Call supplier tomorrow !"' required autoComplete="off" aria-label="To-do" />
-          <button className="ct-add" type="submit" disabled={pending}>{pending ? "Adding…" : "Add"}</button>
-        </form>
-        <p className="ct-foot">Goes to your To-do. Say when it&apos;s due, and add ! to put it at the top.</p>
-        <p className="ct-foot">
-          Lots on your mind?{" "}
-          <button type="button" className="ct-link" onClick={() => { close(); router.push("/calendar?dump=1"); }}>Tell Oatcake all of it ›</button>
-        </p>
       </>
     );
   } else {

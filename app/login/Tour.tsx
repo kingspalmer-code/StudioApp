@@ -88,7 +88,7 @@ export default function Tour({ onDone }: { onDone: () => void }) {
               </motion.p>
               {last && (
                 <motion.p className="tour-small" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }}>
-                  Made for small studios and trades, not big teams. Set up in two minutes.
+                  Made for creatives with busy heads and the small businesses they run. Set up in two minutes.
                 </motion.p>
               )}
             </motion.div>

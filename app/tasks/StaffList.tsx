@@ -21,7 +21,7 @@ export function Progress({ progress }: { progress: List["progress"] }) {
       <p>
         <b>{Math.round((done / total) * 100)}%</b> done · {done} of {total}
         {waiting > 0 && <span className="w"> · {waiting} waiting for sign-off</span>}
-        {late > 0 && <span className="late"> · {late} overdue</span>}
+        {late > 0 && <span className="late"> · {late} from earlier days</span>}
       </p>
     </div>
   );

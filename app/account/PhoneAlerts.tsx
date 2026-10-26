@@ -111,7 +111,7 @@ export default function PhoneAlerts({ ready, publicKey, kinds: initial, studio }
               ? "Alerts aren't switched on for Oatcake yet."
               : (explain[state] ??
                 (studio
-                  ? "A pop-up when a client sends a new request, and a morning nudge about anything due or overdue."
+                  ? "A pop-up when a client sends a new request, and one gentle nudge each morning."
                   : "A pop-up when work you asked for is finished. You'll get an email too."))}
           </div>
           {note && <div className="when" style={{ marginTop: 4, color: "var(--label)" }}>{note}</div>}
@@ -142,7 +142,7 @@ export default function PhoneAlerts({ ready, publicKey, kinds: initial, studio }
               <div className="row">
                 <div className="ctl">
                   <div style={{ fontWeight: 600 }}>Morning nudge</div>
-                  <div className="when">First thing each morning, if any to-dos or jobs are due today or overdue.</div>
+                  <div className="when">One alert first thing, naming a single small place to start. Nothing on, nothing sent.</div>
                 </div>
                 <input type="checkbox" role="switch" className="switch" checked={kinds.morning} onChange={(e) => change({ ...kinds, morning: e.target.checked })} aria-label="Morning nudge" />
               </div>

@@ -432,7 +432,7 @@ function EaseCard({ h, n, onAnswer }: { h: Habit; n: Nudge; onAnswer: (take: boo
   return (
     <div className="hb-ease" style={paint(h.colour)}>
       <p className="hb-eyebrow">{n.kind === "ease" ? "A kinder goal?" : "Step back up?"}</p>
-      <h3><HabitIcon name={h.icon} size={18} />{n.kind === "ease" ? `${h.name} missed ${n.misses} times lately` : `${h.name} is going well`}</h3>
+      <h3><HabitIcon name={h.icon} size={18} />{n.kind === "ease" ? `${h.name} has been tricky lately` : `${h.name} is going well`}</h3>
       <p>{n.kind === "ease"
         ? `That's fine, your streak's safe. Want to make it easier for a bit? You can always step back up.`
         : `Three in a row since you eased off. Want to go back to ${paceLabel(n.goal).toLowerCase()}?`}</p>

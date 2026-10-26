@@ -22,3 +22,15 @@ export const onPhoneTab = (href: string, i: number, shown?: string[]) => i === 0
 // New job, since the + button at the top does the same, and Gallery, since Filing holds finished
 // work too. Anyone who has already chosen their own buttons keeps their choice.
 export const OWNER_HIDDEN_BY_DEFAULT = ["/portal", "/gallery"];
+
+// The pages that sit under Work (the business side: jobs, clients, finished work, the team), so its
+// button stays lit on any of them.
+export const WORK_PREFIXES = ["/queue", "/overview", "/people", "/customers", "/gallery", "/filing", "/team", "/tickets", "/documents", "/portal"];
+
+// Which button is lit for a path: the longest of their own addresses the path starts with, and
+// failing that a button whose `match` covers it (Work on a client's page, say).
+export function activeHref(links: { href: string; match?: string[] }[], path: string): string | undefined {
+  const own = links.map((l) => l.href).filter((h) => path === h || path.startsWith(h + "/") || path.startsWith(h + "?")).sort((a, b) => b.length - a.length)[0];
+  if (own) return own;
+  return links.find((l) => l.match?.some((m) => path === m || path.startsWith(m + "/")))?.href;
+}

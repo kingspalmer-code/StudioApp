@@ -10,7 +10,7 @@ import { accessFor, allows, hasAny, type Area } from "./access";
 import { OWNER_HIDDEN_BY_DEFAULT } from "./menu";
 import { datesOff } from "./core-fields";
 
-export const HOME: Record<Role, string> = { designer: "/queue", manager: "/overview", client: "/overview", staff: "/calendar" };
+export const HOME: Record<Role, string> = { designer: "/today", manager: "/overview", client: "/overview", staff: "/today" };
 
 // Loads the signed-in member and their workspace, or sends them to sign in. Pass roles to restrict a page.
 // Every database call goes out at once: the sign-in is checked from the session token itself, so

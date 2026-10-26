@@ -9,8 +9,8 @@ import Submit from "@/components/Submit";
 function dueText(due: string | null, today: string): { text: string; late: boolean } | null {
   if (!due) return null;
   const n = Math.round((Date.parse(due) - Date.parse(today)) / 86400000);
-  if (n < -1) return { text: `${-n} days overdue`, late: true };
-  if (n === -1) return { text: "Due yesterday", late: true };
+  if (n < -1) return { text: `Was due ${formatDate(due)}`, late: true };
+  if (n === -1) return { text: "Was due yesterday", late: true };
   if (n === 0) return { text: "Due today", late: false };
   if (n === 1) return { text: "Due tomorrow", late: false };
   return { text: `Due ${formatDate(due)}`, late: false };
