@@ -31,7 +31,9 @@
 
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .cal-wd { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--label-2); text-align: left; padding: 0 8px 4px; }
-.cal-tile { position: relative; min-height: 96px; border-radius: 14px; background: var(--tile); padding: 7px 6px 6px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; min-width: 0; transition: background .12s, box-shadow .12s; }
+/* overflow: hidden keeps a day with long to-dos the width of its column; Safari and the Mac app
+   otherwise widen it over the next day. */
+.cal-tile { position: relative; min-height: 96px; border-radius: 14px; background: var(--tile); padding: 7px 6px 6px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; min-width: 0; overflow: hidden; transition: background .12s, box-shadow .12s; }
 .cal-tile:hover { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--o) 35%, transparent); }
 .cal-tile.out { background: var(--tile-out); }
 .cal-tile.out .cal-num { color: var(--label-3); }
