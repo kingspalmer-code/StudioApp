@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Oatcake",
   description: "Organised by design.",
   appleWebApp: { capable: true, title: "Oatcake", statusBarStyle: "default" },
+  manifest: "/home-screen/oatcake",
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Shell from "@/components/Shell";
 import { allows } from "@/lib/access";
 import { TIME_COLUMNS, type TimeLog } from "@/lib/hours";
@@ -7,6 +8,9 @@ import { requireMember } from "@/lib/session";
 import { loadStaffList } from "@/lib/staff";
 import StaffList from "@/app/tasks/StaffList";
 import Planner from "./Planner";
+
+// Added to a phone's Home Screen from here, this page gets its own icon that opens straight onto it.
+export const metadata: Metadata = { manifest: "/home-screen/todo", appleWebApp: { capable: true, title: "To-do", statusBarStyle: "default" } };
 
 // To-do, the one place for to-dos: a list in priority order on one side, and the month it fills on
 // the other. The owner sees everyone's; an employee sees their own, with the tasks the owner set

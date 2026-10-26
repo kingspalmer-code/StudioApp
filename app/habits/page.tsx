@@ -1,9 +1,13 @@
+import type { Metadata } from "next";
 import Shell from "@/components/Shell";
 import { addDays, todayIn } from "@/lib/plan";
 import { requireMember } from "@/lib/session";
 import { HABIT_COLUMNS, LOG_COLUMNS, type Habit, type HabitLog } from "@/lib/habits";
 import Habits from "./Habits";
 import "./habits.css";
+
+// Added to a phone's Home Screen from here, this page gets its own icon that opens straight onto it.
+export const metadata: Metadata = { manifest: "/home-screen/habits", appleWebApp: { capable: true, title: "Habits", statusBarStyle: "default" } };
 
 // Habits: everyone's own, whatever kind of login. Today's list, slide to log, and the week, month
 // and year zoomed out. Logs go back a year and a bit, enough for the year grid.
