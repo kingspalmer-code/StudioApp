@@ -7,9 +7,11 @@ import { safeNext } from "@/lib/next-path";
 import "./story.css";
 
 // oatcake.xyz for anyone signed out: the sign-in fills the first screen, and scrolling down tells
-// you what Oatcake is (Story.tsx). The Mac app and Home Screen icons only show the sign-in.
+// you what Oatcake is (Story.tsx). The Mac app, Home Screen icons and Let's start (?start=1, the
+// intro steps) only show the sign-in.
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; email?: string; next?: string; start?: string }> }) {
   const { error, email, next, start } = await searchParams;
+  const starting = start === "1";
   return (
     <>
       <div className="login-screen" id="top">
@@ -20,7 +22,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <OatcakeLogo height={44} />
           </div>
           <LoginForm
-            start={start === "1"}
+            start={starting}
             initialEmail={typeof email === "string" ? email.slice(0, 200) : ""}
             next={safeNext(typeof next === "string" ? next : null) ?? "/"}
             initialError={
@@ -32,14 +34,18 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             }
           />
         </LoginIntro>
-        <a className="st-cue" href="#story">
-          What is Oatcake?
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
-        </a>
+        {!starting && (
+          <a className="st-cue" href="#story">
+            What is Oatcake?
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+          </a>
+        )}
       </div>
-      <div id="story">
-        <Story />
-      </div>
+      {!starting && (
+        <div id="story">
+          <Story />
+        </div>
+      )}
     </>
   );
 }
