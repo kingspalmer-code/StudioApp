@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { addDays, planSpan, type PlanItem } from "@/lib/plan";
 import { blockTime, clashWith, daysLabel, type RoutineBlock } from "@/lib/routine";
-import { addBrainDump, readBrainDump, type DumpChange, type DumpItem, type DumpKind, type DumpRoutine } from "./brain";
+import { addBrainDump, readBrainDump, type DumpAnswer, type DumpChange, type DumpItem, type DumpKind, type DumpRoutine } from "./brain";
 
 const KIND_LABEL: Record<DumpKind, string> = { event: "On the calendar", todo: "To-do", get: "To get" };
 
@@ -14,13 +14,13 @@ type Change = DumpChange & { keep: boolean };
 // What's typed (and any preview not yet added) stays on this computer, so leaving To-do and
 // coming back doesn't lose it.
 const DRAFT_KEY = "oatcake-tell-draft";
-type Draft = { text: string; rows: Row[] | null; weekly: Weekly[]; changes: Change[]; heard?: Heard };
-// What Oatcake understood, and anything it wants to check.
-type Heard = { summary: string; question: string | null };
+type Draft = { text: string; rows: Row[] | null; weekly: Weekly[]; changes: Change[]; heard?: Heard; answers?: DumpAnswer[] };
+// What Oatcake understood, and anything it wants to check (with replies to tap).
+type Heard = { summary: string; question: string | null; options?: string[] };
 function loadDraft(): Draft | null {
   try {
     const d = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "null");
-    return d && typeof d.text === "string" ? { text: d.text, rows: Array.isArray(d.rows) ? d.rows : null, weekly: Array.isArray(d.weekly) ? d.weekly : [], changes: Array.isArray(d.changes) ? d.changes : [], heard: d.heard && typeof d.heard.summary === "string" ? d.heard : undefined } : null;
+    return d && typeof d.text === "string" ? { text: d.text, rows: Array.isArray(d.rows) ? d.rows : null, weekly: Array.isArray(d.weekly) ? d.weekly : [], changes: Array.isArray(d.changes) ? d.changes : [], heard: d.heard && typeof d.heard.summary === "string" ? d.heard : undefined, answers: Array.isArray(d.answers) ? d.answers : [] } : null;
   } catch {
     return null;
   }
@@ -56,6 +56,9 @@ export default function BrainDump({
   const [weekly, setWeekly] = useState<Weekly[]>([]);
   const [changes, setChanges] = useState<Change[]>([]);
   const [heard, setHeard] = useState<Heard | undefined>();
+  // Questions answered so far, sent along with the text (it stays as they typed it).
+  const [answers, setAnswers] = useState<DumpAnswer[]>([]);
+  const [reply, setReply] = useState("");
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [reading, startReading] = useTransition();
@@ -70,24 +73,34 @@ export default function BrainDump({
       setWeekly(d.weekly);
       setChanges(d.changes);
       setHeard(d.heard);
+      setAnswers(d.answers ?? []);
     }
     loaded.current = true;
   }, []);
   useEffect(() => {
-    if (loaded.current) saveDraft({ text, rows, weekly, changes, heard });
-  }, [text, rows, weekly, changes, heard]);
+    if (loaded.current) saveDraft({ text, rows, weekly, changes, heard, answers });
+  }, [text, rows, weekly, changes, heard, answers]);
 
-  function read() {
+  // Sorts the text, with any answers so far. Reading it fresh from the box starts the answers over.
+  function read(withAnswers: DumpAnswer[] = []) {
     setError("");
     setNote("");
+    setAnswers(withAnswers);
     startReading(async () => {
-      const r = await readBrainDump(text, routine).catch(() => ({ error: "Couldn't reach Oatcake. Check your connection.", items: undefined, routine: undefined, changes: undefined, summary: undefined, question: undefined }));
+      const r = await readBrainDump(text, routine, withAnswers).catch(() => ({ error: "Couldn't reach Oatcake. Check your connection.", items: undefined, routine: undefined, changes: undefined, summary: undefined, question: undefined, options: undefined }));
       if (r.error) return setError(r.error);
       setRows((r.items ?? []).map((i) => ({ ...i, keep: true })));
       setWeekly((r.routine ?? []).map((b) => ({ ...b, keep: true })));
       setChanges((r.changes ?? []).map((c) => ({ ...c, keep: true })));
-      setHeard(r.summary ? { summary: r.summary, question: r.question ?? null } : undefined);
+      setHeard(r.summary ? { summary: r.summary, question: r.question ?? null, options: r.options ?? [] } : undefined);
     });
+  }
+
+  // Answering Oatcake's question sorts it again with the answer.
+  function answer(a: string) {
+    if (!heard?.question || !a.trim()) return;
+    setReply("");
+    read([...answers, { q: heard.question, a: a.trim() }]);
   }
 
   const change = (n: number, patch: Partial<Row>) => setRows((list) => list && list.map((r, i) => (i === n ? { ...r, ...patch } : r)));
@@ -135,6 +148,7 @@ export default function BrainDump({
       setWeekly([]);
       setChanges([]);
       setHeard(undefined);
+      setAnswers([]);
       setText("");
     });
   }
@@ -158,7 +172,7 @@ export default function BrainDump({
           />
           <div className="dump-foot">
             <span>{note}</span>
-            <button type="button" className="dump-go" disabled={!text.trim() || reading} onClick={read}>
+            <button type="button" className="dump-go" disabled={!text.trim() || reading} onClick={() => read()}>
               {reading ? "Sorting…" : "Sort it out"}
             </button>
           </div>
@@ -172,11 +186,24 @@ export default function BrainDump({
           {heard && (
             <div className="dump-heard">
               <p>{heard.summary}</p>
+              {answers.length > 0 && (
+                <ul className="dump-answered">
+                  {answers.map((x, i) => <li key={i}><span>{x.q}</span><b>{x.a}</b></li>)}
+                </ul>
+              )}
               {heard.question && (
-                <p className="dump-question">
-                  {heard.question}{" "}
-                  <button type="button" className="dump-answer" onClick={() => { setRows(null); setWeekly([]); setChanges([]); setHeard(undefined); const q = heard.question; setText((t) => `${t.trimEnd()}\n\nOatcake asked: ${q}\nMy answer: `); }}>Answer ›</button>
-                </p>
+                <div className={`dump-ask${reading ? " busy" : ""}`}>
+                  <p className="dump-question">{heard.question}</p>
+                  {heard.options && heard.options.length > 0 && (
+                    <div className="dump-options" role="group" aria-label="Answers">
+                      {heard.options.map((o) => <button key={o} type="button" disabled={reading} onClick={() => answer(o)}>{o}</button>)}
+                    </div>
+                  )}
+                  <form className="dump-reply" onSubmit={(e) => { e.preventDefault(); answer(reply); }}>
+                    <input value={reply} onChange={(e) => setReply(e.target.value)} placeholder={heard.options?.length ? "Or say something else" : "Your answer"} aria-label="Your answer" maxLength={300} disabled={reading} />
+                    <button type="submit" disabled={!reply.trim() || reading}>{reading ? "Sorting…" : "Answer"}</button>
+                  </form>
+                </div>
               )}
             </div>
           )}

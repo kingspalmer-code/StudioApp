@@ -58,7 +58,7 @@ export default function Cards({
   const sections: { key: string; title: string; items: PlanItem[] }[] =
     arrange === "groups"
       ? groups.filter((g) => only === null || only === g).map((g) => ({ key: g, title: g || "Loose ends", items: open.filter((i) => i.grp === g) }))
-      : dayBuckets(open, today);
+      : dayBuckets(open, today, dragId !== null);
 
   const next = open
     .filter((i) => i.on_date && i.at_time && (i.on_date > today || i.on_date === today))
@@ -74,8 +74,8 @@ export default function Cards({
   }
 
   // Dropping a card on another puts it just before that one (and into its group); dropping on a
-  // group's space puts it at the end of that group.
-  function dropOn(target: PlanItem | null, grp: string | null) {
+  // group's space puts it at the end of that group. By day, it moves to that day instead.
+  function dropOn(target: PlanItem | null, grp: string | null, day?: string) {
     const id = dragId;
     setDragId(null);
     setOver(null);
@@ -93,6 +93,15 @@ export default function Cards({
     const patch: PlanPatch = { rank };
     const g = target ? target.grp : grp;
     if (arrange === "groups" && g !== null) patch.grp = g;
+    if (arrange === "days") {
+      const item = open.find((i) => i.id === id);
+      const key = day ?? (target ? dayBuckets(open, today, true).find((b) => b.items.some((i) => i.id === target.id))?.key : undefined);
+      const date = item && key ? dateFor(key, item, today) : undefined;
+      if (date !== undefined && date !== item?.on_date) {
+        patch.on_date = date;
+        if (date === null) patch.at_time = null;
+      }
+    }
     onSave(id, patch);
   }
 
@@ -157,13 +166,14 @@ export default function Cards({
           style={{ ["--n" as string]: Math.min(8, sec.items.reduce((n, i) => n + (i.size === "s" ? 1 : 2), 0) + (!readOnly && arrange === "groups" ? 1 : 0)) || 1 }}
           onDragOver={(e) => { if (dragId !== null) { e.preventDefault(); setOver(`sec:${sec.key}`); } }}
           onDragLeave={() => setOver((o) => (o === `sec:${sec.key}` ? null : o))}
-          onDrop={(e) => { e.preventDefault(); dropOn(null, arrange === "groups" ? sec.key : null); }}
+          onDrop={(e) => { e.preventDefault(); dropOn(null, arrange === "groups" ? sec.key : null, arrange === "days" ? sec.key : undefined); }}
         >
           <h2 className="cards-h">
             {sec.title}
             <span>{sec.items.length}</span>
           </h2>
           <div className="cards-grid">
+            {sec.items.length === 0 && <p className="cards-drop">Drop here</p>}
             {sec.items.map((i) => (
               <Card
                 key={i.id}
@@ -348,7 +358,21 @@ function NewGroup({ onAdd }: { onAdd: (title: string, grp: string) => void }) {
 }
 
 // "Overdue", "Today", "Tomorrow", "This week", "Later", "Any time".
-function dayBuckets(open: PlanItem[], today: string) {
+// The day a card moves to when dropped on a day section: today, tomorrow, off the calendar, or
+// for "Next 7 days" and "Later" the soonest day there unless it's already in it. Undefined leaves
+// the day alone (Overdue).
+function dateFor(key: string, item: PlanItem, today: string): string | null | undefined {
+  const d = item.on_date;
+  if (key === "today") return today;
+  if (key === "tomorrow") return addDays(today, 1);
+  if (key === "any") return null;
+  if (key === "week") return d && d > addDays(today, 1) && d <= addDays(today, 7) ? d : addDays(today, 2);
+  if (key === "later") return d && d > addDays(today, 7) ? d : addDays(today, 8);
+  return undefined;
+}
+
+// While a card's being dragged, Today, Tomorrow and Any time show even when empty, to drop on.
+function dayBuckets(open: PlanItem[], today: string, dragging = false) {
   const tomorrow = addDays(today, 1);
   const week = addDays(today, 7);
   const last = (i: PlanItem) => i.end_date ?? i.on_date!;
@@ -363,5 +387,5 @@ function dayBuckets(open: PlanItem[], today: string) {
   const timeOrder = (a: PlanItem, b: PlanItem) => `${a.on_date ?? "9"}${a.at_time ?? "99"}`.localeCompare(`${b.on_date ?? "9"}${b.at_time ?? "99"}`) || a.rank - b.rank;
   return buckets
     .map((b) => ({ key: b.key, title: b.title, items: open.filter(b.test).sort(timeOrder) }))
-    .filter((b) => b.items.length);
+    .filter((b) => b.items.length || (dragging && ["today", "tomorrow", "any"].includes(b.key)));
 }
