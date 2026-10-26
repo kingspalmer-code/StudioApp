@@ -28,7 +28,10 @@ const KINDS: DumpKind[] = ["event", "todo", "get"];
 // The name of the to-do that shopping and errands go under, as steps.
 const GET_LIST = "To get";
 
-export async function readBrainDump(text: string, routineIn: unknown): Promise<{ items?: DumpItem[]; routine?: DumpRoutine[]; changes?: DumpChange[]; summary?: string; question?: string | null; error?: string }> {
+// A question Oatcake asked about this dump, and what they said back.
+export type DumpAnswer = { q: string; a: string };
+
+export async function readBrainDump(text: string, routineIn: unknown, answersIn: DumpAnswer[] = []): Promise<{ items?: DumpItem[]; routine?: DumpRoutine[]; changes?: DumpChange[]; summary?: string; question?: string | null; options?: string[]; error?: string }> {
   if (!process.env.ANTHROPIC_API_KEY) return { error: "This isn't switched on yet." };
   const dump = text.trim().slice(0, 4000);
   if (!dump) return { error: "Type or say what's on your mind first." };
@@ -36,6 +39,10 @@ export async function readBrainDump(text: string, routineIn: unknown): Promise<{
   const { error: limit } = await supabase.rpc("note_ai_use", { what: "brain dump" });
   if (limit) return { error: limit.message.includes("Only the workspace owner") ? "Only the owner can use this for now." : limit.message };
   const routine = readRoutine(routineIn);
+  const answers = (Array.isArray(answersIn) ? answersIn : [])
+    .filter((x) => x && typeof x.q === "string" && typeof x.a === "string" && x.a.trim())
+    .slice(-5)
+    .map((x) => `You asked: ${x.q.slice(0, 300)}\nThey said: ${x.a.trim().slice(0, 300)}`);
   const now = new Date();
   const today = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, weekday: "long", year: "numeric", month: "long", day: "numeric" }).format(now);
   const iso = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
@@ -78,7 +85,7 @@ ${list}
 
 If they ask to change something already on the list ("move the HopRocket photoshoot to 8 in the morning", "push the gig shoot to Friday", "I've done the leather cleaner", "cancel the dentist"), put it in changes, not items, using the id of the best match. In a change, title/date/end_date/time/group/place are the new values, or null to leave them as they are (moving only the time keeps the day); clear_date true takes it off the calendar; done true ticks it off; remove true deletes it. Only change things they clearly mean.
 
-summary: one or two short plain sentences on what you understood, the way you'd confirm it back to them ("Got it: you're in London Thursday to Monday, and the gold spray paint needs getting this weekend for the chilli wing contest on Tuesday."). question: if something important is genuinely unclear (which day they mean, which of two things to change), ask one short question; otherwise null. Still make your best guess in the items.
+summary: one or two short plain sentences on what you understood, the way you'd confirm it back to them ("Got it: you're in London Thursday to Monday, and the gold spray paint needs getting this weekend for the chilli wing contest on Tuesday."). question: if something important is genuinely unclear (which day they mean, which of two things to change), ask one short question; otherwise null. Still make your best guess in the items. options: two or three tap-to-answer replies to your question, each a few words in their voice ("Same one", "Separate job"); [] when there's no question or it can't be answered that way. Once they've answered a question, go with their answer and don't ask it again.
 
 If they describe something that happens every week (office days, a regular train, a class), put it in routine instead of items: days as numbers 1 = Monday to 7 = Sunday, start and end as HH:MM (end null for something at one time, like a train). Don't repeat what's already in their usual week. Don't invent anything they didn't say.`,
       output_config: {
@@ -88,10 +95,11 @@ If they describe something that happens every week (office days, a regular train
           schema: {
             type: "object",
             additionalProperties: false,
-            required: ["summary", "question", "items", "routine", "changes"],
+            required: ["summary", "question", "options", "items", "routine", "changes"],
             properties: {
               summary: { type: "string" },
               question: { type: ["string", "null"] },
+              options: { type: "array", items: { type: "string" } },
               changes: {
                 type: "array",
                 items: {
@@ -148,7 +156,7 @@ If they describe something that happens every week (office days, a regular train
           },
         },
       },
-      messages: [{ role: "user", content: dump }],
+      messages: [{ role: "user", content: answers.length ? `${dump}\n\n${answers.join("\n\n")}` : dump }],
     });
     const out = JSON.parse(response.content.find((b) => b.type === "text")?.text ?? "{}");
     const items: DumpItem[] = (Array.isArray(out.items) ? out.items : [])
@@ -185,7 +193,8 @@ If they describe something that happens every week (office days, a regular train
     if (!items.length && !found.length && !changes.length) return { error: "Oatcake couldn't find anything to add or change in that. Try saying it another way." };
     const summary = String(out.summary ?? "").trim().slice(0, 600);
     const question = typeof out.question === "string" && out.question.trim() ? out.question.trim().slice(0, 300) : null;
-    return { items, routine: found, changes, summary, question };
+    const options = question && Array.isArray(out.options) ? out.options.filter((o: unknown): o is string => typeof o === "string" && o.trim() !== "").map((o: string) => o.trim().slice(0, 60)).slice(0, 3) : [];
+    return { items, routine: found, changes, summary, question, options };
   } catch (e) {
     console.error("readBrainDump", e);
     return { error: "Oatcake couldn't read that just now. Try again in a moment." };
