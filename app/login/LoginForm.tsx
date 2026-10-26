@@ -9,7 +9,8 @@ import Wheels from "./Wheels";
 type Mode = "password" | "tour" | "new" | "forgot" | "sent";
 
 // initialEmail comes from an invite link (Team > Share invite link): it opens straight on "Email me a link".
-export default function LoginForm({ initialError, initialEmail = "" }: { initialError: string | null; initialEmail?: string }) {
+// next is the page they were sent here from, where signing in with a password lands them.
+export default function LoginForm({ initialError, initialEmail = "", next = "/" }: { initialError: string | null; initialEmail?: string; next?: string }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>(initialEmail ? "forgot" : "password");
   const [email, setEmail] = useState(initialEmail);
@@ -26,7 +27,7 @@ export default function LoginForm({ initialError, initialEmail = "" }: { initial
     const { error } = await createClient().auth.signInWithPassword({ email: address(), password });
     setBusy(false);
     if (error) setError("That email and password don't match. No password yet? Use \"Email me a link\" below.");
-    else router.replace("/");
+    else router.replace(next);
   }
 
   async function sendLink(e: React.FormEvent) {

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { safeNext } from "./lib/next-path";
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -32,16 +33,23 @@ export async function middleware(request: NextRequest) {
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.search = "";
+    // Remember the page they were after, so a Home Screen icon for Habits lands on Habits once signed in.
+    url.search = path === "/" ? "" : `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
     return NextResponse.redirect(url);
   }
 
   // A Home Screen app on an iPhone always opens on the page it was added from, which is often the
-  // sign-in page. Someone still signed in goes straight on in, keeping any token just renewed above.
+  // sign-in page. Someone still signed in goes straight on in (to the page they were after, if any), keeping any token just renewed above.
   if (user && path === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.search = "";
+    const next = safeNext(request.nextUrl.searchParams.get("next"));
+    if (next) {
+      const [pathname, search = ""] = next.split("?");
+      url.pathname = pathname;
+      url.search = search ? `?${search}` : "";
+    }
     const home = NextResponse.redirect(url);
     response.cookies.getAll().forEach((cookie) => home.cookies.set(cookie));
     return home;
