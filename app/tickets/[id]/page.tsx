@@ -24,6 +24,7 @@ import { docName, gbp, round2, STATUS_LABEL } from "@/lib/documents";
 import { asDoc } from "@/lib/docs-server";
 import Deliveries from "@/components/Deliveries";
 import Thumb from "@/components/Thumb";
+import FileMenu from "@/components/FileMenu";
 import { signDeliveries, type Delivery, type Draft, type DraftFile } from "@/lib/deliveries";
 import SaveForm from "@/components/SaveForm";
 import Submit from "@/components/Submit";
@@ -161,7 +162,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   const deliveries = (isDesigner || delivered.length > 0) && (
     <>
       <p className="eyebrow">Finished files</p>
-      <Deliveries ticketId={t.id} businessId={t.business_id} files={delivered} canEdit={isDesigner && !viewing} clientName={biz?.name ?? `the ${terms.client}`} />
+      <Deliveries ticketId={t.id} businessId={t.business_id} files={delivered} canEdit={isDesigner && !viewing} canEmail={isDesigner && !viewing} clientName={biz?.name ?? `the ${terms.client}`} />
     </>
   );
 
@@ -205,7 +206,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                 {approval && <span className="chip draft-approved">Approved by {approval.author_name || approval.author_email}</span>}
               </div>
               {d.message && <div className="copy">{d.message}</div>}
-              <Deliveries ticketId={t.id} businessId={t.business_id} files={draftFiles.filter((f) => f.draft_id === d.id)} canEdit={false} clientName="" />
+              <Deliveries ticketId={t.id} businessId={t.business_id} files={draftFiles.filter((f) => f.draft_id === d.id)} canEdit={false} canEmail={isDesigner && !viewing} clientName="" />
               {(said.length > 0 || canNote) && (
                 <div className="group">
                   {said.map(noteRow)}
@@ -382,10 +383,17 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                 <div className="files">
                   {files!.map((f, i) =>
                     signed[i]?.signedUrl ? (
-                      <a key={f.id} href={signed[i].signedUrl} target="_blank" rel="noreferrer">
-                        {IMAGE.test(f.name) && <Thumb bucket="inspiration" path={f.path} full={signed[i].signedUrl} />}
-                        {f.name}
-                      </a>
+                      <FileMenu
+                        key={f.id}
+                        ticketId={t.id}
+                        canEmail={isDesigner && !viewing}
+                        file={{ name: f.name, bucket: "inspiration", path: f.path, url: null, view: signed[i].signedUrl, download: null, image: IMAGE.test(f.name) }}
+                      >
+                        <a href={signed[i].signedUrl} target="_blank" rel="noreferrer">
+                          {IMAGE.test(f.name) && <Thumb bucket="inspiration" path={f.path} full={signed[i].signedUrl} />}
+                          {f.name}
+                        </a>
+                      </FileMenu>
                     ) : null
                   )}
                 </div>

@@ -7,7 +7,8 @@ import { redirect } from "next/navigation";
 import { addDays, cleanItems, CUSTOM_FONT, docName, gbp, KIND_LABEL, type DocKind, type LineItem } from "@/lib/documents";
 import { asDoc, jobDefaults, loadSettings, pdfFor, readSettingsForm } from "@/lib/docs-server";
 import { itemsKey } from "@/lib/fields";
-import { gmailReady, revoke, sendViaGmail, unseal } from "@/lib/gmail";
+import { revoke, unseal } from "@/lib/gmail";
+import { outbox } from "@/lib/outbox";
 import { requireEditor } from "@/lib/session";
 import type { Ticket } from "@/lib/types";
 
@@ -229,22 +230,18 @@ export async function disconnectMail() {
   revalidatePath("/settings/documents");
 }
 
-// Sent from their own Gmail when one is connected, otherwise from Oatcake's address with replies
-// going to them. If Gmail stops accepting the sign-in, it goes from Oatcake and says to reconnect.
+// Sent from their own Gmail when one is connected, otherwise from Oatcake's address (lib/outbox).
 export async function sendDocument(id: number, to: string, message: string): Promise<{ ok?: boolean; error?: string; note?: string; via?: string }> {
-  const key = process.env.RESEND_API_KEY;
   const { supabase, workspace, member } = await owner();
-  const { data: account } = gmailReady()
-    ? await supabase.from("mail_accounts").select("email, refresh_token").eq("workspace_id", workspace.id).maybeSingle()
-    : { data: null };
-  if (!key && !account) return { error: "Emailing isn't switched on yet. Download the PDF and send it yourself for now." };
+  const mail = await outbox(supabase, workspace, member.email);
+  if (!mail.ready) return { error: "Emailing isn't switched on yet. Download the PDF and send it yourself for now." };
   const address = to.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) return { error: "Check the email address." };
 
   const { data: row } = await supabase.from("documents").select("*").eq("id", id).maybeSingle();
   if (!row) return { error: "Not found" };
   const doc = asDoc(row);
-  const settings = await loadSettings(supabase, workspace.id);
+  const settings = mail.settings;
   const h = await headers();
   const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
   let pdf: Buffer;
@@ -255,8 +252,7 @@ export async function sendDocument(id: number, to: string, message: string): Pro
     return { error: "The PDF couldn't be made, so nothing was sent. Try again in a moment." };
   }
 
-  const from = (settings.business_name || workspace.name).replace(/[<>"]/g, "");
-  const replyTo = settings.email || member.email;
+  const { from, replyTo } = mail;
   const name = docName(doc);
   const body = message.trim() || `Please find ${doc.kind === "quote" ? "your quote" : "your invoice"} attached.`;
   const html = `<div style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#2a201c;max-width:520px">
@@ -266,54 +262,15 @@ ${esc(body).replace(/\n/g, "<br>")}
 <p style="margin:22px 0 0;color:#6b5d55;font-size:13px">${esc(from)}${replyTo ? ` · Reply to this email to get in touch` : ""}</p>
 </div>`;
 
-  const subject = `${name} from ${from}`;
-  const text = `${body}\n\n${name}${doc.title ? ` · ${doc.title}` : ""}\n${gbp(doc.total)}\n\n${from}`;
-  const filename = `${name}.pdf`;
-
-  let via: string | undefined;
-  let note: string | undefined;
-  if (account) {
-    // The Email in Settings can be one of their Gmail "Send mail as" addresses (say a work alias).
-    // Gmail sends from it if it's set up there, and quietly uses the main address if it isn't.
-    const sendAs = settings.email && settings.email !== account.email ? settings.email : account.email;
-    const sent = await sendViaGmail(account.refresh_token, {
-      fromName: from,
-      from: sendAs,
-      to: address,
-      replyTo: replyTo || undefined,
-      subject,
-      text,
-      html,
-      attachment: { filename, content: Buffer.from(pdf) },
-    });
-    if (sent.ok) via = sendAs;
-    else {
-      console.error("sendDocument gmail", sent.detail);
-      if (!key) return { error: sent.reconnect ? "Gmail needs reconnecting in Settings > Quotes & invoices. Nothing was sent." : "Gmail didn't send it. Try again in a moment." };
-      note = sent.reconnect ? "Gmail needs reconnecting in Settings > Quotes & invoices, so this went from Oatcake's address." : "Gmail didn't take it, so this went from Oatcake's address.";
-    }
-  }
-
-  if (!via) {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: `${from} via Oatcake <documents@oatcake.xyz>`,
-        to: [address],
-        reply_to: replyTo || undefined,
-        subject,
-        html,
-        text,
-        attachments: [{ filename, content: Buffer.from(pdf).toString("base64") }],
-      }),
-    });
-    if (!res.ok) {
-      const detail = await res.text();
-      console.error("sendDocument", res.status, detail);
-      return { error: `The email didn't send (${res.status}). Try again, or download the PDF and send it yourself.` };
-    }
-  }
+  const sent = await mail.send({
+    to: address,
+    subject: `${name} from ${from}`,
+    text: `${body}\n\n${name}${doc.title ? ` · ${doc.title}` : ""}\n${gbp(doc.total)}\n\n${from}`,
+    html,
+    attachment: { filename: `${name}.pdf`, content: Buffer.from(pdf), type: "application/pdf" },
+  });
+  if (!sent.ok) return { error: sent.error };
+  const { via, note } = sent;
   await supabase
     .from("documents")
     .update({ status: doc.status === "draft" ? "sent" : doc.status, sent_at: new Date().toISOString(), sent_to: address })
