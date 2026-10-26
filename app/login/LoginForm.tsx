@@ -9,10 +9,11 @@ import Wheels from "./Wheels";
 type Mode = "password" | "tour" | "new" | "forgot" | "sent";
 
 // initialEmail comes from an invite link (Team > Share invite link): it opens straight on "Email me a link".
+// start comes from "Get started" at the foot of the page under the sign-in: it opens on the tour.
 // next is the page they were sent here from, where signing in with a password lands them.
-export default function LoginForm({ initialError, initialEmail = "", next = "/" }: { initialError: string | null; initialEmail?: string; next?: string }) {
+export default function LoginForm({ initialError, initialEmail = "", next = "/", start = false }: { initialError: string | null; initialEmail?: string; next?: string; start?: boolean }) {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>(initialEmail ? "forgot" : "password");
+  const [mode, setMode] = useState<Mode>(initialEmail ? "forgot" : start ? "tour" : "password");
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");

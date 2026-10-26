@@ -1,39 +1,38 @@
 "use client";
 
-import { AnimatePresence, LayoutGroup, motion, MotionConfig, useReducedMotion, type PanInfo } from "motion/react";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion, MotionConfig, useReducedMotion, type PanInfo } from "motion/react";
+import { useEffect, useRef, useState } from "react";
 
 // A short look at Oatcake for people tapping "Get started", before they make an account.
-// Each card shows a small piece of the real app moving on its own, rather than an illustration.
+// Same colourful poster style as the story under the sign-in: each step has its own colour and a small screen of the app moving on its own.
 // Motion uses springs throughout; with Reduce Motion on, things fade and the demos sit still.
 const SPRING = { type: "spring", stiffness: 260, damping: 30, mass: 0.9 } as const;
 const SOFT = { type: "spring", stiffness: 170, damping: 26 } as const;
 
 const SLIDES = [
   {
-    title: "Every job, one place.",
-    text: "No more digging through emails, WhatsApps and notes to find where things are up to.",
-    Demo: BoardDemo,
+    title: "Get it out of your head.",
+    text: "Brain dumps, scribbles, half-thoughts at 2am. Tell Oatcake and it sorts them into cards.",
+    color: "#ff5a36",
+    Demo: TellDemo,
   },
   {
-    title: "Clients ask properly.",
-    text: "Requests arrive with everything you need, not just “can you do us a poster?”",
-    Demo: RequestDemo,
+    title: "Three things today.",
+    text: "Not forty. Pick a few, tick them off, and let the rest wait without staring at you.",
+    color: "#ffd45c",
+    Demo: TodayDemo,
   },
   {
-    title: "Know what to start today.",
-    text: "Oatcake works back from each deadline, so nothing sneaks up on you.",
-    Demo: QueueDemo,
+    title: "Habits that bend when life does.",
+    text: "Slide to log. Miss a few and Oatcake offers an easier goal, not a guilt trip.",
+    color: "#ffbdee",
+    Demo: HabitsDemo,
   },
   {
-    title: "Quotes & invoices, sorted.",
-    text: "Send a quote from your phone, designed by Oatcake with your logo. Turn it into an invoice when the job's done.",
+    title: "And the serious bits.",
+    text: "Jobs, quotes, invoices and clients for small teams, solo creators and young studios.",
+    color: "#8aa4dd",
     Demo: InvoiceDemo,
-  },
-  {
-    title: "Make it yours.",
-    text: "Designers, signwriters, photographers: tell Oatcake how you work and it sets itself up to match.",
-    Demo: YoursDemo,
   },
 ];
 
@@ -54,6 +53,7 @@ export default function Tour({ onDone }: { onDone: () => void }) {
   return (
     <MotionConfig reducedMotion="user">
       <div className="tour">
+        <motion.div className="tour-bg" aria-hidden="true" initial={false} animate={{ backgroundColor: SLIDES[i].color }} transition={{ duration: 0.6, ease: [0.2, 0.8, 0.2, 1] }} />
         <button type="button" className="tour-skip" onClick={onDone}>Skip</button>
         <motion.div className="tour-track" drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.18} onDragEnd={onDragEnd}>
           <AnimatePresence mode="popLayout" initial={false} custom={dir}>
@@ -88,7 +88,7 @@ export default function Tour({ onDone }: { onDone: () => void }) {
               </motion.p>
               {last && (
                 <motion.p className="tour-small" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }}>
-                  Made for creatives with busy heads and the small businesses they run. Set up in two minutes.
+                  For life and work. Set up in two minutes.
                 </motion.p>
               )}
             </motion.div>
@@ -137,103 +137,93 @@ function useLoop(count: number, ms: number) {
   return still ? count - 1 : step;
 }
 
-function BoardDemo() {
-  const at = useLoop(5, 1500); // the moving job sits in column 0..3, then pauses in Delivered
-  const cols = [
-    { label: "New", color: "blue", cards: ["Gift vouchers"] },
-    { label: "In progress", color: "indigo", cards: ["Spring menu"] },
-    { label: "With client", color: "purple", cards: ["Logo refresh"] },
-    { label: "Delivered", color: "green", cards: ["Beer mats"] },
-  ];
-  const col = Math.min(at, 3);
-  return (
-    <LayoutGroup>
-      <div className="demo-board">
-        {cols.map((c, n) => (
-          <div className="demo-col" key={c.label}>
-            <b><i style={{ background: `var(--t-${c.color})` }} />{c.label}</b>
-            {n === col && (
-              <motion.div layoutId="mover" className="demo-card mover" transition={SPRING}>
-                Halloween poster<small>Due Fri</small>
-              </motion.div>
-            )}
-            {c.cards.map((t) => (
-              <motion.div layout="position" className="demo-card" key={t} transition={SPRING}>{t}</motion.div>
-            ))}
-          </div>
-        ))}
-      </div>
-    </LayoutGroup>
-  );
-}
-
 function Typed({ text, from, step }: { text: string; from: number; step: number }) {
   const shown = Math.max(0, Math.min(text.length, (step - from) * 3));
   return <span>{text.slice(0, shown)}{shown > 0 && shown < text.length && <i className="caret" />}</span>;
 }
 
-function RequestDemo() {
-  const step = useLoop(34, 160); // type the request, press send, then it lands in the queue
-  const sent = step >= 20;
+// A messy thought gets typed out, then Oatcake turns it into coloured cards.
+function TellDemo() {
+  const step = useLoop(44, 140);
+  const dump = "dentist thurs?? oat milk. call mum. finish Jo's poster";
+  const cards = [
+    { t: "Dentist", s: "Thu", c: "sky" },
+    { t: "Oat milk", s: "To get", c: "lemon" },
+    { t: "Call mum", s: "Any time", c: "pink" },
+    { t: "Jo's poster", s: "Work", c: "orange" },
+  ];
+  const sorted = step >= 24;
   return (
-    <LayoutGroup>
-      <div className="demo-request">
-        <AnimatePresence mode="popLayout">
-          {!sent ? (
-            <motion.div key="form" className="demo-form" exit={{ opacity: 0, scale: 0.96, filter: "blur(4px)" }} transition={SPRING}>
-              <div className="demo-field">
-                <small>What do you need?</small>
-                <Typed text="Christmas menu, A4" from={1} step={step} />
-              </div>
-              <div className="demo-field"><small>Deadline</small><Typed text="Fri 12 Dec" from={8} step={step} /></div>
-              <div className="demo-field"><small>Exact wording</small><Typed text="3 courses £32.50" from={12} step={step} /></div>
-              <motion.div className="demo-send" animate={{ scale: step === 18 || step === 19 ? 0.92 : 1 }} transition={SPRING}>Send request</motion.div>
+    <div className="demo-tell">
+      <div className="demo-dump">
+        <small>What&rsquo;s on your mind?</small>
+        <Typed text={dump} from={1} step={step} />
+      </div>
+      <div className="demo-cards">
+        <AnimatePresence>
+          {sorted && cards.map((c, n) => (
+            <motion.div
+              key={c.t}
+              className={`demo-bento ${c.c}`}
+              initial={{ opacity: 0, y: 14, scale: 0.85, rotate: n % 2 ? 3 : -3 }}
+              animate={{ opacity: 1, y: 0, scale: 1, rotate: n % 2 ? 1.5 : -1.5 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 320, damping: 20, delay: 0.12 * n }}
+            >
+              {c.t}<small>{c.s}</small>
             </motion.div>
-          ) : (
-            <motion.div key="list" className="demo-list">
-              <motion.div
-                className="demo-row fresh"
-                initial={{ opacity: 0, y: -26, scale: 0.94, filter: "blur(6px)" }}
-                animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-                transition={{ type: "spring", stiffness: 300, damping: 22 }}
-              >
-                <span>Christmas menu, A4<small>Copper Kettle Café · due Fri 12 Dec</small></span><em className="new">New</em>
-              </motion.div>
-              <motion.div className="demo-row" initial={{ y: -44 }} animate={{ y: 0 }} transition={SPRING}><span>Gin festival banner<small>Northgate Cycles</small></span><em>In progress</em></motion.div>
-              <motion.div className="demo-row" initial={{ y: -44 }} animate={{ y: 0 }} transition={{ ...SPRING, delay: 0.03 }}><span>Staff rota poster<small>Larkspur Inn</small></span><em>With client</em></motion.div>
-            </motion.div>
-          )}
+          ))}
         </AnimatePresence>
       </div>
-    </LayoutGroup>
+    </div>
   );
 }
 
-function QueueDemo() {
-  const step = useLoop(4, 1400); // the urgent job arrives and the queue makes room for it
-  const rows = [
-    ...(step >= 1 ? [{ k: "u", t: "Beer festival banner", s: "Urgent · due Mon", w: "Start today", c: "hot" }] : []),
-    { k: "a", t: "Van livery", s: "5 days’ work · due Thu", w: "Start today", c: "hot" },
-    { k: "b", t: "Autumn menu", s: "3 days’ work · due Fri", w: "Start tomorrow", c: "warm" },
-    { k: "c", t: "A-board", s: "2 days’ work · due next Wed", w: "Start Mon", c: "" },
-  ];
+// Three things for today get ticked off one by one; the rest stays folded away.
+function TodayDemo() {
+  const step = useLoop(9, 900);
+  const things = ["Reply to Sam", "Walk before lunch", "Send Jo the proofs"];
   return (
-    <div className="demo-list demo-queue">
-      <AnimatePresence initial={false} mode="popLayout">
-        {rows.map((r) => (
-          <motion.div
-            key={r.k}
-            layout
-            className={`demo-row${r.k === "u" ? " urgent" : ""}`}
-            initial={{ opacity: 0, y: -24, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 320, damping: 22 }}
-          >
-            <span>{r.t}<small>{r.s}</small></span><em className={r.c}>{r.w}</em>
+    <div className="demo-today">
+      <b className="demo-head">Today</b>
+      {things.map((t, n) => {
+        const done = step >= n * 2 + 2;
+        return (
+          <motion.div key={t} className={`demo-thing${done ? " done" : ""}`} animate={{ scale: step === n * 2 + 2 ? [1, 1.04, 1] : 1 }} transition={{ duration: 0.4 }}>
+            <motion.i animate={{ background: done ? "#6fbf7e" : "rgba(243,233,220,0)" }} transition={SOFT}>
+              {done && <svg viewBox="0 0 12 12"><motion.path d="M2.5 6.2 5 8.6 9.6 3.6" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.3 }} /></svg>}
+            </motion.i>
+            <span>{t}</span>
           </motion.div>
-        ))}
-      </AnimatePresence>
+        );
+      })}
+      <motion.p className="demo-nice" animate={{ opacity: step >= 7 ? 1 : 0, y: step >= 7 ? 0 : 6 }} transition={SOFT}>Nice. The rest can wait.</motion.p>
+      <div className="demo-plate">Still on your plate &middot; 12</div>
+    </div>
+  );
+}
+
+// Slide the knob to log a glass of water; a missed run offers a kinder goal.
+function HabitsDemo() {
+  const step = useLoop(7, 1100);
+  const logged = step >= 2;
+  const glasses = logged ? 4 : 3;
+  const track = useRef<HTMLDivElement>(null);
+  const far = (track.current?.clientWidth ?? 280) - 40;
+  return (
+    <div className="demo-habits">
+      <div className="demo-habit">
+        <svg className="demo-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" /><motion.circle cx="18" cy="18" r="15" className="on" initial={false} animate={{ pathLength: glasses / 6 }} transition={SOFT} /></svg>
+        <span>Drink water<small>{glasses} of 6 glasses</small></span>
+      </div>
+      <div className="demo-slide" ref={track}>
+        <motion.i animate={{ x: step === 1 ? far : 0 }} transition={step === 1 ? { duration: 0.8, ease: [0.4, 0, 0.2, 1] } : SPRING} />
+        <span>{logged && step < 4 ? "Logged" : "Slide to log a glass"}</span>
+      </div>
+      <motion.div className="demo-kind" animate={{ opacity: step >= 4 ? 1 : 0, y: step >= 4 ? 0 : 8 }} transition={SOFT}>
+        <span>Running<small>Missed a couple this week</small></span>
+        <em>Try 2 instead?</em>
+      </motion.div>
     </div>
   );
 }
@@ -293,57 +283,6 @@ function InvoiceDemo() {
           <motion.span key={invoice ? "i" : "q"} initial={{ opacity: 0, filter: "blur(4px)" }} animate={{ opacity: 1, filter: "blur(0px)" }} exit={{ opacity: 0, filter: "blur(4px)" }} transition={SOFT}>
             {invoice ? "Send invoice" : "Send quote"}
           </motion.span>
-        </AnimatePresence>
-      </motion.div>
-    </div>
-  );
-}
-
-function YoursDemo() {
-  const step = useLoop(4, 1600);
-  const yours = step >= 1 && step <= 2;
-  const stages: [string, string, string, string][] = [
-    ["New", "Quote sent", "blue", "orange"],
-    ["In progress", "Building", "indigo", "purple"],
-    ["Delivered", "Fitted", "green", "green"],
-  ];
-  return (
-    <div className="demo-yours">
-      <div className="demo-pills">
-        {stages.map(([a, b, ca, cb]) => (
-          <span className="demo-pill" key={a}>
-            <motion.i animate={{ background: `var(--t-${yours ? cb : ca})` }} />
-            <AnimatePresence mode="popLayout" initial={false}>
-              <motion.span
-                key={yours ? b : a}
-                initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                exit={{ opacity: 0, y: -8, filter: "blur(4px)" }}
-                transition={SOFT}
-              >
-                {yours ? b : a}
-              </motion.span>
-            </AnimatePresence>
-          </span>
-        ))}
-      </div>
-      <motion.div layout className="demo-form" transition={SPRING}>
-        <motion.div layout className="demo-field" transition={SPRING}><small>{yours ? "Job notes" : "Brief"}</small><span>Gold leaf, double-sided</span></motion.div>
-        <motion.div layout className="demo-field" transition={SPRING}><small>{yours ? "Site address" : "Deadline"}</small><span>{yours ? "14 Mill Row" : "Fri 12 Dec"}</span></motion.div>
-        <AnimatePresence initial={false}>
-          {yours && (
-            <motion.div
-              layout
-              key="quote"
-              className="demo-field added"
-              initial={{ opacity: 0, scale: 0.9, y: -6 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            >
-              <small>Quote (£)</small><span>£850</span>
-            </motion.div>
-          )}
         </AnimatePresence>
       </motion.div>
     </div>
