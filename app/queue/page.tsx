@@ -1,10 +1,11 @@
 import Shell from "@/components/Shell";
+import { jobsPage } from "@/lib/workspace";
 import HomeBlocks from "@/components/HomeBlocks";
 import { requireMember } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
 
-// The Queue: Up next and the widgets above it to start with, and whatever else the owner puts on
+// The Jobs page (still at /queue so saved links keep working): Up next and the widgets above it to start with, and whatever else the owner puts on
 // it with Customise (lib/layouts.ts).
 export default async function QueuePage({
   searchParams,
@@ -20,7 +21,7 @@ export default async function QueuePage({
   ]);
   return (
     <Shell {...session.shell}>
-      <HomeBlocks session={session} all={data ?? []} page="queue" title="Queue" view={view} biz={biz} tour={tour} />
+      <HomeBlocks session={session} all={data ?? []} page="queue" title={jobsPage(session.workspace.kind)} view={view} biz={biz} tour={tour} />
     </Shell>
   );
 }

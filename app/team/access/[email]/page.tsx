@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { jobsPage } from "@/lib/workspace";
 import { notFound } from "next/navigation";
 import FrameChanged from "@/components/FrameChanged";
 import Shell from "@/components/Shell";
@@ -21,7 +22,7 @@ export default async function EmployeeAccessPage({ params }: { params: Promise<{
   const name = person.full_name || person.email;
 
   const areas: { key: Area; label: string; sub: string }[] = [
-    { key: "requests", label: terms.Jobs, sub: `The queue, the overview and every ${terms.job}: notes, drafts and files` },
+    { key: "requests", label: terms.Jobs, sub: `The ${jobsPage(workspace.kind)} page, the overview and every ${terms.job}: notes, drafts and files` },
     ...(workspace.kind === "solo" ? [] : [{ key: "clients" as Area, label: terms.Clients, sub: `Their details, logins and apps` }]),
     { key: "quotes", label: "Quotes & invoices", sub: "Making, sending and marking them paid" },
     { key: "team", label: "Team", sub: "Everyone's to-do lists. Adding people and changing access stays with you." },

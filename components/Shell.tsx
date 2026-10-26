@@ -17,7 +17,7 @@ import SearchButton from "./SearchButton";
 import TabBar from "./TabBar";
 import Tracker from "./Tracker";
 import { OatcakeMark } from "./OatcakeLogo";
-import { termsFor } from "@/lib/workspace";
+import { jobsPage, termsFor } from "@/lib/workspace";
 import { alwaysOnComputer, onPhoneTab, ordered } from "@/lib/menu";
 import Submit from "@/components/Submit";
 import { allows } from "@/lib/access";
@@ -76,7 +76,7 @@ export function pagesFor(member: Member, workspace: Workspace, viewing: boolean,
 
 export function linksFor(member: Member, workspace: Workspace, viewing: boolean): NavLink[] {
   const terms = termsFor(workspace.kind);
-  const main = { href: "/queue", label: workspace.kind === "studio" ? "Queue" : terms.Jobs };
+  const main = { href: "/queue", label: jobsPage(workspace.kind) };
   // Managers can look at the queue, every job in it and the gallery of finished work; nothing there lets them change anything.
   // Managers linked to businesses on the People page can also send requests for them.
   // Every finished job, filed by month in a card drawer. After the first four, so it sits under More on phones.
