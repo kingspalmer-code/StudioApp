@@ -1,5 +1,9 @@
 // Line icons for the sections, shared by the phone tab bar and the sidebar rail.
 export const NAV_ICONS: Record<string, React.ReactNode> = {
+  // A sun coming up over the line of the day.
+  "/today": <path d="M4 18h16M7.5 18a4.5 4.5 0 0 1 9 0M12 7V5M6.3 9.3 4.9 7.9M17.7 9.3l1.4-1.4M3 13.5h2M19 13.5h2" />,
+  // A work bag: the business side (jobs, clients, finished work, the team).
+  work: <path d="M4 8h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1ZM9 8V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18" />,
   "/queue": <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" />,
   "/overview": <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
   "/gallery": <path d="M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1ZM4 16l4.5-4.5L13 16M13 14l2.5-2.5L20 16M15.5 8.5h.01" />,

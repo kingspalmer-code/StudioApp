@@ -83,7 +83,7 @@ export async function homeBlocks({
         // Without dates nothing can run late, so the at-risk count gives way to what's come in.
         ctx.noDates
           ? { n: all.filter((t) => new Date(t.created_at) >= monthStart).length, label: "New this month" }
-          : { n: risk.length, label: "At risk", color: risk.length ? "var(--red)" : undefined },
+          : { n: risk.length, label: "Worth starting", color: risk.length ? "var(--orange)" : undefined },
         { n: done.filter((t) => t.delivered_at && new Date(t.delivered_at) >= monthStart).length, label: "Delivered this month", color: "var(--green)" },
       ];
       return (
@@ -146,9 +146,9 @@ export async function homeBlocks({
       </>
     ) : (
       <>
-        <p className="eyebrow">At risk</p>
+        <p className="eyebrow">Worth starting</p>
         <div className="group">
-          {risk.length ? risk.map((t) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} plan={canEdit} />) : <div className="empty">Nothing at risk right now.</div>}
+          {risk.length ? risk.map((t) => <TicketRow key={t.id} t={t} biz={byId[t.business_id]} ctx={ctx} plan={canEdit} />) : <div className="empty">Nothing needs starting right now.</div>}
         </div>
         <p className="foot">Should already have started, or waiting on the client within 5 days of the deadline.</p>
       </>

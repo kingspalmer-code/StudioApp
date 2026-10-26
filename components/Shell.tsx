@@ -18,11 +18,12 @@ import TabBar from "./TabBar";
 import Tracker from "./Tracker";
 import { OatcakeMark } from "./OatcakeLogo";
 import { jobsPage, termsFor } from "@/lib/workspace";
-import { alwaysOnComputer, onPhoneTab, ordered } from "@/lib/menu";
+import { alwaysOnComputer, onPhoneTab, ordered, WORK_PREFIXES } from "@/lib/menu";
+import WorkTabs from "./WorkTabs";
 import Submit from "@/components/Submit";
 import { allows } from "@/lib/access";
 
-export type NavLink = { href: string; label: string; icon?: string; fixed?: boolean };
+export type NavLink = { href: string; label: string; icon?: string; fixed?: boolean; match?: string[] };
 
 // Every other page someone can open, grouped the way the app groups them, so Edit sidebar can pin
 // any of them (menu_pins). Only pages this login may open are offered, and a pin to anything not
@@ -42,6 +43,8 @@ export function pagesFor(member: Member, workspace: Workspace, viewing: boolean,
   const parts = owner || allows(a, "settings");
   const icon = "/settings";
   return [
+    // The business side's own pages, so any of them can be pinned straight onto the sidebar.
+    { title: "Work", links: owner || member.staff ? workLinks(member, workspace).filter((l) => l.href !== "/queue") : [] },
     {
       title: "Settings",
       links: settings
@@ -86,6 +89,8 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
   const todo = { href: "/calendar", label: "To-do" };
   // Everyone's own habits, whatever kind of login.
   const habits = { href: "/habits", label: "Habits" };
+  // The front door: what's on today, somewhere to jot things down, today's habits and Pickle.
+  const today = { href: "/today", label: "Today" };
   if (member.role === "manager")
     return [
       main,
@@ -107,48 +112,62 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
       filing,
       habits,
     ];
-  // Employees see the to-do list the owner sets them, and Apps, plus whatever else the owner let them into on Team.
+  // Employees start on Today too, with the to-do list the owner sets them, their habits and Apps,
+  // plus Work if the owner let them into any of it on Team.
   if (member.staff) {
     const a = member.access;
-    const clients = workspace.kind === "studio" ? [{ href: "/people", label: "People" }] : workspace.kind === "trade" ? [{ href: "/customers", label: "Customers" }] : [];
+    const work = workLinks(member, workspace);
     return [
+      today,
       todo,
-      habits,
-      ...(allows(a, "requests") ? [main, { href: "/overview", label: "Overview" }] : []),
       ...(allows(a, "requests", "edit") ? [{ href: "/portal", label: `New ${terms.job}` }] : []),
-      ...(allows(a, "clients") ? clients : []),
-      ...(allows(a, "requests") ? [{ href: "/gallery", label: "Gallery" }, filing] : []),
+      habits,
+      ...(work.length ? [workButton(work)] : []),
       { href: "/apps", label: "Apps" },
-      ...(allows(a, "team") ? [{ href: "/team", label: "Team" }] : []),
       ...(allows(a, "settings") || allows(a, "quotes") ? [{ href: "/settings", label: "Settings" }] : []),
     ];
   }
-  if (member.role === "staff") return [todo, habits, { href: "/apps", label: "Apps" }];
-  // Who the work is for: businesses (with their staff) on People, customers on Customers, and nobody when working alone.
-  const clients =
-    workspace.kind === "studio" ? [{ href: "/people", label: "People" }]
-    : workspace.kind === "trade" ? [{ href: "/customers", label: "Customers" }]
-    : [];
-  // Everyone who sees jobs gets the gallery of finished work.
-  const gallery = { href: "/gallery", label: "Gallery" };
+  if (member.role === "staff") return [today, todo, habits, { href: "/apps", label: "Apps" }];
   // Settings is a section of its own, last, so it's always a click away (it used to hide behind your account).
   const settings = { href: "/settings", label: "Settings" };
-  if (viewing) return [main, { href: "/overview", label: "Overview" }, ...clients, gallery, filing, { href: "/apps", label: "Apps" }, settings];
+  if (viewing) return [main, { href: "/overview", label: "Overview" }, ...clientsOf(workspace), { href: "/gallery", label: "Gallery" }, filing, { href: "/apps", label: "Apps" }, settings];
+  // The owner's sections follow the day: Today, To-do, the + (New on phones, which opens the
+  // create sheet with somewhere to jot anything down), Habits, then Work, which holds the business
+  // side (jobs, clients, finished work, the team) behind one button with a strip along the top.
   return [
-    main,
-    { href: "/overview", label: "Overview" },
-    { href: "/portal", label: `New ${terms.job}` },
-    ...clients,
+    today,
     todo,
+    { href: "/portal", label: `New ${terms.job}` },
     habits,
-    gallery,
-    filing,
+    workButton(workLinks(member, workspace)),
     // Tools made for one client each, such as a pattern recolourer, and a way to ask for new ones.
     { href: "/apps", label: "Apps" },
-    { href: "/team", label: "Team" },
     settings,
   ];
 }
+
+// Who the work is for: businesses (with their staff) on People, customers on Customers, and nobody when working alone.
+const clientsOf = (workspace: Workspace): NavLink[] =>
+  workspace.kind === "studio" ? [{ href: "/people", label: "People" }]
+  : workspace.kind === "trade" ? [{ href: "/customers", label: "Customers" }]
+  : [];
+
+// The pages under Work for this login, in the order its strip shows them. An employee only gets
+// the ones the owner let them into on Team.
+export function workLinks(member: Member, workspace: Workspace): NavLink[] {
+  const owner = member.role === "designer" && !member.staff;
+  const a = member.access;
+  const jobs = owner || allows(a, "requests");
+  return [
+    ...(jobs ? [{ href: "/queue", label: jobsPage(workspace.kind) }, { href: "/overview", label: "Overview" }] : []),
+    ...(owner || allows(a, "clients") ? clientsOf(workspace) : []),
+    ...(jobs ? [{ href: "/filing", label: "Filing" }, { href: "/gallery", label: "Gallery" }] : []),
+    ...(owner || allows(a, "team") ? [{ href: "/team", label: "Team" }] : []),
+  ];
+}
+
+// The one Work button: it opens the first page under Work and stays lit on all of them.
+const workButton = (work: NavLink[]): NavLink => ({ href: work[0]?.href ?? "/queue", label: "Work", icon: "work", match: WORK_PREFIXES });
 
 export default function Shell({
   member,
@@ -225,6 +244,8 @@ export default function Shell({
   const isClient = member.role === "client";
   const newHref = isClient ? "/portal?new=1" : undefined;
   const terms = termsFor(workspace.kind);
+  // The strip along the top of the pages under Work.
+  const work = member.role === "designer" && !viewing && !preview ? workLinks(member, workspace) : [];
 
   return (
     <div className={[brand ? "brand-theme" : "", rail ? "has-rail" : ""].filter(Boolean).join(" ") || undefined}>
@@ -300,6 +321,7 @@ export default function Shell({
         </div>
       )}
       <main className={links.length > 1 ? "has-tabbar" : undefined}>
+        {work.length > 1 && <WorkTabs links={work} />}
         {viewing || preview || readOnly ? (
           <fieldset disabled className="read-only">
             {children}
@@ -315,6 +337,7 @@ export default function Shell({
           Job={terms.Job}
           Client={terms.Client}
           clientNames={Object.fromEntries(businesses.map((b) => [b.id, b.name]))}
+          brain={Boolean(process.env.ANTHROPIC_API_KEY)}
         />
       )}
       {isClient && (

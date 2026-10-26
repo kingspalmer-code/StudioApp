@@ -317,7 +317,6 @@ input.dump-title:focus { outline: none; box-shadow: 0 1.5px 0 var(--o); }
 .card-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .card-top:empty { display: none; }
 .card-when { border: 1.5px solid currentColor; border-radius: 999px; padding: 3px 10px; font-size: 12.5px; font-weight: 600; white-space: nowrap; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
-.card-when.late { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .card-count { margin-left: auto; font: 700 12px/1 ui-monospace, "SF Mono", Menlo, monospace; opacity: .7; }
 .card-title { margin: 0; font: 600 18px/1.15 var(--font-display); letter-spacing: -.02em; overflow-wrap: anywhere; }
 .card.size-m .card-title { font-size: 22px; }

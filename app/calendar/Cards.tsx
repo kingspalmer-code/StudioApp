@@ -287,7 +287,7 @@ function Card({
       onClick={onOpen}
     >
       <div className="card-top">
-        {when && <span className={`card-when${late ? " late" : ""}`}>{late ? "Overdue · " : ""}{when}</span>}
+        {when && <span className="card-when">{late ? "From " : ""}{when}</span>}
         {steps.length > 0 && <span className="card-count">{steps.length - left}/{steps.length}</span>}
       </div>
       <h3 className="card-title">{item.title}</h3>
@@ -357,10 +357,10 @@ function NewGroup({ onAdd }: { onAdd: (title: string, grp: string) => void }) {
   );
 }
 
-// "Overdue", "Today", "Tomorrow", "This week", "Later", "Any time".
+// "Still on your plate" (from earlier days, never called late), "Today", "Tomorrow", "This week", "Later", "Any time".
 // The day a card moves to when dropped on a day section: today, tomorrow, off the calendar, or
 // for "Next 7 days" and "Later" the soonest day there unless it's already in it. Undefined leaves
-// the day alone (Overdue).
+// the day alone (Still on your plate).
 function dateFor(key: string, item: PlanItem, today: string): string | null | undefined {
   const d = item.on_date;
   if (key === "today") return today;
@@ -377,7 +377,7 @@ function dayBuckets(open: PlanItem[], today: string, dragging = false) {
   const week = addDays(today, 7);
   const last = (i: PlanItem) => i.end_date ?? i.on_date!;
   const buckets: { key: string; title: string; test: (i: PlanItem) => boolean }[] = [
-    { key: "late", title: "Overdue", test: (i) => !!i.on_date && last(i) < today },
+    { key: "late", title: "Still on your plate", test: (i) => !!i.on_date && last(i) < today },
     { key: "today", title: "Today", test: (i) => !!i.on_date && i.on_date <= today && last(i) >= today },
     { key: "tomorrow", title: "Tomorrow", test: (i) => i.on_date === tomorrow },
     { key: "week", title: "Next 7 days", test: (i) => !!i.on_date && i.on_date > tomorrow && i.on_date <= week },

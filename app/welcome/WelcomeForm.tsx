@@ -12,7 +12,16 @@ import type { WorkspaceKind } from "@/lib/types";
 import { MODES, termsFor } from "@/lib/workspace";
 import { suggestSetup } from "./actions";
 
-type Step = "name" | "who" | "profile" | "setup" | "workspace";
+type Step = "name" | "help" | "who" | "profile" | "setup" | "workspace";
+type Help = "head" | "routines" | "work";
+
+// The first real question: what would help, in the person's words, not what kind of business
+// they are. Only work leads on to the business questions; the rest start straight away.
+const HELPS: { key: Help; title: string; blurb: string }[] = [
+  { key: "head", title: "Getting things out of my head", blurb: "Jot anything down and Oatcake sorts it into a short list for today." },
+  { key: "routines", title: "Building routines", blurb: "Small habits with gentle goals. Misses never reset anything." },
+  { key: "work", title: "Keeping client work on track", blurb: "Jobs, clients, quotes and invoices in one calm place." },
+];
 
 const BLANK: Setup = {
   base: "personal",
@@ -42,6 +51,7 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
   const [blankStart, setBlankStart] = useState(false);
   const [workspace, setWorkspace] = useState("");
   const [mode, setMode] = useState<WorkspaceKind | null>(null);
+  const [helps, setHelps] = useState<Help[]>([]);
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +62,16 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
     setSetup({ ...BLANK, job_types: [{ name: termsFor(mode ?? "studio").Job, lead_days: 3 }] });
     setBlankStart(true);
     setWorkspace(`${first || "My"}'s Workspace`);
+    setStep("workspace");
+  }
+
+  // Without client work there's nothing to set up yet: a workspace of their own, and on to the end.
+  function fromHelp() {
+    if (helps.includes("work")) return setStep("who");
+    setMode("solo");
+    setSetup({ ...BLANK, job_types: [{ name: termsFor("solo").Job, lead_days: 3 }] });
+    setBlankStart(true);
+    setWorkspace(`${first || "My"}'s Oatcake`);
     setStep("workspace");
   }
 
@@ -87,15 +107,16 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
       setBusy(false);
       return setError(wsError.message);
     }
-    router.replace("/");
+    // Someone here for routines starts on Habits; everyone else on Today.
+    router.replace(helps.length === 1 && helps[0] === "routines" ? "/habits" : "/");
     router.refresh();
   }
 
   if (step === "name")
     return (
-      <form onSubmit={(e) => { e.preventDefault(); if (name.trim()) setStep("who"); }}>
+      <form onSubmit={(e) => { e.preventDefault(); if (name.trim()) setStep("help"); }}>
         <p className="login-step">Welcome to Oatcake</p>
-        <p className="login-sub">Signed in as {email}. Let&apos;s set up your workspace.</p>
+        <p className="login-sub">Signed in as {email}. Two quick questions and you&apos;re in.</p>
         <div className="group">
           <div className="row">
             <label htmlFor="name">Your name</label>
@@ -107,6 +128,33 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
         <p className="foot" style={{ textAlign: "center" }}>
           If someone like your designer added you, they used a different email to {email}.{" "}
           <button type="button" className="link" onClick={() => signOut()}>Sign out</button> and use that one instead.
+        </p>
+      </form>
+    );
+
+  if (step === "help")
+    return (
+      <form onSubmit={(e) => { e.preventDefault(); if (helps.length) fromHelp(); }}>
+        <p className="login-step">What would help most right now?</p>
+        <p className="login-sub">Pick any. You can use all of Oatcake whatever you choose.</p>
+        <div className="mode-pick" role="group" aria-label="What would help most right now?">
+          {HELPS.map((h) => (
+            <button
+              type="button"
+              key={h.key}
+              role="checkbox"
+              aria-checked={helps.includes(h.key)}
+              className="mode-card"
+              onClick={() => setHelps((all) => (all.includes(h.key) ? all.filter((x) => x !== h.key) : [...all, h.key]))}
+            >
+              <b>{h.title}</b>
+              <small>{h.blurb}</small>
+            </button>
+          ))}
+        </div>
+        <button className="btn wide" disabled={!helps.length}>Next</button>
+        <p className="foot" style={{ textAlign: "center", marginTop: 14 }}>
+          <button type="button" className="link" onClick={() => setStep("name")}>Back</button>
         </p>
       </form>
     );
@@ -129,7 +177,7 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
         </div>
         <button className="btn wide" disabled={!mode}>Next</button>
         <p className="foot" style={{ textAlign: "center", marginTop: 14 }}>
-          <button type="button" className="link" onClick={() => setStep("name")}>Back</button>
+          <button type="button" className="link" onClick={() => setStep("help")}>Back</button>
         </p>
       </form>
     );
@@ -192,7 +240,7 @@ export default function WelcomeForm({ email, hasPassword, helper }: { email: str
       {error && <p className="error">{error}</p>}
       <button className="btn wide" disabled={busy} style={{ marginTop: 8 }}>{busy ? "Setting up…" : "Create my workspace"}</button>
       <p className="foot" style={{ textAlign: "center", marginTop: 14 }}>
-        <button type="button" className="link" onClick={() => setStep(blankStart ? "profile" : "setup")}>Back</button>
+        <button type="button" className="link" onClick={() => setStep(!helps.includes("work") ? "help" : blankStart ? "profile" : "setup")}>Back</button>
       </p>
     </form>
   );

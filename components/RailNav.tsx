@@ -9,8 +9,9 @@ import { openCreate } from "./panel-events";
 import { NavIcon } from "./NavIcons";
 import { openSearch } from "./panel-events";
 import SidebarEdit from "./SidebarEdit";
+import { activeHref } from "@/lib/menu";
 
-type Link = { href: string; label: string; icon?: string; fixed?: boolean };
+type Link = { href: string; label: string; icon?: string; fixed?: boolean; match?: string[] };
 
 export function SearchIcon() {
   return (
@@ -62,10 +63,8 @@ export default function RailNav({
   }
   // With pages pinned from inside a section (Settings and Settings > Stages, say), only the
   // closest match lights up.
-  const current = [...links, ...(admin ?? [])]
-    .map((l) => l.href)
-    .filter((h) => path.startsWith(h))
-    .sort((a, b) => b.length - a.length)[0];
+  // Work stays lit on the pages under it (its `match`).
+  const current = activeHref([...links, ...(admin ?? [])], path);
   const biz = useSearchParams().get("biz");
   const nav = useRef<HTMLElement>(null);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);

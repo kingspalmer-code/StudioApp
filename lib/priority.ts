@@ -70,7 +70,7 @@ export function sortQueue<T extends ListTicket>(tickets: T[], ctx: Ctx): T[] {
 }
 
 export function startLabel(n: number): { text: string; tone: "" | "warm" | "hot" } {
-  if (n < 0) return { text: `Start ${-n}d late`, tone: "hot" };
+  if (n < 0) return { text: "Start when you can", tone: "hot" };
   if (n === 0) return { text: "Start today", tone: "hot" };
   if (n <= 2) return { text: `Start in ${n}d`, tone: "warm" };
   return { text: `Start in ${n}d`, tone: "" };
@@ -88,8 +88,8 @@ export function formatDate(date: string, withWeekday = false): string {
 // How far off a date is, for places that already show the date itself.
 export function whenLabel(date: string): string {
   const n = daysFromToday(date);
-  if (n < -1) return `${-n} days overdue`;
-  if (n === -1) return "1 day overdue";
+  if (n < -1) return `${-n} days ago`;
+  if (n === -1) return "yesterday";
   if (n === 0) return "today";
   if (n === 1) return "tomorrow";
   return `in ${n} days`;
@@ -97,7 +97,7 @@ export function whenLabel(date: string): string {
 
 export function dueLabel(date: string): string {
   const n = daysFromToday(date);
-  if (n < 0) return `${-n}d overdue`;
+  if (n < 0) return `Was due ${formatDate(date)}`;
   if (n === 0) return "Due today";
   if (n === 1) return "Due tomorrow";
   return `Due ${formatDate(date)}`;

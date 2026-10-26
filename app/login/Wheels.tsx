@@ -4,8 +4,12 @@ import { motion, MotionConfig } from "motion/react";
 import { useEffect, useState } from "react";
 
 const DOES = [
+  "busy heads",
   "projects",
   "to-do lists",
+  "habits",
+  "brain dumps",
+  "focus time",
   "quotes",
   "invoices",
   "client requests",

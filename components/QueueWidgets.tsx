@@ -183,7 +183,7 @@ function Tally({ delivered, due, late }: WeekStats) {
     <div className="tally">
       <p><b>{delivered}<small> / {total}</small></b> <span>delivered this week</span></p>
       <div className="meter"><i style={{ width: `${total ? (delivered / total) * 100 : 0}%`, background: "var(--green)" }} /></div>
-      <span className={late > 0 ? "tally-late" : undefined}>{late > 0 ? `${late} running late` : "Nothing late"}</span>
+      <span className={late > 0 ? "tally-late" : undefined}>{late > 0 ? `${late} past their date` : "All on track"}</span>
     </div>
   );
 }
@@ -275,7 +275,7 @@ export function DaysView({ days, today }: { days: Map<string, number> | null; to
 // Pickle, a little LCD pet like an old Tamagotchi (rules in lib/pet.ts). Delivered jobs (or sent
 // requests) fill its tin with oatcakes; Feed gives it one, and five can be swapped for a golden one. Visiting each
 // day keeps a streak going. It never dies, it just gets peckish.
-function Pet({ pet: start, earnHint, business }: { pet: PetView | null; earnHint: string; business?: string }) {
+export function Pet({ pet: start, earnHint, business }: { pet: PetView | null; earnHint: string; business?: string }) {
   const tinKey = business ? `${TIN_KEY}_${business}` : TIN_KEY;
   const [pet, setPet] = useState(start);
   const [act, setAct] = useState<Act | null>(null);

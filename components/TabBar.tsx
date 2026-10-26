@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { openCreate } from "./panel-events";
 import { NavIcon } from "./NavIcons";
+import { activeHref } from "@/lib/menu";
 
-type TabLink = { href: string; label: string; icon?: string };
+type TabLink = { href: string; label: string; icon?: string; match?: string[] };
 
 // The section links as an iPhone-style tab bar along the bottom. Only shown on phones; bigger
 // screens have the sidebar rail. The middle button opens the create sheet, and the sections that
@@ -16,7 +17,8 @@ export default function TabBar({ links, more = [], canCreate = true }: { links: 
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [path]);
   if (links.length + more.length < 2) return null;
-  const inMore = more.some((l) => path.startsWith(l.href));
+  const current = activeHref([...links, ...more], path);
+  const inMore = more.some((l) => l.href === current);
   return (
     <>
       <nav className="tabbar" aria-label="Sections">
@@ -27,7 +29,7 @@ export default function TabBar({ links, more = [], canCreate = true }: { links: 
               <span>New</span>
             </button>
           ) : (
-            <Link key={l.href} href={l.href} aria-current={path.startsWith(l.href) ? "page" : undefined}>
+            <Link key={l.href} href={l.href} aria-current={l.href === current ? "page" : undefined}>
               <NavIcon href={l.icon ?? l.href} />
               <span>{l.label}</span>
             </Link>
@@ -46,7 +48,7 @@ export default function TabBar({ links, more = [], canCreate = true }: { links: 
           <div className="more-panel">
             <div className="ct-grab" />
             {more.map((l) => (
-              <Link key={l.href} href={l.href} aria-current={path.startsWith(l.href) ? "page" : undefined} onClick={() => setOpen(false)}>
+              <Link key={l.href} href={l.href} aria-current={l.href === current ? "page" : undefined} onClick={() => setOpen(false)}>
                 <NavIcon href={l.icon ?? l.href} />
                 <span>{l.label}</span>
               </Link>

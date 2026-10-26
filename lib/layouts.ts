@@ -10,9 +10,9 @@ export const BLOCKS: Record<BlockId, { label: string; hint: string; half?: boole
   widgets: { label: "Widgets", hint: "Pickle, the week ahead, fresh work and more" },
   upnext: { label: "Up next", hint: "Everything open, in the order to start it" },
   board: { label: "Board", hint: "Every job in a column for its stage" },
-  totals: { label: "Totals", hint: "Open, due or unpaid, at risk and delivered" },
+  totals: { label: "Totals", hint: "Open, due or unpaid, worth starting and delivered" },
   clients: { label: "By client", hint: "Each client's work split by stage" },
-  risk: { label: "At risk", hint: "Jobs that should have started already", half: true },
+  risk: { label: "Worth starting", hint: "Jobs best started now to finish on time", half: true },
   delivered: { label: "Delivered recently", hint: "The last ten finished", half: true },
 };
 

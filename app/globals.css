@@ -210,7 +210,7 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
 .task .t { display: block; overflow-wrap: anywhere; }
 .task .m { font-size: 12px; color: var(--label-2); display: flex; gap: 10px; flex-wrap: wrap; }
 .task .m:empty { display: none; }
-.task .late { color: var(--red); font-weight: 600; }
+.task .late { color: var(--orange); font-weight: 600; }
 .task.done .t { color: var(--label-3); text-decoration: line-through; }
 .check { --check: var(--accent); width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--label-3); background: transparent; flex: none; cursor: pointer; padding: 0; position: relative; }
 .check[aria-pressed="true"] { background: var(--check); border-color: var(--check); }
@@ -368,7 +368,7 @@ input::placeholder, textarea::placeholder { color: var(--label-3); }
    above the page stylesheets, which load later and reset the face with a font shorthand. */
 :root :is(.cal-title, .cal-big, .cards-h, .hero-day b, .hero-done b, .hero-next b, .tt-total b,
   .hb-title, .hb-dark-title, .hb-empty h2, .hb-landed h2, .hb-log-title, .hb-ease-goal,
-  .hb-dial-num, .hb-money-box, .hb-tile b, .bt-hero-text b, .bt-mini-num) { font-family: var(--font-title); letter-spacing: 0; }
+  .hb-dial-num, .hb-money-box, .hb-tile b, .bt-hero-text b, .bt-mini-num, .td-title, .focus-title, .focus-clock b) { font-family: var(--font-title); letter-spacing: 0; }
 
 /* iPhone zooms the page into any field smaller than 16px, so touch screens get 16px fields. */
 @media (hover: none) and (pointer: coarse) { input, select, textarea { font-size: 16px !important; } }
@@ -1100,7 +1100,7 @@ html.in-app .nt-layer { top: var(--app-bar); }
 .staff-progress p { margin: 6px 4px 0; font-size: 13px; color: var(--label-2); }
 .staff-progress p b { color: var(--label); }
 .staff-progress .w { color: var(--orange); }
-.staff-progress .late { color: var(--red); font-weight: 600; }
+.staff-progress .late { color: var(--label); font-weight: 600; }
 .team-count { display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; margin-left: 6px; border-radius: 9px; background: var(--orange); color: #fff; font-size: 11px; font-weight: 700; }
 
 /* Dragging the rail's edge (RailGrip) widens it into a sidebar: labels beside the icons, and the
@@ -1867,3 +1867,24 @@ html.in-app .pal-layer { top: var(--app-bar); }
 @keyframes file-sheet-in { from { transform: translateY(110%); } }
 @keyframes file-fade { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .file-menu, .file-menu.sheet-like, .file-menu-backdrop { animation: none; } }
+
+/* The strip along the top of the pages under Work (components/WorkTabs.tsx). */
+.work-tabs { display: flex; width: max-content; margin: 2px 0 14px; }
+
+/* Capture (components/Capture.tsx), on Today and in the + sheet. */
+.capture { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.capture-row { display: flex; gap: 8px; }
+.capture-row input { flex: 1; min-width: 0; border: 0; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); padding: 15px 16px; font-size: 17px; outline: none; }
+.capture-row input:focus-visible { box-shadow: var(--shadow), 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+.capture-row .btn { border-radius: 14px; padding: 0 20px; }
+.capture-foot { margin: 0 4px; font-size: 13px; color: var(--label-2); }
+.capture-foot .link { font-size: 13px; }
+.capture-error { margin: 0 4px; font-size: 13px; color: var(--red); }
+
+.ct-panel .capture { margin: 0 6px 6px; }
+.ct-panel .capture-row input { box-shadow: inset 0 1px 0 rgba(255,244,230,.10), inset 0 0 0 .5px rgba(255,244,230,.07); background: rgba(243,233,220,.07); color: inherit; font-size: 16px; padding: 12px 14px; }
+.ct-panel .capture-row input::placeholder { color: rgba(243,233,220,.35); }
+.ct-panel .capture-row .btn { background: #e6d4bc; color: #382a25; padding: 0 18px; }
+.ct-panel .capture-foot { color: rgba(243,233,220,.5); }
+.ct-panel .capture-foot .link { color: #ff8a5c; }
+.ct-sub { margin: 16px 6px 10px; font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: rgba(243,233,220,.5); }
