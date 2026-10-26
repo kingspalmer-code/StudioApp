@@ -236,3 +236,71 @@
 .hb-year-grid i.l4 { background: color-mix(in srgb, var(--c) 70%, #fff); }
 .hb-year-nav { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--dk-ink); margin-top: 6px; }
 .hb-year-nav button { background: rgba(243,233,220,.1); color: var(--dk-ink); }
+
+/* Desktop bento: more at once. Today's list runs down the left; the right holds today's ring, the
+   week, a tile per habit, and the picked habit's month, year and numbers. */
+.hb-bento { display: none; }
+@media (min-width: 1100px) {
+  .hb { max-width: 1480px; }
+  .hb > .hb-seg, .hb > .hb-body { display: none; }
+  .hb-bento {
+    display: grid; gap: 14px; align-items: start;
+    grid-template-columns: minmax(320px, 380px) minmax(0, 1fr) minmax(0, 1.35fr);
+    grid-template-areas: "today hero week" "today minis minis" "today month year";
+  }
+  .bt { border-radius: 24px; min-width: 0; }
+  .bt-today { grid-area: today; grid-row: 1 / span 3; background: var(--surface-2); padding: 14px 12px 6px; box-shadow: inset 0 0 0 1px var(--sep); position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; scrollbar-width: thin; }
+  .bt-today .hb-today { display: block; }
+  .bt-today .hb-card { box-shadow: none; }
+  .bt-today .hb-group-title:first-of-type { margin-top: 6px; }
+
+  .bt-hero { grid-area: hero; align-self: stretch; background: var(--surface); box-shadow: var(--shadow); padding: 20px; display: grid; grid-template-columns: 128px 1fr; grid-template-rows: 1fr auto; gap: 14px 18px; align-items: center; }
+  .bt-ring { width: 128px; height: 128px; }
+  .bt-ring-track { fill: none; stroke: var(--fill); stroke-width: 14; }
+  .bt-ring-fill { fill: none; stroke: var(--accent); stroke-width: 14; stroke-linecap: round; transition: stroke-dasharray .6s cubic-bezier(.2,.9,.25,1); }
+  .bt-hero-text b { font: 700 64px/0.9 var(--font-display); letter-spacing: -.05em; }
+  .bt-hero-text b span { color: var(--label-3); font-weight: 500; }
+  .bt-hero-text p { margin: 6px 0 0; color: var(--label-2); font-size: 14px; }
+  .bt-hero-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--label-2); border-top: 1px solid var(--sep); padding-top: 12px; }
+  .bt-hero-foot b { color: var(--label); font-size: 15px; }
+
+  .bt-week { grid-area: week; align-self: stretch; }
+  .bt-week .hb-dark { height: 100%; display: flex; flex-direction: column; }
+  .bt-week .hb-pills { flex: 1; margin-bottom: 0; }
+  .bt-week .hb-pill { display: flex; flex-direction: column; }
+  .bt-week .hb-pill-track { flex: 1; height: auto; min-height: 130px; }
+
+  .bt-minis { grid-area: minis; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+  .bt-mini { border: 0; font: inherit; color: var(--label); text-align: left; background: var(--surface); box-shadow: 0 1px 2px rgba(56,42,37,.06); padding: 14px; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: transform .12s, box-shadow .12s; }
+  .bt-mini:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+  .bt-mini[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--c), var(--shadow); }
+  .bt-mini-head { display: flex; gap: 10px; align-items: center; min-width: 0; }
+  .bt-mini-head b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bt-mini .hb-ic { width: 32px; height: 32px; border-radius: 10px; }
+  .bt-mini-num { font: 700 38px/1 var(--font-display); letter-spacing: -.04em; color: var(--c); }
+  .bt-mini-num small { font: 500 14px var(--font); letter-spacing: 0; color: var(--label-2); }
+  .bt-mini-grid { display: grid; grid-template-rows: repeat(7, 1fr); grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-flow: column; gap: 2px; }
+  .bt-mini-grid i { aspect-ratio: 1; border-radius: 2px; background: var(--fill); }
+  .bt-mini-grid i.on { background: var(--c); }
+  .bt-mini-grid i.part { background: color-mix(in srgb, var(--c) 40%, transparent); }
+  .bt-mini-grid i.f { background: none; }
+  .bt-mini-foot { display: flex; justify-content: space-between; font-size: 12px; color: var(--label-2); }
+  .bt-mini .hb-bar { flex: none; height: 5px; }
+
+  .bt-month { grid-area: month; }
+  .bt-month .hb-day { font-size: 12px; }
+  .bt-year { grid-area: year; background: #120d0c; color: #f3e9dc; padding: 16px; --dk-ink-2: rgba(243,233,220,.6); --dk-2: #1e1715; --dk-ink: #f3e9dc; }
+  .bt-year-title { display: flex; gap: 8px; align-items: center; margin: 2px 2px 12px; font: 700 18px var(--font-display); letter-spacing: -.01em; }
+  .bt-year .hb-dark { padding: 0; background: none; border-radius: 0; }
+  .bt-year .hb-year-grid { gap: 2px; }
+  .bt-year .hb-year-grid i { border-radius: 2px; }
+  .bt-year .hb-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .bt-year .hb-tiles { gap: 6px; }
+  .bt-year .hb-tile { min-height: 96px; padding: 10px; border-radius: 14px; }
+  .bt-year .hb-tile small { font-size: 11px; line-height: 1.3; }
+  .bt-year .hb-tile small:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .bt-year .hb-tile small:first-child svg { vertical-align: -2px; margin-right: 4px; }
+  .bt-year .hb-tile b { font-size: clamp(18px, 1.45vw, 26px); white-space: nowrap; }
+  .bt-year .hb-year { grid-template-columns: minmax(0, 1fr); }
+  .bt-year .hb-year-days { display: none; }
+}

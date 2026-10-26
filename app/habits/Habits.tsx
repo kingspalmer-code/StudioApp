@@ -132,6 +132,41 @@ export default function Habits({ initial, initialLogs, today, readOnly, openId, 
   const logHabitRow = logging ? habits.find((h) => h.id === logging.id) : undefined;
   const focusHabit = habits.find((h) => h.id === focus) ?? habits[0];
 
+  // Today's list, shown on its own on phones and as the tall tile of the desktop bento.
+  const todayList = (
+    <section className="hb-today" aria-label="Today">
+      {due.length > 0 && (
+        <div className="hb-progress">
+          <span>{doneCount === due.length ? "All done today" : `${doneCount} of ${due.length} done`}</span>
+          <div className="hb-bar"><i style={{ width: `${(doneCount / due.length) * 100}%` }} /></div>
+        </div>
+      )}
+      {/* One at a time, so it never piles on. */}
+      {!readOnly && nudges.slice(0, 1).map(({ h, n }) => <EaseCard key={h.id} h={h} n={n} onAnswer={(take) => ease(h, n, take)} />)}
+      {PARTS.map((p) => {
+        const list = due.filter((h) => h.part === p.key);
+        if (!list.length) return null;
+        const done = list.filter((h) => stats.get(h.id)!.today.done).length;
+        return (
+          <div key={p.key} className="hb-group">
+            <h2 className="hb-group-title"><span><HabitIcon name={p.icon} size={14} />{p.label}</span><span>{done}/{list.length}</span></h2>
+            {list.map((h) => (
+              <HabitCard key={h.id} h={h} s={stats.get(h.id)!} days={byHabit.get(h.id)} today={today} onOpen={() => setLogging({ id: h.id, date: today })} />
+            ))}
+          </div>
+        );
+      })}
+      {rest.length > 0 && (
+        <div className="hb-group hb-rest">
+          <h2 className="hb-group-title"><span>Done for now</span><span>{rest.length}</span></h2>
+          {rest.map((h) => (
+            <HabitCard key={h.id} h={h} s={stats.get(h.id)!} days={byHabit.get(h.id)} today={today} onOpen={() => setLogging({ id: h.id, date: today })} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+
   const dateLabel = new Date(today + "T12:00:00Z").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
 
   return (
@@ -186,37 +221,7 @@ export default function Habits({ initial, initialLogs, today, readOnly, openId, 
         <Empty readOnly={readOnly} onStarter={addStarter} onOwn={() => setEditing("new")} />
       ) : (
         <div className="hb-body">
-          <section className="hb-today" aria-label="Today">
-            {due.length > 0 && (
-              <div className="hb-progress">
-                <span>{doneCount === due.length ? "All done today" : `${doneCount} of ${due.length} done`}</span>
-                <div className="hb-bar"><i style={{ width: `${(doneCount / due.length) * 100}%` }} /></div>
-              </div>
-            )}
-            {/* One at a time, so it never piles on. */}
-            {!readOnly && nudges.slice(0, 1).map(({ h, n }) => <EaseCard key={h.id} h={h} n={n} onAnswer={(take) => ease(h, n, take)} />)}
-            {PARTS.map((p) => {
-              const list = due.filter((h) => h.part === p.key);
-              if (!list.length) return null;
-              const done = list.filter((h) => stats.get(h.id)!.today.done).length;
-              return (
-                <div key={p.key} className="hb-group">
-                  <h2 className="hb-group-title"><span><HabitIcon name={p.icon} size={14} />{p.label}</span><span>{done}/{list.length}</span></h2>
-                  {list.map((h) => (
-                    <HabitCard key={h.id} h={h} s={stats.get(h.id)!} days={byHabit.get(h.id)} today={today} onOpen={() => setLogging({ id: h.id, date: today })} />
-                  ))}
-                </div>
-              );
-            })}
-            {rest.length > 0 && (
-              <div className="hb-group hb-rest">
-                <h2 className="hb-group-title"><span>Done for now</span><span>{rest.length}</span></h2>
-                {rest.map((h) => (
-                  <HabitCard key={h.id} h={h} s={stats.get(h.id)!} days={byHabit.get(h.id)} today={today} onOpen={() => setLogging({ id: h.id, date: today })} />
-                ))}
-              </div>
-            )}
-          </section>
+          {todayList}
 
           <section className="hb-zoom" aria-label="Progress">
             <div className="hb-seg hb-seg-desk" role="tablist">
@@ -244,6 +249,20 @@ export default function Habits({ initial, initialLogs, today, readOnly, openId, 
             )}
           </section>
         </div>
+      )}
+      {habits.length > 0 && (
+        <Bento
+          habits={habits}
+          stats={stats}
+          byHabit={byHabit}
+          today={today}
+          due={due.length}
+          doneCount={doneCount}
+          focus={focusHabit}
+          onFocus={setFocus}
+          todayList={todayList}
+          onDay={readOnly || !focusHabit ? undefined : (d) => setLogging({ id: focusHabit.id, date: d })}
+        />
       )}
 
       {logHabitRow && logging && (
@@ -798,7 +817,7 @@ function Editor({ h, onClose, onSave, onRemove }: { h: Habit | null; onClose: ()
   );
 }
 
-function WeekView({ habits, stats, byHabit, today, onPick }: { habits: Habit[]; stats: Map<number, HabitStats>; byHabit: Map<number, Map<string, HabitLog[]>>; today: string; onPick: (id: number) => void }) {
+function WeekView({ habits, stats, byHabit, today, onPick, bare }: { habits: Habit[]; stats: Map<number, HabitStats>; byHabit: Map<number, Map<string, HabitLog[]>>; today: string; onPick: (id: number) => void; bare?: boolean }) {
   const hit = habits.filter((h) => stats.get(h.id)!.week >= 1).length;
   const checkIns = habits.reduce((a, h) => {
     const d = byHabit.get(h.id);
@@ -824,10 +843,12 @@ function WeekView({ habits, stats, byHabit, today, onPick }: { habits: Habit[]; 
           );
         })}
       </div>
-      <div className="hb-tiles">
-        <Tile label="Check-ins" value={String(checkIns)} foot="This week" icon="check" />
-        <Tile label="Longest streak" value={best ? `${stats.get(best.id)!.streak}` : "0"} foot={best ? best.name : ""} icon="flame" />
-      </div>
+      {!bare && (
+        <div className="hb-tiles">
+          <Tile label="Check-ins" value={String(checkIns)} foot="This week" icon="check" />
+          <Tile label="Longest streak" value={best ? `${stats.get(best.id)!.streak}` : "0"} foot={best ? best.name : ""} icon="flame" />
+        </div>
+      )}
     </div>
   );
 }
@@ -860,7 +881,7 @@ function HabitTiles({ h, s }: { h: Habit; s: HabitStats }) {
   );
 }
 
-function MonthView({ h, s, days, today, onDay }: { h: Habit; s: HabitStats; days?: Map<string, HabitLog[]>; today: string; onDay?: (d: string) => void }) {
+function MonthView({ h, s, days, today, onDay, bare }: { h: Habit; s: HabitStats; days?: Map<string, HabitLog[]>; today: string; onDay?: (d: string) => void; bare?: boolean }) {
   const [month, setMonth] = useState(today.slice(0, 7));
   const cells = monthDays(month);
   const earliest = addDays(today, -14);
@@ -888,15 +909,14 @@ function MonthView({ h, s, days, today, onDay }: { h: Habit; s: HabitStats; days
         })}
       </div>
       {h.freq === "times" && <p className="hb-hint left">{paceLabel(h)}: counted from {new Date(periodStart(h, today) + "T12:00:00Z").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" })}.</p>}
-      <HabitTiles h={h} s={s} />
+      {!bare && <HabitTiles h={h} s={s} />}
     </div>
   );
 }
 
 // Half a year on one screen, a column a week, darker the more you did that day.
-function YearView({ h, s, days, today }: { h: Habit; s: HabitStats; days?: Map<string, HabitLog[]>; today: string }) {
+function YearView({ h, s, days, today, bare, weeks = 26 }: { h: Habit; s: HabitStats; days?: Map<string, HabitLog[]>; today: string; bare?: boolean; weeks?: number }) {
   const [back, setBack] = useState(0);
-  const weeks = 26;
   const end = addDays(mondayOf(today), 6 - back * weeks * 7);
   const start = addDays(end, -(weeks * 7 - 1));
   const cells: { d: string; level: number }[] = [];
@@ -915,16 +935,92 @@ function YearView({ h, s, days, today }: { h: Habit; s: HabitStats; days?: Map<s
     <div className="hb-dark" style={{ ["--c" as string]: h.colour }}>
       <div className="hb-year">
         <div className="hb-year-days">{WEEKDAYS.map((w, i) => <span key={i}>{w}</span>)}</div>
-        <div className="hb-year-grid">
+        <div className="hb-year-grid" style={{ gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))` }}>
           {cells.map((c) => <i key={c.d} className={`l${c.level}`} title={`${fmt(c.d)}`} />)}
         </div>
         <div className="hb-year-nav">
-          <button type="button" aria-label="Earlier" disabled={back >= 1} onClick={() => setBack(back + 1)}>‹</button>
+          <button type="button" aria-label="Earlier" disabled={weeks >= 52 || back >= 1} onClick={() => setBack(back + 1)}>‹</button>
           <span>{fmt(start)} – {fmt(end > today ? today : end)}</span>
           <button type="button" aria-label="Later" disabled={back === 0} onClick={() => setBack(back - 1)}>›</button>
         </div>
       </div>
-      <HabitTiles h={h} s={s} />
+      {!bare && <HabitTiles h={h} s={s} />}
+    </div>
+  );
+}
+
+// Desktop: everything at once, bento style. Today's list runs down the left; on the right, how
+// today's going, the week, a tile per habit, and the picked habit's month, year and numbers.
+function Bento({ habits, stats, byHabit, today, due, doneCount, focus, onFocus, todayList, onDay }: {
+  habits: Habit[]; stats: Map<number, HabitStats>; byHabit: Map<number, Map<string, HabitLog[]>>; today: string;
+  due: number; doneCount: number; focus?: Habit; onFocus: (id: number) => void; todayList: ReactNode; onDay?: (d: string) => void;
+}) {
+  const share = due ? doneCount / due : 0;
+  const R = 54, C = 2 * Math.PI * R;
+  const monday = mondayOf(today);
+  let weekDone = 0;
+  for (const h of habits) for (let i = 0; i < 7; i++) if (dayOf(h, byHabit.get(h.id)?.get(addDays(monday, i)) ?? []).done) weekDone++;
+  const best = habits.reduce<Habit | null>((b, h) => (!b || stats.get(h.id)!.streak > stats.get(b.id)!.streak ? h : b), null);
+  const fs = focus ? stats.get(focus.id)! : undefined;
+  return (
+    <div className="hb-bento">
+      <div className="bt bt-today">{todayList}</div>
+
+      <div className="bt bt-hero">
+        <svg viewBox="0 0 128 128" className="bt-ring" aria-hidden="true">
+          <circle cx="64" cy="64" r={R} className="bt-ring-track" />
+          <circle cx="64" cy="64" r={R} className="bt-ring-fill" strokeDasharray={`${share * C} ${C}`} transform="rotate(-90 64 64)" />
+        </svg>
+        <div className="bt-hero-text">
+          <b>{doneCount}<span>/{due}</span></b>
+          <p>{due === 0 ? "Nothing due today" : doneCount === due ? "All done today" : "done today"}</p>
+        </div>
+        <div className="bt-hero-foot">
+          <span><b>{weekDone}</b> check-ins this week</span>
+          {best && stats.get(best.id)!.streak > 0 && <span><b>{stats.get(best.id)!.streak}</b> {best.name.toLowerCase()} streak</span>}
+        </div>
+      </div>
+
+      <div className="bt bt-week">
+        <WeekView habits={habits} stats={stats} byHabit={byHabit} today={today} onPick={onFocus} bare />
+      </div>
+
+      <div className="bt-minis">
+        {habits.map((h) => {
+          const s = stats.get(h.id)!;
+          const days = byHabit.get(h.id);
+          const start = addDays(monday, -7 * 11);
+          return (
+            <button key={h.id} type="button" className="bt bt-mini" aria-pressed={focus?.id === h.id} style={{ ["--c" as string]: h.colour }} onClick={() => onFocus(h.id)}>
+              <span className="bt-mini-head"><span className="hb-ic"><HabitIcon name={h.icon} size={18} /></span><b>{h.name}</b></span>
+              <span className="bt-mini-num">{s.streak}<small>{s.unit === "wk" ? " wk" : " day"}{s.streak === 1 ? "" : "s"}</small></span>
+              <span className="bt-mini-grid" aria-hidden="true">
+                {Array.from({ length: 84 }, (_, i) => {
+                  const d = addDays(start, i);
+                  const day = dayOf(h, days?.get(d) ?? []);
+                  return <i key={d} className={d > today ? "f" : day.done ? "on" : day.amount > 0 ? "part" : ""} />;
+                })}
+              </span>
+              <span className="bt-mini-foot">
+                <span>{paceLabel(h)}</span>
+                <span>{s.periodDone}/{s.periodGoal}</span>
+              </span>
+              <span className="hb-bar"><i style={{ width: `${s.periodGoal ? Math.min(1, s.periodDone / s.periodGoal) * 100 : 0}%`, background: h.colour }} /></span>
+            </button>
+          );
+        })}
+      </div>
+
+      {focus && fs && (
+        <>
+          <div className="bt bt-month"><MonthView key={focus.id} h={focus} s={fs} days={byHabit.get(focus.id)} today={today} onDay={onDay} bare /></div>
+          <div className="bt bt-year" style={{ ["--c" as string]: focus.colour }}>
+            <h3 className="bt-year-title"><HabitIcon name={focus.icon} size={16} />{focus.name} · the year</h3>
+            <YearView key={focus.id} h={focus} s={fs} days={byHabit.get(focus.id)} today={today} bare weeks={52} />
+            <HabitTiles h={focus} s={fs} />
+          </div>
+        </>
+      )}
     </div>
   );
 }
