@@ -84,6 +84,8 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
   // The one place for to-dos: a list in priority order beside the calendar it fills. Employees also
   // find the tasks the owner set them there. (It lives at /calendar so saved menus still find it.)
   const todo = { href: "/calendar", label: "To-do" };
+  // Everyone's own habits, whatever kind of login.
+  const habits = { href: "/habits", label: "Habits" };
   if (member.role === "manager")
     return [
       main,
@@ -91,6 +93,7 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
       { href: "/gallery", label: "Gallery" },
       { href: "/apps", label: "Apps" },
       filing,
+      habits,
       ...(member.business_ids?.length && !viewing ? [{ href: "/portal", label: "New request" }] : []),
     ];
   // Clients get a sidebar like the studio's: their Overview (with the widgets) first, then their
@@ -102,6 +105,7 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
       { href: "/gallery", label: "Gallery" },
       { href: "/apps", label: "Apps" },
       filing,
+      habits,
     ];
   // Employees see the to-do list the owner sets them, and Apps, plus whatever else the owner let them into on Team.
   if (member.staff) {
@@ -109,6 +113,7 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
     const clients = workspace.kind === "studio" ? [{ href: "/people", label: "People" }] : workspace.kind === "trade" ? [{ href: "/customers", label: "Customers" }] : [];
     return [
       todo,
+      habits,
       ...(allows(a, "requests") ? [main, { href: "/overview", label: "Overview" }] : []),
       ...(allows(a, "requests", "edit") ? [{ href: "/portal", label: `New ${terms.job}` }] : []),
       ...(allows(a, "clients") ? clients : []),
@@ -118,7 +123,7 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
       ...(allows(a, "settings") || allows(a, "quotes") ? [{ href: "/settings", label: "Settings" }] : []),
     ];
   }
-  if (member.role === "staff") return [todo, { href: "/apps", label: "Apps" }];
+  if (member.role === "staff") return [todo, habits, { href: "/apps", label: "Apps" }];
   // Who the work is for: businesses (with their staff) on People, customers on Customers, and nobody when working alone.
   const clients =
     workspace.kind === "studio" ? [{ href: "/people", label: "People" }]
@@ -135,6 +140,7 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean)
     { href: "/portal", label: `New ${terms.job}` },
     ...clients,
     todo,
+    habits,
     gallery,
     filing,
     // Tools made for one client each, such as a pattern recolourer, and a way to ask for new ones.

@@ -13,6 +13,8 @@ export const NAV_ICONS: Record<string, React.ReactNode> = {
   requests: <path d="M4 13h4.5l1.5 2.5h4l1.5-2.5H20M4 13l2.2-7.2A1.2 1.2 0 0 1 7.35 5h9.3a1.2 1.2 0 0 1 1.15.8L20 13v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-5Z" />,
   "/settings": <path d="M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4" />,
   "/calendar": <path d="M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1ZM4 10h16M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01" />,
+  // A ring closing, like a habit kept.
+  "/habits": <path d="M20 12a8 8 0 1 1-4-6.93M9 11.5l2.5 2.5L20 5.5" />,
   "/personal": <path d="M9 11l2.5 2.5L16 9M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />,
   // Pages that can be pinned from further in (Edit sidebar > Add a page).
   "/admin": <path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3ZM9 12l2 2 4-4" />,

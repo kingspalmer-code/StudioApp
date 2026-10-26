@@ -3,7 +3,7 @@ import { planWhen } from "@/lib/plan";
 
 const TZ = process.env.NEXT_PUBLIC_TIMEZONE || "Europe/London";
 
-// Calendar reminders. The database calls this every five minutes (migration 040) with the alerts
+// Calendar reminders and habit nudges. The database calls this every five minutes (migration 040) with the alerts
 // secret; push_due_reminders marks each due reminder sent and puts it in the bell, and this sends
 // it to the person's phone.
 export async function GET(req: Request) {
@@ -12,6 +12,18 @@ export async function GET(req: Request) {
   if (!secrets.some((s) => auth === `Bearer ${s}`)) return new Response("Not allowed", { status: 401 });
   if (!pushReady()) return Response.json({ sent: 0, reason: "alerts not set up" });
 
+  // Habits with a nudge time that's passed today, due today and not logged yet (migration 050).
+  const habits = await pushRpc<{ id: number; email: string; name: string; kind: string; per_day: number; unit: string }[]>("push_due_habits", { p_tz: TZ });
+  const nudged = await Promise.all(
+    (Array.isArray(habits) ? habits : []).map((h) =>
+      sendAlert([h.email], {
+        title: h.name,
+        body: h.kind === "count" ? `Still a few to go today. Tap to log.` : h.kind === "money" ? `How did today's spending go? Slide to log it.` : `Today's the day. Slide to log it, or skip, no harm done.`,
+        url: `/habits?h=${h.id}`,
+        tag: `habit-${h.id}`,
+      }).catch(() => 0)
+    )
+  );
   const due = await pushRpc<{ id: number; email: string; title: string; parent_title: string | null; on_date: string; at_time: string | null }[]>(
     "push_due_reminders",
     { p_tz: TZ }
@@ -27,5 +39,5 @@ export async function GET(req: Request) {
       }).catch(() => 0)
     )
   );
-  return Response.json({ due: due.length, sent: sent.reduce((a, b) => a + b, 0) });
+  return Response.json({ due: due.length, sent: sent.reduce((a, b) => a + b, 0), habits: nudged.reduce((a, b) => a + b, 0) });
 }
