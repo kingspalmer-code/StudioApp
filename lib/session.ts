@@ -7,10 +7,13 @@ import { createClient, PREVIEW_COOKIE, VIEW_COOKIE } from "./supabase/server";
 import type { Business, JobType, Member, Role, Stage, Workspace } from "./types";
 import { clientsLogIn, isSelf, termsFor } from "./workspace";
 import { accessFor, allows, hasAny, type Area } from "./access";
-import { OWNER_HIDDEN_BY_DEFAULT } from "./menu";
+import { homeMode, OWNER_HIDDEN_BY_DEFAULT, TODAY_ARRIVED, type HomeMode } from "./menu";
 import { datesOff } from "./core-fields";
 
 export const HOME: Record<Role, string> = { designer: "/today", manager: "/overview", client: "/overview", staff: "/today" };
+
+// Where someone lands: an owner who picked "Just work" opens on Jobs, as Oatcake used to.
+export const homeFor = (role: Role, mode: HomeMode = "life") => (role === "designer" && mode === "work" ? "/queue" : HOME[role]);
 
 // Loads the signed-in member and their workspace, or sends them to sign in. Pass roles to restrict a page.
 // Every database call goes out at once: the sign-in is checked from the session token itself, so
@@ -32,7 +35,7 @@ export async function requireMember(roles?: Role[], areas?: Area | Area[]) {
     const owner = { ...member, role: "designer" as Role };
     return { ...session, member: owner, viewing: session.viewing || look, shell: { ...session.shell, member: owner, readOnly: look } };
   }
-  if (roles && !roles.includes(member.role)) redirect(HOME[member.role]);
+  if (roles && !roles.includes(member.role)) redirect(homeFor(member.role, session.mode));
   return session;
 }
 
@@ -50,7 +53,7 @@ const loadMember = cache(async () => {
   const [{ data: row }, { data: businesses }, { data: viewedRows }, { data: stages }, { data: types }, { data: isAdmin }, { data: replies }, { data: mine }, { data: appRows }] = await Promise.all([
     supabase
       .from("members")
-      .select("email, full_name, role, business_id, permissions, workspace_id, workspaces(id, name, kind, owner_name, request_slug, requests_open, core_fields)")
+      .select("email, full_name, role, business_id, permissions, workspace_id, workspaces(id, name, kind, owner_name, request_slug, requests_open, core_fields, created_at)")
       .eq("email", email)
       .maybeSingle<Member & { workspace_id: string; workspaces: Workspace | null }>(),
     supabase.from("businesses").select("*").order("name").returns<Business[]>(),
@@ -113,10 +116,14 @@ const loadMember = cache(async () => {
   const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
   const phoneTabs = Array.isArray(user.user_metadata?.phone_tabs) ? list(user.user_metadata.phone_tabs) : undefined;
   const hidden = { phoneTabs, computer: Array.isArray(user.user_metadata?.hide_computer) ? list(user.user_metadata.hide_computer) : member.role === "designer" ? OWNER_HIDDEN_BY_DEFAULT : [], order: list(user.user_metadata?.menu_order), pins: list(user.user_metadata?.menu_pins), admin: Array.isArray(user.user_metadata?.admin_menu) ? list(user.user_metadata.admin_menu) : undefined };
+  // Today first, or Jobs first the way it used to be (lib/menu.ts HomeMode). Owners whose workspace
+  // was set up before Today arrived get asked once; an employee with access is staff here, so never.
+  const mode = viewing ? "life" : homeMode(user.user_metadata?.home_mode);
+  const askMode = member.role === "designer" && !viewing && !user.user_metadata?.home_mode && Boolean(own?.created_at && own.created_at < TODAY_ARRIVED);
   // Their own colour theme, if they've picked one (components/Colours.tsx).
   const palette = cleanPalette(user.user_metadata?.palette);
   const boxes = cleanBoxes(user.user_metadata?.boxes);
-  const shell = { member, businesses: clients, workspace: ws, isAdmin: Boolean(isAdmin), viewing, readOnly: false, avatar, initials, askHint, askOpens, askSince, helpUnread, track, hidden, palette, boxes, preview: undefined as Business | undefined };
+  const shell = { member, businesses: clients, workspace: ws, isAdmin: Boolean(isAdmin), viewing, readOnly: false, avatar, initials, askHint, askOpens, askSince, helpUnread, track, hidden, palette, boxes, mode, askMode, preview: undefined as Business | undefined };
   // How Queue and Overview are laid out (Customise, lib/layouts.ts). Someone viewing another
   // workspace sees its pages as they come.
   const layouts = { queue: viewing ? undefined : user.user_metadata?.layout_queue, overview: viewing ? undefined : user.user_metadata?.layout_overview } as Record<"queue" | "overview", unknown>;
@@ -128,7 +135,7 @@ const loadMember = cache(async () => {
   const todoView: "list" | "cards" = !viewing && user.user_metadata?.todo_view === "cards" ? "cards" : "list";
   // Their own name for the To-do page heading ("To-do" until renamed).
   const todoTitle = (!viewing && typeof user.user_metadata?.todo_title === "string" && user.user_metadata.todo_title.trim()) || "To-do";
-  return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview, appBusinesses, layouts, jobsView, routine, todoView, todoTitle };
+  return { supabase, member, businesses: clients, self, workspace: ws, ctx, terms, shell, viewing, preview, mode, appBusinesses, layouts, jobsView, routine, todoView, todoTitle };
 });
 
 type Session = Awaited<ReturnType<typeof requireMember>>;

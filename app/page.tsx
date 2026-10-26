@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { HOME, requireMember } from "@/lib/session";
+import { homeFor, requireMember } from "@/lib/session";
 
 export default async function Home() {
-  const { member } = await requireMember();
-  redirect(HOME[member.role]);
+  const { member, mode } = await requireMember();
+  redirect(homeFor(member.role, mode));
 }

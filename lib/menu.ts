@@ -34,3 +34,15 @@ export function activeHref(links: { href: string; match?: string[] }[], path: st
   if (own) return own;
   return links.find((l) => l.match?.some((m) => path === m || path.startsWith(m + "/")))?.href;
 }
+
+// How an owner's Oatcake opens (Settings > Menu). "life" is the Today home that arrived on
+// 26 Oct 2026: Today first, the business side behind one Work button. "work" is the way it was
+// before, for people who use it purely for client work: Jobs first, every work page in the menu,
+// no Work strip. Today and Habits can still be added to the sidebar. Saved per account
+// (user_metadata.home_mode); employees, clients and managers aren't affected.
+export type HomeMode = "life" | "work";
+export const homeMode = (v: unknown): HomeMode => (v === "work" ? "work" : "life");
+
+// When Today became the home page. Workspaces set up before then get asked once which way they'd
+// like it (components/NewHome.tsx); anyone who signed up since started on Today and isn't asked.
+export const TODAY_ARRIVED = "2026-10-26T20:34:44Z";

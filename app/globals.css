@@ -1901,3 +1901,25 @@ html.in-app .pal-layer { top: var(--app-bar); }
 .ct-panel .capture-foot { color: rgba(243,233,220,.5); }
 .ct-panel .capture-foot .link { color: #ff8a5c; }
 .ct-sub { margin: 16px 6px 10px; font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: rgba(243,233,220,.5); }
+
+/* Life and work, or Just work (components/NewHome.tsx): the one-time card and Settings > Menu. */
+.home-modes { display: grid; gap: 10px; }
+.home-mode { display: flex; align-items: flex-start; gap: 14px; width: 100%; text-align: left; padding: 16px; border-radius: 16px; border: 2px solid var(--sep); background: var(--surface); color: inherit; font: inherit; cursor: pointer; }
+.home-mode:hover:not(:disabled) { border-color: var(--label-3); }
+.home-mode[aria-checked="true"] { border-color: var(--accent); }
+.home-mode:disabled { cursor: default; opacity: .7; }
+.home-mode-icon { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--fill); }
+.home-mode-icon svg { width: 22px; height: 22px; }
+.home-mode-text { display: grid; gap: 3px; min-width: 0; }
+.home-mode-text b { font-size: 17px; }
+.home-mode-text span { font-size: 14px; color: var(--label-2); }
+.home-modes-head { margin: 0 0 10px; font-size: 15px; font-weight: 600; color: var(--label-2); }
+.home-modes-wrap { margin-bottom: 24px; }
+.new-home-layer { position: fixed; inset: 0; z-index: 70; background: var(--bg); display: grid; place-items: center; overflow-y: auto;
+  padding: calc(24px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.new-home-card { width: 100%; max-width: 520px; display: grid; gap: 14px; }
+.new-home-eyebrow { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--label-2); }
+.new-home-title { margin: 0; font: 400 42px/1.05 var(--font-title); text-wrap: balance; }
+.new-home-notes { margin: 0; color: var(--label-2); font-size: 16px; }
+.new-home-later { justify-self: center; color: var(--label-2); font-weight: 500; margin-top: 4px; }
+@media (max-width: 640px) { .new-home-title { font-size: 34px; } }
