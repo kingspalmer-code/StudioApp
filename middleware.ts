@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
 }
 
 // The PDF fonts in public/pdf-fonts are fetched by the server itself while it makes a PDF, with no
-// login, so they must not be sent to /login.
+// login, so they must not be sent to /login. Phones fetch the Home Screen app details without one too.
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|icons/|sw.js|manifest.webmanifest|api/cron/|brands/|fonts/|pdf-fonts/).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|icons/|sw.js|home-screen/|api/cron/|brands/|fonts/|pdf-fonts/).*)"],
 };
