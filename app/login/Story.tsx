@@ -231,9 +231,16 @@ function Word({ word, i, progress }: { word: string; i: number; progress: Motion
   return <motion.span style={{ opacity }}>{word} </motion.span>;
 }
 
+// When the last word has lit up.
+const LIT = ((LINE.length - 1) / LINE.length) * 0.8 + 0.1;
+
+// The quieter line under it only appears once every word is lit, and slowly, like a whisper.
 function Line() {
   const ref = useRef<HTMLElement>(null);
+  const still = useReducedMotion();
+  const [lit, setLit] = useState(false);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.75", "end 0.6"] });
+  useMotionValueEvent(scrollYProgress, "change", (v) => setLit((was) => (was ? v > LIT - 0.06 : v >= LIT)));
   return (
     <section ref={ref} className="st-line-sec">
       <h2>
@@ -241,9 +248,14 @@ function Line() {
           <Word key={i} word={w} i={i} progress={scrollYProgress} />
         ))}
       </h2>
-      <Rise className="st-line-sub" delay={0.2}>
+      <motion.p
+        className="st-line-sub"
+        initial={false}
+        animate={lit ? { opacity: 1, filter: "blur(0px)", y: 0 } : { opacity: 0, filter: still ? "blur(0px)" : "blur(6px)", y: still ? 0 : 6 }}
+        transition={{ duration: lit ? 2.2 : 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+      >
         So your brain can be a little quieter.
-      </Rise>
+      </motion.p>
     </section>
   );
 }
