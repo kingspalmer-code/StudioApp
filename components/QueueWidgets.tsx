@@ -284,6 +284,9 @@ export function Pet({ pet: start, earnHint, business }: { pet: PetView | null; e
   const [out, setOut] = useState<Outing | null>(null);
   const stageEl = useRef<HTMLButtonElement>(null);
   const walkEl = useRef<HTMLSpanElement>(null);
+  const [hour, setHour] = useState<number | null>(null);
+  const [awake, setAwake] = useState(false);
+  const asleepRef = useRef(false);
   useEffect(() => setPet(start), [start]);
 
   // In his screen Pickle always heads toward your cursor (left and right), hopping as he goes.
@@ -295,7 +298,7 @@ export function Pet({ pet: start, earnHint, business }: { pet: PetView | null; e
       if (box && w) {
         const max = box.width - w.offsetWidth;
         if (x < 0) x = max / 2;
-        const target = cursor === null ? x : Math.min(max, Math.max(0, cursor - box.left - w.offsetWidth / 2));
+        const target = cursor === null || asleepRef.current ? x : Math.min(max, Math.max(0, cursor - box.left - w.offsetWidth / 2));
         const d = target - x;
         x += Math.sign(d) * Math.min(Math.abs(d), 2.5);
         w.style.left = `${Math.round(x / 2) * 2}px`;
@@ -314,16 +317,30 @@ export function Pet({ pet: start, earnHint, business }: { pet: PetView | null; e
     let seen = NaN;
     try { seen = Number(localStorage.getItem(tinKey) ?? "NaN"); } catch {}
     try { localStorage.setItem(tinKey, String(start.tin)); } catch {}
-    if (!Number.isNaN(seen) && start.tin > seen) {
+    let seenLevel = NaN;
+    try { seenLevel = Number(localStorage.getItem(LEVEL_KEY) ?? "NaN"); } catch {}
+    try { localStorage.setItem(LEVEL_KEY, String(start.level)); } catch {}
+    if (!Number.isNaN(seenLevel) && start.level > seenLevel) {
+      // Grew while you were away: the level-up party (and what's new) plays when you arrive.
+      setNews(`LV ${start.level}! ${unlockAt(start.level)}`);
+      setAct("levelup");
+      setTimeout(() => setAct(null), partyMs(start.level));
+    } else if (!Number.isNaN(seen) && start.tin > seen) {
       setNews(`+${start.tin - seen} in the tin!`);
       // Fresh oatcakes from a finished job: Pickle hops out of the screen and explores the page.
       if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) setOut("explore");
     }
-    let seenLevel = NaN;
-    try { seenLevel = Number(localStorage.getItem(LEVEL_KEY) ?? "NaN"); } catch {}
-    try { localStorage.setItem(LEVEL_KEY, String(start.level)); } catch {}
-    if (!Number.isNaN(seenLevel) && start.level > seenLevel) setNews(`Grew to LV ${start.level}!`);
   }, [start]);
+
+  // Night and midday change how he looks (bedtime from LV 4, sunglasses from LV 8). Read on this
+  // computer only, so the first paint matches the server's.
+  useEffect(() => {
+    const tick = () => setHour(new Date().getHours());
+    tick();
+    const t = setInterval(tick, 60_000);
+    return () => clearInterval(t);
+  }, []);
+  asleepRef.current = !!pet && pet.level >= BEDTIME_AT && hour !== null && (hour >= 22 || hour < 7) && !awake && !act && !out;
 
   if (!pet) return <p className="widget-empty">Pickle is hatching…</p>;
 
@@ -351,7 +368,7 @@ export function Pet({ pet: start, earnHint, business }: { pet: PetView | null; e
         const grew = next.level > pet.level;
         setTimeout(() => {
           setPet(next);
-          if (grew) play("levelup", 2600);
+          if (grew) play("levelup", partyMs(next.level));
         }, wait);
       }
     } finally {
@@ -359,35 +376,51 @@ export function Pet({ pet: start, earnHint, business }: { pet: PetView | null; e
     }
   };
 
+  const lv = pet.level;
+  const asleep = asleepRef.current;
   const canDance = pet.hunger >= DANCE_AT;
-  const mood: Mood = act === "eat" || act === "golden" ? "eat" : act === "happy" || act === "dance" || act === "levelup" || pet.glowing ? "happy" : pet.mood;
-  const meters: [string, number][] = [["Food", pet.hunger], ["Joy", pet.happy], ["Grow", pet.growth]];
+  const baseMood: Mood = act === "eat" || act === "golden" ? "eat" : act === "happy" || act === "dance" || act === "levelup" || pet.glowing ? "happy" : pet.mood;
+  // Sunglasses on golden-oatcake days and around midday, once he's LV 8.
+  const shades = lv >= SHADES_AT && !act && (pet.glowing || (hour !== null && hour >= 11 && hour < 16));
+  const mood: Mood = asleep ? "sleep" : shades ? "cool" : baseMood;
+  const stage = stageFor(lv), hat = hatFor(lv);
+  const next = unlockAt(lv + 1);
+  const meters: [string, number, string][] = [["Food", pet.hunger, ""], ["Joy", pet.happy, ""], ["Grow", pet.growth, ` · LV ${lv + 1}: ${next}`]];
   const says =
-    act === "golden" ? "Golden!!" : act === "eat" ? "Nom nom!" : act === "pickle" ? "I'm a pickle!" : act === "dance" ? "♪ ♫ ♪" : act === "levelup" ? `Level up! LV ${pet.level}` : act === "happy" ? "♥" :
-    out ? "Exploring!" : news ?? (pet.mood === "sad" ? (pet.tin ? "Feed me?" : "Peckish...") : `Day ${pet.streak} streak`);
+    act === "golden" ? "Golden!!" : act === "eat" ? "Nom nom!" : act === "pickle" ? "I'm a pickle!" : act === "dance" ? (lv >= CARTWHEEL_AT ? "Wheee!" : "♪ ♫ ♪") : act === "levelup" ? `LV ${lv}! ${unlockAt(lv)}` : act === "happy" ? `Next: ${next}` :
+    out ? "Exploring!" : asleep ? "z z Z" : news ?? (pet.mood === "sad" ? (pet.tin ? "Feed me?" : "Peckish...") : `Day ${pet.streak} streak`);
+  const fuss = () => {
+    if (act || out) return;
+    if (asleep) setAwake(true);
+    play("happy", 1600);
+  };
   return (
-    <div className={`lcd ${pixel.className}${pet.glowing ? " glowing" : ""}`}>
+    <div className={`lcd ${pixel.className}${pet.glowing ? " glowing" : ""}${asleep ? " night" : ""}`}>
       <button
         type="button"
         ref={stageEl}
-        className={`lcd-stage ${act ?? mood}${out ? " away" : ""}`}
-        onClick={() => !act && !out && play("happy", 1600)}
+        className={`lcd-stage ${act ?? mood}${act === "dance" && lv >= CARTWHEEL_AT ? " spin" : ""}${out ? " away" : ""}`}
+        onClick={fuss}
         onDoubleClick={() => (!act || act === "happy") && setOut("explore")}
-        aria-label={`Pickle, level ${pet.level}. Click to give Pickle a fuss, double-click to let him out to explore`}
+        aria-label={`Pickle, level ${lv}${asleep ? ", asleep" : ""}. Click to give Pickle a fuss, double-click to let him out to explore`}
       >
-        <span className="lcd-name">Pickle <small>LV {pet.level}</small></span>
+        <span className="lcd-name">Pickle <small>LV {lv}</small></span>
         <span className="lcd-says">{says}</span>
+        <Props level={lv} />
         <span className="lcd-walk" ref={walkEl}>
-          {act === "pickle" ? <Gherkin /> : <Blob mood={mood} stage={stageFor(pet.level)} />}
+          {act === "pickle" ? <Gherkin /> : <Blob mood={mood} stage={stage} hat={hat} />}
+          {lv >= BALL_AT && act !== "pickle" && <Ball />}
+          {lv >= PIP_AT && act !== "pickle" && !asleep && <Pip head={headHeight(stage, hat)} />}
           {(act === "eat" || act === "golden") && <Snack golden={act === "golden"} />}
           {act === "golden" && <span className="lcd-sparkle" aria-hidden="true">✦ ✧ ✦</span>}
           {act === "pickle" && <span className="lcd-poof" aria-hidden="true">* *</span>}
         </span>
+        {act === "levelup" && <Confetti big={lv % 5 === 0} />}
       </button>
-      {out && <Roam key={out} mode={out} stage={stageFor(pet.level)} home={() => stageEl.current?.getBoundingClientRect() ?? null} onHome={() => { setOut(null); play("happy", 1600); }} />}
+      {out && <Roam key={out} mode={out} stage={stage} hat={hat} home={() => stageEl.current?.getBoundingClientRect() ?? null} onHome={() => { setOut(null); play("happy", 1600); }} />}
       <div className="lcd-meters">
-        {meters.map(([label, v]) => (
-          <span key={label} className="lcd-meter" title={`${label} ${Math.round(v * 100)}%`}>
+        {meters.map(([label, v, more]) => (
+          <span key={label} className="lcd-meter" title={`${label} ${Math.round(v * 100)}%${more}`}>
             {label}
             <i>{[0, 1, 2, 3].map((n) => <b key={n} className={v > n / 4 + 0.05 ? "on" : undefined} />)}</i>
           </span>
@@ -413,7 +446,7 @@ export function Pet({ pet: start, earnHint, business }: { pet: PetView | null; e
 // sends him home early. Inside his screen he follows your cursor instead (see Pet).
 type Outing = "explore";
 const ROAM_MS: Record<Outing, number> = { explore: 14_000 };
-function Roam({ mode, stage, home, onHome }: { mode: Outing; stage: Stage; home: () => DOMRect | null; onHome: () => void }) {
+function Roam({ mode, stage, hat, home, onHome }: { mode: Outing; stage: Stage; hat: Hat | null; home: () => DOMRect | null; onHome: () => void }) {
   const el = useRef<HTMLButtonElement>(null);
   const back = useRef(false);
   const done = useRef(onHome);
@@ -467,7 +500,7 @@ function Roam({ mode, stage, home, onHome }: { mode: Outing; stage: Stage; home:
   }, []);
   return createPortal(
     <button ref={el} type="button" className="pickle-out" onClick={() => (back.current = true)} aria-label="Pickle is exploring. Click to send him home">
-      <span><Blob mood="happy" stage={stage} /></span>
+      <span><Blob mood="happy" stage={stage} hat={hat} /></span>
     </button>,
     document.body,
   );
@@ -477,7 +510,7 @@ function Roam({ mode, stage, home, onHome }: { mode: Outing; stage: Stage; home:
 const DANCE_AT = 0.6;
 type Act = "eat" | "golden" | "happy" | "dance" | "pickle" | "levelup";
 
-type Mood = "idle" | "happy" | "sad" | "eat";
+type Mood = "idle" | "happy" | "sad" | "eat" | "sleep" | "cool";
 
 // The body is worked out once: an outlined round blob on a 22 × 18 grid, shaded along its
 // lower right like the old LCD ones. Faces are drawn over it per mood.
@@ -500,6 +533,8 @@ const FACES: Record<Mood, string[]> = {
   happy: ["...........", ".#.......#.", "#.#.....#.#", "....###...."],
   sad: ["...........", "###.....###", "...........", "...#####..."],
   eat: ["...........", "##.......##", "....###....", "....###...."],
+  sleep: ["...........", "...........", "###.....###", "....###...."],
+  cool: ["###########", "####...####", ".##.....##.", "....###...."],
 };
 function face(rows: string[]) {
   let d = "";
@@ -511,24 +546,95 @@ type Stage = "baby" | "kid" | "teen" | "adult";
 function stageFor(level: number): Stage {
   return level >= 10 ? "adult" : level >= 6 ? "teen" : level >= 3 ? "kid" : "baby";
 }
-const CROWN = ["#..#..#", "##.#.##", "#######", "#######"];
+// Something new at every level, so each level-up has a surprise; nothing is taken away after.
+// LV 1 is the hatchling in his eggshell. Past LV 10 he gets a new outfit each level.
+const SPROUT_AT = 2, BALL_AT = 3, BEDTIME_AT = 4, CARTWHEEL_AT = 6, PIP_AT = 7, SHADES_AT = 8, BLOOM_AT = 9;
+const UNLOCKS: Record<number, string> = { 1: "Hatched", 2: "A sprout", 3: "A ball", 4: "Bedtime", 5: "Party hat", 6: "Feet!", 7: "Pip the bird", 8: "Shades", 9: "A flower", 10: "A crown" };
+// Hats sit on his head; sink is how many of their rows overlap the top of it.
+type Hat = { rows: string[]; dx: number; sink?: number };
+const CROWN: Hat = { rows: ["#..#..#", "##.#.##", "#######", "#######"], dx: 7 };
+const PARTY: Hat = { rows: ["..#..", ".###.", ".#.#.", "##.##", "#####"], dx: 8, sink: 1 };
+const OUTFITS: { name: string; hat: Hat }[] = [
+  { name: "A bow", hat: { rows: ["##...##", "###.###", "#######", "###.###", "##...##"], dx: 13, sink: 3 } },
+  { name: "Wizard hat", hat: { rows: ["....#....", "...###...", "..#.#.#..", "..#...#..", ".#..#..#.", "#########"], dx: 6, sink: 1 } },
+  { name: "A beanie", hat: { rows: [".....#.....", "....###....", "..#######..", ".#########.", "#.#.#.#.#.#"], dx: 5, sink: 2 } },
+  { name: "Top hat", hat: { rows: [".#######.", ".#######.", ".#.....#.", ".#######.", "#########"], dx: 6, sink: 1 } },
+];
+function unlockAt(level: number) {
+  return level <= 10 ? UNLOCKS[level] ?? "" : OUTFITS[(level - 11) % OUTFITS.length].name;
+}
+function hatFor(level: number): Hat | null {
+  return level > 10 ? OUTFITS[(level - 11) % OUTFITS.length].hat : level === 10 ? CROWN : level >= 5 ? PARTY : null;
+}
+// Every fifth level is a bigger party.
+const partyMs = (level: number) => (level % 5 === 0 ? 3600 : 2600);
+// Drawn widths (globals.css .lcd-blob) give how tall he stands, so Pip can land on his head.
+const WIDTH: Record<Stage, number> = { baby: 34, kid: 48, teen: 54, adult: 60 };
+function headHeight(stage: Stage, hat: Hat | null) {
+  const rows = H + (hat ? hat.rows.length - (hat.sink ?? 0) : 0) + (stage === "teen" || stage === "adult" ? 2 : 0);
+  return Math.round((WIDTH[stage] * rows) / W) - 3;
+}
 const FEET = ["..###.......###...", ".####......####..."];
 function sprite(rows: string[], dx: number, dy: number) {
   let d = "";
   rows.forEach((row, y) => [...row].forEach((c, x) => { if (c === "#") d += `M${(x + dx) * PX} ${(y + dy) * PX}h${PX}v${PX}h-${PX}z`; }));
   return d;
 }
-function Blob({ mood, stage }: { mood: Mood; stage: Stage }) {
-  const top = stage === "adult" ? 3 : 0;
+function Blob({ mood, stage, hat = null }: { mood: Mood; stage: Stage; hat?: Hat | null }) {
+  const top = hat ? hat.rows.length - (hat.sink ?? 0) : 0;
   const feet = stage === "teen" || stage === "adult";
   const rows = H + top + (feet ? 2 : 0);
   return (
     <svg className={`lcd-blob ${stage}`} viewBox={`0 ${-top * PX} ${W * PX} ${rows * PX}`} aria-hidden="true" shapeRendering="crispEdges">
       <path className="lcd-shade" d={BODY.shade} />
-      <path className="lcd-ink" d={BODY.ink + face(FACES[mood]) + (feet ? sprite(FEET, 2, H - 1) : "") + (top ? sprite(CROWN, 7, -top) : "")} />
+      <path className="lcd-ink" d={BODY.ink + face(FACES[mood]) + (feet ? sprite(FEET, 2, H - 1) : "") + (hat ? sprite(hat.rows, hat.dx, -top) : "")} />
     </svg>
   );
 }
+// A small pixel picture: # is ink, + is shade.
+function Pixels({ art, className, style }: { art: string[]; className: string; style?: React.CSSProperties }) {
+  return (
+    <svg className={className} style={style} viewBox={`0 0 ${art[0].length * PX} ${art.length * PX}`} aria-hidden="true" shapeRendering="crispEdges">
+      <path className="lcd-shade" d={sprite(art.map((r) => r.replace(/#/g, ".").replace(/\+/g, "#")), 0, 0)} />
+      <path className="lcd-ink" d={sprite(art, 0, 0)} />
+    </svg>
+  );
+}
+// What sits in his screen: the eggshell he hatched from at LV 1, then a sprout that gets taller
+// every level and flowers at LV 9.
+const SHELL = ["#.#..#.#", "#+####+#", ".######."];
+function sproutArt(level: number) {
+  const rows = level >= BLOOM_AT ? [".#.#.", "##.##", ".#.#.", "..#.."] : ["..#.."];
+  for (let i = 0; i < Math.min(level - 1, 6); i++) rows.push(i % 2 ? "..###" : "###..", "..#..");
+  return [...rows, "#####", ".###."];
+}
+function Props({ level }: { level: number }) {
+  if (level < SPROUT_AT) return <Pixels art={SHELL} className="lcd-shell" />;
+  const art = sproutArt(level);
+  return <Pixels art={art} className="lcd-sprout" style={{ height: art.length * 3 }} />;
+}
+// His ball (LV 3): it sits by his side and bounces when you give him a fuss.
+const BALL = [".##.", "#++#", "#+##", ".##."];
+function Ball() {
+  return <Pixels art={BALL} className="lcd-ball" />;
+}
+// Pip the bird (LV 7) drops in every so often and sits on his head for a bit.
+const BIRD = ["..##.", ".####", "####.", "..#.."];
+function Pip({ head }: { head: number }) {
+  return <Pixels art={BIRD} className="lcd-pip" style={{ bottom: head }} />;
+}
+// Confetti for a level-up; every fifth level gets twice as much.
+function Confetti({ big }: { big: boolean }) {
+  const n = big ? 30 : 14;
+  return (
+    <span className="lcd-confetti" aria-hidden="true">
+      {Array.from({ length: n }, (_, k) => (
+        <i key={k} style={{ left: `${(k * 37) % 100}%`, animationDelay: `${((k * 53) % 9) * 0.12}s` }} />
+      ))}
+    </span>
+  );
+}
+
 // Pickle as an actual pickle: a bumpy upright gherkin with the same 0_0 face. # is ink, + is shade.
 const GHERKIN_ART = [
   "....####....",
