@@ -29,7 +29,7 @@ create policy "gallery: see" on public.gallery_items for select to authenticated
   using (workspace_id = (select public.view_workspace()) and (
     (select public.my_role()) = 'manager'
     or (select public.can('requests', 'view'))
-    or business_id = any ((select public.my_businesses()))
+    or business_id = any ((select public.my_businesses())::uuid[])
     or (select public.my_email()) = any (tagged)
   ));
 drop policy if exists "gallery: studio adds" on public.gallery_items;
