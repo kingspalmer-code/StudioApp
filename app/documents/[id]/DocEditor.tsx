@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deleteDocument, draftItems, fromJob, saveDocument, sendDocument, setDocStatus, type DocDraft } from "@/app/documents/actions";
 import PdfSheet, { type PdfRequest } from "@/components/PdfSheet";
-import { docName, gbp, round2, totals, type Doc, type LineItem } from "@/lib/documents";
+import { docName, fillMessage, gbp, round2, totals, type Doc, type LineItem } from "@/lib/documents";
 
 export default function DocEditor({
   doc,
   vatRegistered,
   vatRate,
+  message,
+  contact,
   ai,
   email,
   readOnly,
@@ -19,6 +21,9 @@ export default function DocEditor({
   doc: Doc;
   vatRegistered: boolean;
   vatRate: number;
+  // The business's own email wording (Settings > Quotes & invoices), and the job's contact person.
+  message: string;
+  contact: string;
   ai: boolean;
   email: boolean;
   readOnly: boolean;
@@ -43,14 +48,12 @@ export default function DocEditor({
   const [extra, setExtra] = useState("");
   const [sending, setSending] = useState(false);
   const [to, setTo] = useState(doc.customer_email);
-  const [note, setNote] = useState(
-    quote
-      ? `Hi${doc.customer_name ? ` ${doc.customer_name}` : ""},\n\nHere's the quote for ${doc.title || "the job"}. Let me know if you have any questions or you're happy to go ahead.\n\nThanks`
-      : `Hi${doc.customer_name ? ` ${doc.customer_name}` : ""},\n\nHere's the invoice for ${doc.title || "the job"}. Payment details are on the PDF.\n\nThanks`
-  );
+  // The email follows the details above until it's typed in.
+  const [typed, setNote] = useState<string | null>(null);
 
   const rate = d.vat ? (doc.vat_rate ?? vatRate) : null;
   const t = totals(d.items, rate);
+  const note = typed ?? fillMessage(message, { ...doc, ...d, total: t.total }, contact);
   const set = <K extends keyof DocDraft>(k: K, v: DocDraft[K]) => {
     setD((x) => ({ ...x, [k]: v }));
     setDirty(true);

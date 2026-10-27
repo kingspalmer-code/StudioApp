@@ -24,6 +24,9 @@ export type DocSettings = {
   logo_path: string;
   next_invoice: number;
   next_quote: number;
+  // The email that goes with each, as the business wrote it. Empty means Oatcake's own (DEFAULT_MESSAGES).
+  quote_message: string;
+  invoice_message: string;
 };
 
 export type Doc = {
@@ -81,6 +84,8 @@ export const DEFAULT_SETTINGS: Omit<DocSettings, "workspace_id"> = {
   logo_path: "",
   next_invoice: 1,
   next_quote: 1,
+  quote_message: "",
+  invoice_message: "",
 };
 
 export const KIND_LABEL: Record<DocKind, string> = { quote: "Quote", invoice: "Invoice" };
@@ -88,6 +93,37 @@ export const STATUS_LABEL: Record<DocStatus, string> = { draft: "Draft", sent: "
 
 export const docNumber = (d: Pick<Doc, "kind" | "number">) => `${d.kind === "quote" ? "Q" : "INV"}-${String(d.number).padStart(4, "0")}`;
 export const docName = (d: Pick<Doc, "kind" | "number">) => `${KIND_LABEL[d.kind]} ${docNumber(d)}`;
+
+// The email that goes with a quote or invoice. Words in curly brackets fill themselves in (fillMessage).
+export const DEFAULT_MESSAGES: Record<DocKind, string> = {
+  quote: "Hi {first name},\n\nHere's the quote for {job}. Let me know if you have any questions or you're happy to go ahead.\n\nThanks",
+  invoice: "Hi {first name},\n\nHere's the invoice for {job}. Payment details are on the PDF.\n\nThanks",
+};
+export const MESSAGE_WORDS = ["first name", "name", "customer", "job", "number", "total", "due date"] as const;
+
+// {first name} and {name} are the job's contact person, or the customer when there isn't one.
+// A word with nothing to fill it goes, along with the space before it: "Hi {first name}," → "Hi,".
+export function fillMessage(
+  template: string,
+  d: Pick<Doc, "kind" | "number" | "customer_name" | "title" | "total" | "due_on">,
+  contact: string
+) {
+  const who = contact.trim();
+  const values: Record<(typeof MESSAGE_WORDS)[number], string> = {
+    "first name": who.split(/\s+/)[0] || d.customer_name.trim(),
+    name: who || d.customer_name.trim(),
+    customer: d.customer_name.trim(),
+    job: d.title.trim() || "the job",
+    number: docNumber(d),
+    total: gbp(d.total),
+    "due date": longDate(d.due_on),
+  };
+  return (template.trim() || DEFAULT_MESSAGES[d.kind]).replace(/([ \t]*)\{([a-z ]+)\}/gi, (all, space: string, word: string) => {
+    const key = word.trim().toLowerCase() as keyof typeof values;
+    if (!(key in values)) return all;
+    return values[key] ? `${space}${values[key]}` : "";
+  });
+}
 
 export const gbp = (n: number) => n.toLocaleString("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { saveDocSettings, setBrandFile } from "@/app/documents/actions";
-import { CUSTOM_FONT, FONTS, docNumber, type DocSettings } from "@/lib/documents";
+import { CUSTOM_FONT, DEFAULT_MESSAGES, FONTS, docNumber, type DocSettings } from "@/lib/documents";
 import { createClient } from "@/lib/supabase/client";
 import PdfSheet, { type PdfRequest } from "@/components/PdfSheet";
 
@@ -147,6 +147,16 @@ export default function DocSettingsForm({
           <p className="foot">
             Already numbering invoices somewhere else? Put the next number here and Oatcake carries on from it.
             {(used.invoice > 0 || used.quote > 0) && " It can't go back to a number you've already used."}
+          </p>
+
+          <p className="eyebrow">Emails</p>
+          <div className="group">
+            <div className="row stack"><label htmlFor="qm">Quote email</label><textarea id="qm" name="quote_message" defaultValue={settings.quote_message || DEFAULT_MESSAGES.quote} rows={6} /></div>
+            <div className="row stack"><label htmlFor="im">Invoice email</label><textarea id="im" name="invoice_message" defaultValue={settings.invoice_message || DEFAULT_MESSAGES.invoice} rows={6} /></div>
+          </div>
+          <p className="foot">
+            What the email says when you send one. You can still change it before each send. Words in curly brackets fill themselves in:
+            {" {first name}"} and {"{name}"} are the job&apos;s contact person (or the customer if there isn&apos;t one), then {"{customer}"}, {"{job}"}, {"{number}"}, {"{total}"} and {"{due date}"}. For example, &ldquo;Dear {"{first name}"},&rdquo;.
           </p>
 
           {msg && <p className={msg.bad ? "error" : "foot"}>{msg.text}</p>}

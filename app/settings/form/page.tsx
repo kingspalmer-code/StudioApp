@@ -144,6 +144,7 @@ export default async function JobFormPage() {
           Every {terms.job} needs these, so only {core.filter((c) => c.canHide).map((c) => c.defaultLabel.toLowerCase()).join(", ").replace(/, ([^,]*)$/, " and $1")} can be hidden. A hidden importance means Standard.
           {` A hidden needed by means ${terms.jobs} have no due date: none shows anywhere and the ${jobsPage(workspace.kind)} list goes by importance and order added. Dates already saved come back if you show it again.`}
           {core.some((c) => isContact(c.key)) && ` Show the contact details you want to ask for (phone, email, address). Rename them to suit, say "Mobile" or "Work email". They save onto the ${terms.client}.`}
+          {core.some((c) => c.key === "contact") && ` Contact person is who to deal with on each ${terms.job}. Quote and invoice emails are addressed to them.`}
         </p>
 
         <p className="eyebrow">On the form</p>

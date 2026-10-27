@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { PRIORITIES, daysFromToday, todayISO } from "@/lib/priority";
 import FieldInput from "@/components/FieldInput";
 import { appliesTo, groupFields, readFields, type JobField } from "@/lib/fields";
-import { coreFields, isContact, type CoreField } from "@/lib/core-fields";
+import { contactOn, coreFields, isContact, type CoreField } from "@/lib/core-fields";
 import type { Business, JobType } from "@/lib/types";
 import { isMyBusiness, MY_BUSINESS, SELF_PREFIX, slugify } from "@/lib/workspace";
 import TellPicker, { type TellPerson } from "@/components/TellPicker";
@@ -101,7 +101,8 @@ export default function NewRequestForm({
   const typeRow = types.find((t) => t.name === type);
   const lead = typeRow?.lead_days ?? 3;
   // Fields can be limited to some job types; headings with nothing under them drop out.
-  const fields = allFields.filter((f) => appliesTo(f, typeRow?.id));
+  // Contact person at the top saves where Requested by does, so the form asks only once.
+  const fields = allFields.filter((f) => appliesTo(f, typeRow?.id) && !(f.key === "requester_name" && contactOn(core)));
   const groups = groupFields(fields);
   const job = solo ? "Project" : trade ? "Job" : "Request";
   const tight = deadline && daysFromToday(deadline) < lead;
@@ -171,6 +172,7 @@ export default function NewRequestForm({
         deadline: get("deadline") || null,
         priority: get("priority") || "Standard",
         ...columns,
+        ...(f.has("contact_person") ? { requester_name: get("contact_person").slice(0, 120) } : {}),
         details,
         ...(followUp ? { follows: followUp.id } : {}),
         ...(picked.length ? { tell: picked.map((p) => p.email) } : {}),
@@ -287,6 +289,8 @@ export default function NewRequestForm({
                     ? <div className="when">In-house: a job for your own business. No customer is added.</div>
                     : <button type="button" className="link when" onClick={() => { if (customerRef.current) customerRef.current.value = MY_BUSINESS; setMine(true); }}>It&apos;s for my business</button>)}
                 </>
+              ) : c.key === "contact" ? (
+                <input id="contact" name="contact_person" autoComplete="off" placeholder={c.hint || undefined} />
               ) : c.key === "phone" ? (
                 <input id="phone" name="phone" type="tel" placeholder={c.hint || undefined} />
               ) : c.key === "email" ? (

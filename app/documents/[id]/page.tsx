@@ -13,9 +13,13 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
   if (!row) notFound();
   const doc = asDoc(row);
   // Made before the job had an email? Pick it up from the job now, so it's ready to send.
-  const [settings, email] = await Promise.all([
+  // The job's contact person is who the email is addressed to.
+  const [settings, email, contact] = await Promise.all([
     loadSettings(supabase, workspace.id),
     !doc.customer_email && doc.ticket_id && !viewing ? jobDefaults(supabase, doc.ticket_id, doc.kind).then((j) => j?.customer_email ?? "") : "",
+    doc.ticket_id
+      ? supabase.from("tickets").select("requester_name").eq("id", doc.ticket_id).maybeSingle<{ requester_name: string | null }>().then(({ data }) => data?.requester_name ?? "")
+      : "",
   ]);
   if (email) {
     await supabase.from("documents").update({ customer_email: email }).eq("id", doc.id);
@@ -43,6 +47,8 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
           doc={doc}
           vatRegistered={settings.vat_registered}
           vatRate={settings.vat_rate}
+          message={doc.kind === "quote" ? settings.quote_message : settings.invoice_message}
+          contact={contact}
           ai={Boolean(process.env.ANTHROPIC_API_KEY)}
           email={Boolean(process.env.RESEND_API_KEY)}
           readOnly={viewing}
