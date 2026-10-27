@@ -4,7 +4,7 @@ import { docName, gbp, STATUS_LABEL } from "@/lib/documents";
 import { asDoc } from "@/lib/docs-server";
 import { fileSize, isImage, signDeliveries, type Delivery } from "@/lib/deliveries";
 import { groupFields, hasValue, showValue, valueOf, type JobField } from "@/lib/fields";
-import type { JobFile } from "@/lib/filing";
+import { sentInvoice, type JobFile } from "@/lib/filing";
 import { fmtMinutes, TIME_COLUMNS, totalMinutes, type TimeLog } from "@/lib/hours";
 import { formatDate, isDone, statusLabel } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
@@ -39,6 +39,7 @@ export async function openFile(id: number): Promise<JobFile | null> {
   const minutes = totalMinutes(logs ?? []);
   // Quotes and invoices show to the studio, as on the job's page.
   const docs = member.role === "designer" ? (docRows ?? []).map(asDoc) : [];
+  const invoice = sentInvoice(docs);
 
   return {
     id: t.id,
@@ -52,7 +53,17 @@ export async function openFile(id: number): Promise<JobFile | null> {
       title: g.title,
       rows: g.fields.map((f) => ({ label: f.label, value: showValue(f, valueOf(t, f)), long: f.kind === "longtext" })),
     })),
-    docs: docs.map((d) => ({ id: d.id, name: docName(d), status: STATUS_LABEL[d.status], total: gbp(d.total), issued: formatDate(d.issued_on) })),
+    invoice: invoice && {
+      id: invoice.id,
+      name: docName(invoice),
+      status: STATUS_LABEL[invoice.status],
+      paid: invoice.status === "paid",
+      total: gbp(invoice.total),
+      sent: year(invoice.sent_at ?? invoice.issued_on),
+      to: invoice.sent_to,
+      filename: `${docName(invoice)}${invoice.customer_name ? ` - ${invoice.customer_name}` : ""}.pdf`.replace(/[^\w .,&()-]/g, ""),
+    },
+    docs: docs.filter((d) => d.id !== invoice?.id).map((d) => ({ id: d.id, name: docName(d), status: STATUS_LABEL[d.status], total: gbp(d.total), issued: formatDate(d.issued_on) })),
     images: signed.filter((d) => isImage(d)).map((d) => ({ name: d.name, path: d.path, view: d.view, download: d.download })),
     others: signed.filter((d) => !isImage(d)).map((d) => ({ name: d.name, size: fileSize(d.size), download: d.download })),
     refs: (refs ?? []).map((f) => ({ name: f.name, view: /\.(png|jpe?g|gif|webp|svg)$/i.test(f.name) ? refUrls[f.path] ?? null : null })),
@@ -60,3 +71,4 @@ export async function openFile(id: number): Promise<JobFile | null> {
     hours: minutes ? fmtMinutes(minutes) : null,
   };
 }
+
