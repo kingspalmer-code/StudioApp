@@ -78,6 +78,10 @@ export default function Planner({
   const [showDone, setShowDone] = useState(false);
   const [error, setError] = useState("");
   const [drag, setDrag] = useState<Drag | null>(null);
+  // Clicking a day opens a small box to add something to it, next to the day (a sheet on a phone).
+  const [adding, setAdding] = useState<{ day: string; x: number; y: number; w: number; h: number } | null>(null);
+  // The job picked last time, so a run of things for one job doesn't need picking each time.
+  const [lastJob, setLastJob] = useState<number | null>(newForJob?.id ?? null);
   const [routine, setRoutine] = useState(initialRoutine);
   // The calendar and list or Cards (the board), whichever was picked last (saved to the account); and how
   // the cards are arranged (kept on this computer).
@@ -141,7 +145,7 @@ export default function Planner({
     });
   }
 
-  function add(title: string, extra: { parent?: PlanItem; day?: string; job?: Job; grp?: string } = {}) {
+  function add(title: string, extra: { parent?: PlanItem; day?: string; time?: string | null; job?: Job; grp?: string } = {}) {
     if (readOnly || !title.trim()) return;
     const parent = extra.parent;
     const siblings = items.filter((i) => i.parent_id === (parent?.id ?? null));
@@ -161,7 +165,7 @@ export default function Planner({
       grp: parent?.grp ?? extra.grp ?? "",
       place: "",
       size: "s",
-      at_time: null,
+      at_time: extra.day ? extra.time || null : null,
       remind: 0,
       done_at: null,
       created_by: me,
@@ -169,7 +173,7 @@ export default function Planner({
     setItems((list) => [...list, draft]);
     if (parent) setExpanded((s) => new Set(s).add(parent.id));
     startTransition(async () => {
-      const r = await addPlanItem({ title: draft.title, parent_id: draft.parent_id, ticket_id: draft.ticket_id, owner, on_date: draft.on_date, rank, grp: draft.grp }).catch(() => ({ error: "Couldn't add that. Check your connection.", item: undefined }));
+      const r = await addPlanItem({ title: draft.title, parent_id: draft.parent_id, ticket_id: draft.ticket_id, owner, on_date: draft.on_date, at_time: draft.at_time, rank, grp: draft.grp }).catch(() => ({ error: "Couldn't add that. Check your connection.", item: undefined }));
       if (r.error || !r.item) {
         setError(r.error || "Couldn't add that.");
         setItems((list) => list.filter((i) => i.id !== draft.id));
@@ -179,6 +183,7 @@ export default function Planner({
         setEditing((e) => (e === draft.id ? saved.id : e));
       }
     });
+    return draft.id;
   }
 
   // Your week is saved to your account; if that fails it goes back.
@@ -409,11 +414,26 @@ export default function Planner({
               // A weekly block colours its days: filled in, or outlined (Your week).
               const block = routineOn(routine, day)[0];
               const bc = block ? CARD_COLOURS.find((c) => c.key === block.colour) ?? CARD_COLOURS[5] : undefined;
+              // A square day has room for three rows, or two under a weekly block's label; when there's
+              // more than that, the last row says "+N".
+              const rows = block ? 2 : 3;
+              const fits = list.length > rows ? rows - 1 : rows;
               const cls = ["cal-tile", out && "out", day === today && "today", day === selected && "sel", dropDay === day && "drop", day < today && "past", block && `wk-${block.look}`].filter(Boolean).join(" ");
               return (
-                <div key={day} className={cls} data-day={day} onClick={() => setSelected(day)} style={bc ? ({ "--wk": bc.bg, "--wk-ink": bc.ink } as React.CSSProperties) : undefined}>
+                <div
+                  key={day}
+                  className={cls}
+                  data-day={day}
+                  onClick={(e) => {
+                    setSelected(day);
+                    if (readOnly) return;
+                    const r = e.currentTarget.getBoundingClientRect();
+                    setAdding({ day, x: r.left, y: r.top, w: r.width, h: r.height });
+                  }}
+                  title={readOnly ? undefined : "Click to add something"}
+                  style={bc ? ({ "--wk": bc.bg, "--wk-ink": bc.ink } as React.CSSProperties) : undefined}>
                   <span className="cal-num">
-                    {day.endsWith("-01") && out ? new Date(day + "T12:00:00Z").toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" }) + " " : ""}
+                    {day.endsWith("-01") && out && <span className="cal-mon">{new Date(day + "T12:00:00Z").toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" })} </span>}
                     {Number(day.slice(8))}
                   </span>
                   {routineOn(routine, day).length > 0 && (
@@ -422,7 +442,7 @@ export default function Planner({
                     </span>
                   )}
                   <div className="cal-chips">
-                    {list.slice(0, 3).map((i) => (
+                    {list.slice(0, fits).map((i) => (
                       <div
                         key={i.id}
                         className={`cal-chip${i.done_at ? " done" : ""}${drag?.id === i.id ? " lifted" : ""}${i.owner !== me ? " theirs" : ""}`}
@@ -434,7 +454,7 @@ export default function Planner({
                         {i.title}
                       </div>
                     ))}
-                    {list.length > 3 && <div className="cal-more">+{list.length - 3}</div>}
+                    {list.length > fits && <div className="cal-more">+{list.length - fits}</div>}
                   </div>
                   {list.length > 0 && (
                     <span className="cal-dots" aria-label={`${list.length} on this day`}>
@@ -458,7 +478,7 @@ export default function Planner({
                 ))}
               </ul>
             )}
-            {onDay(selected).length === 0 && <p className="cal-empty">Nothing planned. Add something, or drag a to-do onto a day.</p>}
+            {onDay(selected).length === 0 && <p className="cal-empty">Nothing planned. Click a day to add something, or drag a to-do onto it.</p>}
             <ul className="cal-agenda">
               {onDay(selected).map((i) => {
                 const parent = i.parent_id ? byId.get(i.parent_id) : undefined;
@@ -582,6 +602,25 @@ export default function Planner({
         />
       )}
 
+      {adding && !editingItem && (
+        <DayAdd
+          key={adding.day}
+          at={adding}
+          today={today}
+          items={onDay(adding.day)}
+          jobs={jobs}
+          job={lastJob}
+          routine={routineOn(routine, adding.day)}
+          onAdd={(title, time, jobId, more) => {
+            setLastJob(jobId);
+            const id = add(title, { day: adding.day, time, job: jobs.find((j) => j.id === jobId) });
+            if (more && id !== undefined) { setAdding(null); setEditing(id); }
+          }}
+          onOpen={(id) => { setAdding(null); setEditing(id); }}
+          onClose={() => setAdding(null)}
+        />
+      )}
+
       {editingItem && (
         <Editor
           key={editingItem.id}
@@ -683,6 +722,129 @@ function Row({
       {item.on_date && <span className="cal-dated" aria-label="On the calendar" />}
       {extra}
     </div>
+  );
+}
+
+// The box a click on a day opens: name it, give it a time if it has one, and pick the job it's for.
+// Enter adds it and keeps the box open for the next one; what's already on the day sits underneath.
+function DayAdd({
+  at,
+  today,
+  items,
+  jobs,
+  job: startJob,
+  routine,
+  onAdd,
+  onOpen,
+  onClose,
+}: {
+  at: { day: string; x: number; y: number; w: number; h: number };
+  today: string;
+  items: PlanItem[];
+  jobs: Job[];
+  job: number | null;
+  routine: RoutineBlock[];
+  onAdd: (title: string, time: string | null, job: number | null, more: boolean) => void;
+  onOpen: (id: number) => void;
+  onClose: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [time, setTime] = useState("");
+  const [job, setJob] = useState<number | null>(startJob && jobs.some((j) => j.id === startJob) ? startJob : null);
+  const [added, setAdded] = useState(0);
+  const input = useRef<HTMLInputElement>(null);
+  const box = useRef<HTMLFormElement>(null);
+  const [pos, setPos] = useState<React.CSSProperties>({ visibility: "hidden" });
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [onClose]);
+  // Beside the day if there's room, otherwise the other side; on a phone it's a sheet from the bottom.
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    if (window.matchMedia("(max-width: 640px)").matches) setPos({});
+    else {
+      const bw = el.offsetWidth, bh = el.offsetHeight, gap = 8;
+      const vw = window.innerWidth, vh = window.innerHeight;
+      let left = at.x + at.w + gap;
+      if (left + bw > vw - 12) left = at.x - bw - gap;
+      if (left < 12) left = Math.min(Math.max(12, at.x), vw - bw - 12);
+      const top = Math.min(Math.max(12, at.y), vh - bh - 12);
+      setPos({ left, top });
+    }
+    input.current?.focus({ preventScroll: true });
+  }, [at]);
+
+  function submit(more: boolean) {
+    if (!title.trim()) { input.current?.focus(); return; }
+    onAdd(title, time || null, job, more);
+    setTitle("");
+    setAdded((n) => n + 1);
+    input.current?.focus();
+  }
+  const when = at.day === today ? "Today" : dayName(at.day);
+
+  return (
+    <>
+      <div className="cal-scrim cal-scrim-light" onClick={onClose} />
+      <form
+        ref={box}
+        className="cal-dayadd"
+        role="dialog"
+        aria-label={`Add to ${when}`}
+        style={pos}
+        onSubmit={(e) => { e.preventDefault(); submit(false); }}
+      >
+        <div className="cal-sheet-top">
+          <span className="cal-kicker">{when}</span>
+          <button type="button" className="cal-x" aria-label="Close" onClick={onClose}>×</button>
+        </div>
+        <input
+          ref={input}
+          className="cal-dayadd-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={added ? "And another?" : "What needs doing?"}
+          aria-label="What needs doing"
+          maxLength={300}
+          enterKeyHint="done"
+        />
+        <div className="cal-dayadd-row">
+          <label className="cal-dayadd-time">
+            <span>Time</span>
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label="Time, if it has one" />
+          </label>
+          {jobs.length > 0 && (
+            <label className="cal-dayadd-job">
+              <span>Job</span>
+              <select value={job ?? ""} onChange={(e) => setJob(e.target.value ? Number(e.target.value) : null)}>
+                <option value="">No job</option>
+                {jobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
+              </select>
+            </label>
+          )}
+        </div>
+        <div className="cal-dayadd-foot">
+          <button type="button" className="cal-dayadd-more" onClick={() => submit(true)}>More details</button>
+          <button type="submit" className="cal-dayadd-go">Add</button>
+        </div>
+        {(items.length > 0 || routine.length > 0) && (
+          <ul className="cal-dayadd-on" aria-label={`Already on ${when}`}>
+            {routine.map((b) => (
+              <li key={b.id} className="routine"><span>{b.start}</span>{b.label}</li>
+            ))}
+            {items.map((i) => (
+              <li key={i.id} className={i.done_at ? "done" : ""}>
+                <span>{i.at_time ? hhmm(i.at_time) : "Any time"}</span>
+                <button type="button" onClick={() => i.id > 0 && onOpen(i.id)}>{i.title}</button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </form>
+    </>
   );
 }
 
