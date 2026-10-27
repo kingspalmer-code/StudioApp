@@ -5,7 +5,7 @@ import { Silkscreen } from "next/font/google";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { createPortal } from "react-dom";
 import { feedPickle } from "@/app/queue/pet";
-import { GOLDEN_COST, type PetView } from "@/lib/pet";
+import { GOLDEN_COST, XP_PER_LEVEL, type PetView } from "@/lib/pet";
 import { createClient } from "@/lib/supabase/client";
 import Thumb from "./Thumb";
 
@@ -385,7 +385,9 @@ export function Pet({ pet: start, earnHint, business }: { pet: PetView | null; e
   const mood: Mood = asleep ? "sleep" : shades ? "cool" : baseMood;
   const stage = stageFor(lv), hat = hatFor(lv);
   const next = unlockAt(lv + 1);
-  const meters: [string, number, string][] = [["Food", pet.hunger, ""], ["Joy", pet.happy, ""], ["Grow", pet.growth, ` · LV ${lv + 1}: ${next}`]];
+  const meters: [string, number][] = [["Food", pet.hunger], ["Joy", pet.happy]];
+  // How far to the next level: one block per oatcake eaten this level (a golden one fills the lot).
+  const eaten = Math.round(pet.growth * XP_PER_LEVEL);
   const says =
     act === "golden" ? "Golden!!" : act === "eat" ? "Nom nom!" : act === "pickle" ? "I'm a pickle!" : act === "dance" ? (lv >= CARTWHEEL_AT ? "Wheee!" : "♪ ♫ ♪") : act === "levelup" ? `LV ${lv}! ${unlockAt(lv)}` : act === "happy" ? `Next: ${next}` :
     out ? "Exploring!" : asleep ? "z z Z" : news ?? (pet.mood === "sad" ? (pet.tin ? "Feed me?" : "Peckish...") : `Day ${pet.streak} streak`);
@@ -419,8 +421,8 @@ export function Pet({ pet: start, earnHint, business }: { pet: PetView | null; e
       </button>
       {out && <Roam key={out} mode={out} stage={stage} hat={hat} home={() => stageEl.current?.getBoundingClientRect() ?? null} onHome={() => { setOut(null); play("happy", 1600); }} />}
       <div className="lcd-meters">
-        {meters.map(([label, v, more]) => (
-          <span key={label} className="lcd-meter" title={`${label} ${Math.round(v * 100)}%${more}`}>
+        {meters.map(([label, v]) => (
+          <span key={label} className="lcd-meter" title={`${label} ${Math.round(v * 100)}%`}>
             {label}
             <i>{[0, 1, 2, 3].map((n) => <b key={n} className={v > n / 4 + 0.05 ? "on" : undefined} />)}</i>
           </span>
@@ -436,6 +438,11 @@ export function Pet({ pet: start, earnHint, business }: { pet: PetView | null; e
         <button type="button" onClick={() => play("dance", 3200)} disabled={!!act || !!out || !canDance} title={canDance ? "Make Pickle dance" : "Pickle needs feeding before he'll dance"}>
           Dance
         </button>
+      </div>
+      <div className="lcd-bar" title={`${XP_PER_LEVEL - eaten} more oatcake${XP_PER_LEVEL - eaten === 1 ? "" : "s"} to LV ${lv + 1}`}>
+        LV {lv}
+        <i>{Array.from({ length: XP_PER_LEVEL }, (_, n) => <b key={n} className={n < eaten ? "on" : undefined} />)}</i>
+        <span>LV {lv + 1}<em> · {next}</em></span>
       </div>
     </div>
   );
@@ -569,7 +576,7 @@ function hatFor(level: number): Hat | null {
 // Every fifth level is a bigger party.
 const partyMs = (level: number) => (level % 5 === 0 ? 3600 : 2600);
 // Drawn widths (globals.css .lcd-blob) give how tall he stands, so Pip can land on his head.
-const WIDTH: Record<Stage, number> = { baby: 34, kid: 48, teen: 54, adult: 60 };
+const WIDTH: Record<Stage, number> = { baby: 30, kid: 42, teen: 47, adult: 52 };
 function headHeight(stage: Stage, hat: Hat | null) {
   const rows = H + (hat ? hat.rows.length - (hat.sink ?? 0) : 0) + (stage === "teen" || stage === "adult" ? 2 : 0);
   return Math.round((WIDTH[stage] * rows) / W) - 3;
