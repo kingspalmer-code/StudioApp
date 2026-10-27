@@ -7,13 +7,16 @@ export type NotificationKind =
   // About an employee's task (Team and To-do) rather than a job.
   | "task" | "task_note" | "task_signoff" | "task_confirmed" | "task_reopened"
   // About something on the calendar.
-  | "plan" | "reminder";
+  | "plan" | "reminder"
+  // Tagged on something added to the Gallery.
+  | "tagged";
 
 export type Notification = {
   id: number;
   ticket_id: number | null;
   staff_task_id?: number | null;
   plan_item_id?: number | null;
+  gallery_item_id?: number | null;
   kind: NotificationKind;
   title: string;
   actor_name: string;
@@ -25,7 +28,7 @@ export type Notification = {
   created_at: string;
 };
 
-export const NOTIFICATION_COLUMNS = "id, ticket_id, staff_task_id, plan_item_id, kind, title, actor_name, actor_avatar, body, count, read_at, archived_at, created_at";
+export const NOTIFICATION_COLUMNS = "id, ticket_id, staff_task_id, plan_item_id, gallery_item_id, kind, title, actor_name, actor_avatar, body, count, read_at, archived_at, created_at";
 
 // "<Kingsley> <shared a draft of> <Spring menu>": the words either side of the job's name.
 export function phrase(n: Pick<Notification, "kind" | "count">): [string, string] {
@@ -47,13 +50,15 @@ export function phrase(n: Pick<Notification, "kind" | "count">): [string, string
     case "task_reopened": return ["sent back", ""];
     case "plan": return ["put on your calendar:", ""];
     case "reminder": return ["reminder:", ""];
+    case "tagged": return ["tagged you in", ""];
   }
 }
 
 // Where tapping it goes: the part of the job page it's about.
 // Notes and drafts also carry when it happened, so the job page can scroll to that exact one
 // (app/tickets/[id]/JumpTo.tsx).
-export function hrefFor(n: Pick<Notification, "kind" | "ticket_id" | "staff_task_id" | "plan_item_id" | "created_at">) {
+export function hrefFor(n: Pick<Notification, "kind" | "ticket_id" | "staff_task_id" | "plan_item_id" | "gallery_item_id" | "created_at">) {
+  if (n.gallery_item_id) return `/gallery/${n.gallery_item_id}`;
   if (n.plan_item_id) return `/calendar?item=${n.plan_item_id}`;
   if (n.staff_task_id) return `/tasks/${n.staff_task_id}`;
   if (!n.ticket_id) return "/notifications";
@@ -98,9 +103,9 @@ export const initialsOf = (name: string) =>
 // - requests, files, drafts and other moves from several people or on several jobs stack into one
 //   card that opens up;
 // - notes, replies and approvals are never stacked with other people's: those are the messages.
-// What a notification is about: a job, an employee's task, or something on the calendar.
-export const refOf = (n: Pick<Notification, "ticket_id" | "staff_task_id" | "plan_item_id">) =>
-  n.ticket_id ?? (n.staff_task_id ? `t${n.staff_task_id}` : `p${n.plan_item_id}`);
+// What a notification is about: a job, an employee's task, something on the calendar, or in the Gallery.
+export const refOf = (n: Pick<Notification, "ticket_id" | "staff_task_id" | "plan_item_id" | "gallery_item_id">) =>
+  n.ticket_id ?? (n.staff_task_id ? `t${n.staff_task_id}` : n.gallery_item_id ? `g${n.gallery_item_id}` : `p${n.plan_item_id}`);
 
 export type Card = { key: string; kind: "one" | "stack"; items: Notification[] };
 
@@ -159,6 +164,7 @@ export function stackPhrase(kind: NotificationKind, jobs: number): string {
     case "task_confirmed": return `signed off ${jobs} tasks`;
     case "plan": return `put ${jobs} things on your calendar`;
     case "reminder": return `${jobs} reminders`;
+    case "tagged": return `tagged you in ${jobs} things`;
     default: return `did ${jobs} things`;
   }
 }
