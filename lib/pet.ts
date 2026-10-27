@@ -35,7 +35,7 @@ export type PetView = {
 
 export const STARTER_OATCAKES = 3;
 export const GOLDEN_COST = 5;
-const XP_PER_LEVEL = 10;
+export const XP_PER_LEVEL = 10;
 const DAY = 86_400_000;
 
 export function petView(row: PetRow, delivered: number, now = Date.now()): PetView {
