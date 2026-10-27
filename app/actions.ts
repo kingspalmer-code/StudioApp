@@ -69,7 +69,8 @@ export async function saveDetails(id: number, formData: FormData) {
   ]);
   if (!t) return;
   const typeId = ctx.types.find((x) => x.name === t.type)?.id;
-  const editable = (fields ?? []).filter((f) => !f.hidden && appliesTo(f, typeId));
+  // Contact person at the top stands in for Requested by, which saves to the same place.
+  const editable = (fields ?? []).filter((f) => !f.hidden && appliesTo(f, typeId) && !(f.key === "requester_name" && formData.has("contact_person")));
   const { columns, details } = readFields(
     editable,
     (k) => String(formData.get(k) ?? "").trim(),
@@ -79,6 +80,8 @@ export async function saveDetails(id: number, formData: FormData) {
   const get = (k: string) => String(formData.get(k) ?? "").trim();
   const core: Record<string, string> = {};
   if (get("title")) core.title = get("title");
+  // Contact person, from the top of the form, is kept on the job (it can be cleared).
+  if (formData.has("contact_person")) core.requester_name = get("contact_person").slice(0, 120);
   if (ctx.types.some((x) => x.name === get("type"))) core.type = get("type");
   if (/^\d{4}-\d{2}-\d{2}$/.test(get("deadline"))) core.deadline = get("deadline");
   if ((PRIORITIES as string[]).includes(get("priority"))) core.priority = get("priority");

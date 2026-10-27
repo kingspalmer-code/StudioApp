@@ -1,13 +1,18 @@
 // The fields at the top of every new job form. They're stored in their own ticket columns, so they
 // aren't rows in job_fields, but each workspace can rename them, change their hint, reorder them
 // and hide the ones a job can do without. Saved on workspaces.core_fields.
-export type CoreKey = "customer" | "phone" | "email" | "address" | "title" | "type" | "deadline" | "priority";
+export type CoreKey = "customer" | "contact" | "phone" | "email" | "address" | "title" | "type" | "deadline" | "priority";
 
 // The customer's contact details the top of the form can ask for. Each saves onto the customer,
 // in the businesses column of the same name, so they show on Customers and the job page too.
 export const CONTACT_KEYS = ["phone", "email", "address"] as const;
 export type ContactKey = (typeof CONTACT_KEYS)[number];
 export const isContact = (k: string): k is ContactKey => (CONTACT_KEYS as readonly string[]).includes(k);
+
+// The person to deal with at the customer, saved on the job (tickets.requester_name), so each job
+// can have its own. Quote and invoice emails are addressed to them.
+// When it's on the form it stands in for the Requested by field, which saves to the same place.
+export const contactOn = (core: CoreField[]) => core.some((c) => c.key === "contact" && !c.hidden);
 
 export type CoreSettings = {
   order?: CoreKey[];
@@ -26,9 +31,10 @@ export type CoreField = {
   defaultLabel: string;
 };
 
-// Email and address start switched off, so forms look as they did before they were added.
+// Contact person, email and address start switched off, so forms look as they did before they were added.
 const DEFAULTS: { key: CoreKey; label: string; canHide: boolean; hasHint: boolean; customers?: boolean; off?: boolean }[] = [
   { key: "customer", label: "Customer", canHide: false, hasHint: true, customers: true },
+  { key: "contact", label: "Contact person", canHide: true, hasHint: true, customers: true, off: true },
   { key: "phone", label: "Phone", canHide: true, hasHint: true, customers: true },
   { key: "email", label: "Email", canHide: true, hasHint: true, customers: true, off: true },
   { key: "address", label: "Address", canHide: true, hasHint: true, customers: true, off: true },
@@ -43,7 +49,9 @@ export const CORE_KEYS = DEFAULTS.map((d) => d.key);
 const defaultHint = (key: CoreKey, mode: { trade: boolean; solo: boolean }) =>
   key === "customer"
     ? "Existing or new customer"
-    : isContact(key)
+    : key === "contact"
+      ? "Who quotes and invoices are addressed to"
+      : isContact(key)
       ? "For new customers"
       : key === "title"
         ? mode.solo ? "e.g. Portfolio site refresh" : mode.trade ? "e.g. Shop front fascia" : "e.g. Halloween weekend poster"

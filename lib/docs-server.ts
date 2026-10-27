@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { cleanItems, CUSTOM_FONT, DEFAULT_SETTINGS, FONTS, type Doc, type DocKind, type DocSettings } from "./documents";
+import { cleanItems, CUSTOM_FONT, DEFAULT_MESSAGES, DEFAULT_SETTINGS, FONTS, type Doc, type DocKind, type DocSettings } from "./documents";
 import { itemsOf, valueOf, type JobField } from "./fields";
 import { renderDocPdf } from "./pdf";
 import type { Ticket } from "./types";
@@ -18,6 +18,11 @@ export function readSettingsForm(f: FormData) {
   const num = (k: string, d: number, max: number) => {
     const n = Math.round(Number(f.get(k)));
     return Number.isFinite(n) ? Math.max(0, Math.min(max, n)) : d;
+  };
+  // Left as Oatcake's own wording, a message saves empty, so it follows any change to the default.
+  const message = (k: DocKind) => {
+    const v = String(f.get(`${k}_message`) ?? "").replace(/\r\n/g, "\n").trim().slice(0, 2000);
+    return v === DEFAULT_MESSAGES[k] ? "" : v;
   };
   const font = str("font", 20);
   const accent = str("accent", 7);
@@ -38,6 +43,8 @@ export function readSettingsForm(f: FormData) {
     accent: /^#[0-9a-f]{6}$/i.test(accent) ? accent : "#382a25",
     next_invoice: Math.max(1, num("next_invoice", 1, 9999999)),
     next_quote: Math.max(1, num("next_quote", 1, 9999999)),
+    quote_message: message("quote"),
+    invoice_message: message("invoice"),
   };
 }
 

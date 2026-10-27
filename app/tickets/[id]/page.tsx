@@ -8,7 +8,7 @@ import FieldInput from "@/components/FieldInput";
 import { appliesTo, groupFields, hasValue, itemsOf, showValue, valueOf, type JobField } from "@/lib/fields";
 import { PRIORITIES, dueOf, finalStage, formatDate, isDone, money, reviewStage, startBy, startLabel, statusLabel, todayISO, whenLabel } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
-import { coreFields, type CoreKey } from "@/lib/core-fields";
+import { contactOn, coreFields, type CoreKey } from "@/lib/core-fields";
 import { createClient } from "@/lib/supabase/server";
 import { isSelf, MY_BUSINESS } from "@/lib/workspace";
 import type { Note, Ticket, TicketFile } from "@/lib/types";
@@ -124,11 +124,14 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   const owner = workspace.owner_name || "the studio";
   // Show every field that has something in it, even ones since hidden from the form, so nothing saved is lost.
   const typeId = ctx.types.find((x) => x.name === t.type)?.id;
-  const withValues = (fields ?? []).filter((f) => f.kind === "heading" || hasValue(valueOf(t, f)));
+  // Contact person at the top of the form stands in for Requested by: shown and edited once, under its own name.
+  const contactShown = contactOn(top);
+  const contactLabel = top.find((c) => c.key === "contact")?.label ?? "Contact person";
+  const withValues = (fields ?? []).filter((f) => (f.kind === "heading" || hasValue(valueOf(t, f))) && !(contactShown && f.key === "requester_name"));
   const groups = groupFields(withValues);
   const shown = new Set(withValues.map((f) => f.key));
   const filesField = fields?.find((f) => f.kind === "files");
-  const editable = (fields ?? []).filter((f) => !f.hidden && f.kind !== "heading" && f.kind !== "files" && appliesTo(f, typeId));
+  const editable = (fields ?? []).filter((f) => !f.hidden && f.kind !== "heading" && f.kind !== "files" && appliesTo(f, typeId) && !(contactShown && f.key === "requester_name"));
   const fieldOn = (key: string) => fields?.some((f) => f.key === key && (!f.hidden || hasValue(valueOf(t, f))));
   const quote = fieldOn("quote_amount") && fieldOn("paid_amount") ? t.quote_amount : null;
   const paid = t.paid_amount;
@@ -306,11 +309,12 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
         <p className="eyebrow">Details</p>
         <div className="group">
           {biz && <div className="row"><span className="k">{terms.Client}</span><div className="ctl">{biz.name}</div></div>}
+          {contactShown && t.requester_name && <div className="row"><span className="k">{contactLabel}</span><div className="ctl">{t.requester_name}</div></div>}
           {mine && <div className="row"><span className="k">{terms.Client}</span><div className="ctl">{MY_BUSINESS} <span className="when">(in-house)</span></div></div>}
           <div className="row"><span className="k">{coreLabel("type")}</span><div className="ctl">{t.type}</div></div>
           {due && <div className="row"><span className="k">{coreLabel("deadline")}</span><div className="ctl">{formatDate(due, true)} <span className="when">({whenLabel(due)})</span></div></div>}
           {groups[0] && !groups[0].title && groups[0].fields.map(show)}
-          <div className="row"><span className="k">{trade && !t.details?.via_link ? "Added" : "Submitted"}</span><div className="ctl">{formatDate(t.created_at)}{t.requester_name && !shown.has("requester_name") ? ` by ${t.requester_name}` : ""}{t.details?.via_link ? " through your request link" : ""}</div></div>
+          <div className="row"><span className="k">{trade && !t.details?.via_link ? "Added" : "Submitted"}</span><div className="ctl">{formatDate(t.created_at)}{t.requester_name && !shown.has("requester_name") && !contactShown ? ` by ${t.requester_name}` : ""}{t.details?.via_link ? " through your request link" : ""}</div></div>
           {members && keepable.length > 0 && (
             <div className="row" id="also-tell"><span className="k">Also tell</span><div className="ctl"><KeptUpdated ticketId={t.id} value={t.tell ?? []} people={keepable} sender={sentBy ? sentBy.full_name || sentBy.email : null} /></div></div>
           )}
@@ -344,6 +348,8 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                             {businesses.filter((b) => !isSelf(b)).map((b) => <option key={b.id} value={b.name} />)}
                           </datalist>
                         </>
+                      ) : c.key === "contact" ? (
+                        <input id="edit-contact" name="contact_person" autoComplete="off" defaultValue={t.requester_name ?? ""} placeholder={c.hint || undefined} />
                       ) : c.key === "phone" ? (
                         <input id="edit-phone" name="phone" type="tel" defaultValue={biz?.phone ?? ""} placeholder={c.hint || undefined} />
                       ) : c.key === "email" ? (
