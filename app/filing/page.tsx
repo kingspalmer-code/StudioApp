@@ -1,6 +1,7 @@
 import Shell from "@/components/Shell";
 import { coversFor } from "@/lib/deliveries";
-import { monthKey, type FiledMonth } from "@/lib/filing";
+import type { Doc } from "@/lib/documents";
+import { monthKey, sentInvoice, type FiledMonth } from "@/lib/filing";
 import { isDone, todayISO } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
 import { withMine } from "@/lib/workspace";
@@ -23,9 +24,16 @@ export default async function FilingPage({ searchParams }: { searchParams: Promi
     .filter((t) => isDone(t, ctx))
     .map((t) => ({ ...t, when: t.delivered_at ?? t.deadline ?? t.updated_at }))
     .sort((a, b) => b.when.localeCompare(a.when) || b.id - a.id);
-  const covers = await coversFor(supabase, finished.map((t) => t.id));
   // Money only shows to the studio.
   const studio = member.role === "designer";
+  // Which jobs had an invoice go out, so their cards can say so.
+  const [covers, { data: invoices }] = await Promise.all([
+    coversFor(supabase, finished.map((t) => t.id)),
+    studio
+      ? supabase.from("documents").select("id, ticket_id, kind, status, sent_at, issued_on").eq("kind", "invoice").neq("status", "draft").not("ticket_id", "is", null).returns<Pick<Doc, "id" | "ticket_id" | "kind" | "status" | "sent_at" | "issued_on">[]>()
+      : Promise.resolve({ data: [] as Pick<Doc, "id" | "ticket_id" | "kind" | "status" | "sent_at" | "issued_on">[] }),
+  ]);
+  const invoiceFor = (id: number) => sentInvoice((invoices ?? []).filter((d) => d.ticket_id === id));
 
   const now = monthKey(todayISO());
   const months: FiledMonth[] = [{ key: now, jobs: [] }];
@@ -34,6 +42,7 @@ export default async function FilingPage({ searchParams }: { searchParams: Promi
     const key = monthKey(t.when) > now ? now : monthKey(t.when);
     let m = months.find((x) => x.key === key);
     if (!m) months.push((m = { key, jobs: [] }));
+    const invoice = invoiceFor(t.id);
     m.jobs.push({
       id: t.id,
       title: t.title,
@@ -43,6 +52,7 @@ export default async function FilingPage({ searchParams }: { searchParams: Promi
       cover: covers[t.id]?.url ?? null,
       files: covers[t.id]?.count ?? 0,
       amount: studio ? t.quote_amount : null,
+      invoice: invoice ? (invoice.status === "paid" ? "Paid" : "Invoiced") : null,
     });
   }
   months.sort((a, b) => b.key.localeCompare(a.key));

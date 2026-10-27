@@ -122,6 +122,18 @@ html.fd-locked, html.fd-locked body { overflow: hidden; }
 .fd-lines span { color: var(--label-2); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fd-lines em { font-style: normal; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--accent); }
 
+/* The invoice that went out, first in the file, with an inked stamp for its state. */
+.fd-invoice-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 14px; margin-bottom: 14px; }
+.fd-invoice-row div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fd-invoice-row b { font-size: 17px; font-weight: 700; }
+.fd-invoice-row div span { font-size: 13px; color: var(--label-2); overflow-wrap: anywhere; }
+.fd-invoice-row em { font-style: normal; font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; }
+.fd-stamp { padding: 3px 9px; border: 2px solid var(--label-2); border-radius: 5px; color: var(--label-2); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; transform: rotate(-4deg); }
+.fd-stamp-paid { border-color: var(--green); color: var(--green); }
+.fd-paid { color: var(--green); font-weight: 600; }
+/* The invoice opens above the folder. */
+.fd-locked .sheet-wrap { z-index: 90; }
+
 /* Finished work as prints laid on the sheet. */
 .fd-prints { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; padding: 4px 2px 6px; }
 .fd-print { display: block; padding: 7px 7px 22px; background: #fffdf9; border: 1px solid color-mix(in srgb, #2a201c 18%, transparent); box-shadow: 0 2px 6px rgba(0,0,0,.14); transform: rotate(var(--r)); transition: transform .2s ease; }
@@ -151,8 +163,12 @@ html.fd-locked, html.fd-locked body { overflow: hidden; }
   .fd-folder-in { padding: 14px 12px calc(22px + env(safe-area-inset-bottom, 0px)); }
   .fd-cover h2 { font-size: 24px; }
   .fd-prints { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .fd-invoice-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .fd-invoice-row .fd-stamp { grid-column: 2; grid-row: 1; justify-self: end; }
+  .fd-invoice-row em { grid-column: 2; grid-row: 2; justify-self: end; }
+  .fd-invoice-row div { grid-row: 1 / 3; }
 }
 @media (prefers-reduced-motion: reduce) {
   .fd-card, .fd-print { transition: none; }
-  .fd-sheet:nth-child(n) { transform: none; }
+  .fd-sheet:nth-child(n), .fd-stamp { transform: none; }
 }

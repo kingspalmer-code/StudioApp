@@ -1,6 +1,8 @@
 // The filing drawer (/filing): every finished job, filed behind a divider for the month it was
 // finished in. Shared by the page, the drawer and the file a job opens into.
 
+import type { Doc } from "@/lib/documents";
+
 const TZ = process.env.NEXT_PUBLIC_TIMEZONE || "Europe/London";
 const YM = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit" });
 
@@ -22,6 +24,8 @@ export type FiledJob = {
   cover: string | null;
   files: number;
   amount: number | null;
+  // "Paid" or "Invoiced" when an invoice went out for it, for the studio only.
+  invoice: string | null;
 };
 
 // One divider: the month, and the jobs filed behind it, newest first.
@@ -37,6 +41,8 @@ export type JobFile = {
   started: string;
   finished: string;
   details: { title: string | null; rows: { label: string; value: string; long: boolean }[] }[];
+  // The invoice that went to the customer, shown first so past invoices are one tap away.
+  invoice: { id: number; name: string; status: string; paid: boolean; total: string; sent: string; to: string; filename: string } | null;
   docs: { id: number; name: string; status: string; total: string; issued: string }[];
   images: { name: string; path: string | null; view: string | null; download: string | null }[];
   others: { name: string; size: string; download: string | null }[];
@@ -44,3 +50,11 @@ export type JobFile = {
   notes: { who: string; when: string; body: string; approval: boolean }[];
   hours: string | null;
 };
+
+// The invoice the customer got for a job: a paid one first, then the latest sent. A draft that
+// never went out doesn't count.
+export function sentInvoice<T extends Pick<Doc, "id" | "kind" | "status" | "sent_at" | "issued_on">>(docs: T[]): T | null {
+  const rank = (d: T) => (d.status === "paid" ? 1 : 0);
+  const when = (d: T) => d.sent_at ?? d.issued_on;
+  return docs.filter((d) => d.kind === "invoice" && d.status !== "draft").sort((a, b) => rank(b) - rank(a) || when(b).localeCompare(when(a)) || b.id - a.id)[0] ?? null;
+}

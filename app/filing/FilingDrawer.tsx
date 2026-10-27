@@ -6,6 +6,7 @@ import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNo
 import { createPortal } from "react-dom";
 import { monthName, type FiledJob, type FiledMonth, type JobFile } from "@/lib/filing";
 import { formatDate, money } from "@/lib/priority";
+import PdfSheet, { type PdfRequest } from "@/components/PdfSheet";
 import Thumb from "@/components/Thumb";
 import { openFile } from "./actions";
 
@@ -52,6 +53,7 @@ export default function FilingDrawer({ months, label, openId }: { months: FiledM
   const [file, setFile] = useState<JobFile | null>(null);
   const [failed, setFailed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [pdf, setPdf] = useState<{ id: number; title: string; request: PdfRequest } | null>(null);
   const reduce = useReducedMotion();
   const thisYear = months[0]?.key.slice(0, 4);
   const total = months.reduce((n, m) => n + m.jobs.length, 0);
@@ -164,6 +166,7 @@ export default function FilingDrawer({ months, label, openId }: { months: FiledM
                 <span className="fd-peek">
                   {job.biz && <span>{job.biz}</span>}
                   <span>{formatDate(job.finished)}</span>
+                  {job.invoice && <span className={job.invoice === "Paid" ? "fd-paid" : undefined}>{job.invoice}</span>}
                 </span>
               </motion.button>
             );
@@ -181,8 +184,29 @@ export default function FilingDrawer({ months, label, openId }: { months: FiledM
       {mounted &&
         createPortal(
           <AnimatePresence>
-            {fileId != null && <Folder key={fileId} id={fileId} file={file} failed={failed} onClose={() => setFileId(null)} reduce={!!reduce} />}
+            {fileId != null && (
+              <Folder
+                key={fileId}
+                id={fileId}
+                file={file}
+                failed={failed}
+                onClose={() => setFileId(null)}
+                onInvoice={(inv) => setPdf({ id: inv.id, title: inv.name, request: { url: `/documents/${inv.id}/pdf`, filename: inv.filename } })}
+                reduce={!!reduce}
+              />
+            )}
           </AnimatePresence>,
+          document.body,
+        )}
+      {/* Outside the folder, so the PDF isn't caught up in its tilt. */}
+      {mounted &&
+        createPortal(
+          <PdfSheet
+            request={pdf?.request ?? null}
+            title={pdf?.title ?? "Invoice"}
+            onClose={() => setPdf(null)}
+            actions={pdf ? <Link className="btn plain" href={`/documents/${pdf.id}`}>Open the invoice page</Link> : null}
+          />,
           document.body,
         )}
     </div>
@@ -190,11 +214,14 @@ export default function FilingDrawer({ months, label, openId }: { months: FiledM
 }
 
 // The job's file, out of the drawer: a folder with its papers inside.
-function Folder({ id, file, failed, onClose, reduce }: { id: number; file: JobFile | null; failed: boolean; onClose: () => void; reduce: boolean }) {
+type Invoice = NonNullable<JobFile["invoice"]>;
+
+function Folder({ id, file, failed, onClose, onInvoice, reduce }: { id: number; file: JobFile | null; failed: boolean; onClose: () => void; onInvoice: (inv: Invoice) => void; reduce: boolean }) {
   const close = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     close.current?.focus({ preventScroll: true });
-    const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    // Esc puts the file back, unless it's closing the invoice open on top of it.
+    const key = (e: KeyboardEvent) => e.key === "Escape" && !document.querySelector(".sheet-wrap") && onClose();
     window.addEventListener("keydown", key);
     const html = document.documentElement;
     html.classList.add("fd-locked");
@@ -232,7 +259,7 @@ function Folder({ id, file, failed, onClose, reduce }: { id: number; file: JobFi
               <p className="fd-empty">Pulling the file…</p>
             </div>
           ) : (
-            <FileContents file={file} />
+            <FileContents file={file} onInvoice={onInvoice} />
           )}
         </div>
       </motion.article>
@@ -240,8 +267,8 @@ function Folder({ id, file, failed, onClose, reduce }: { id: number; file: JobFi
   );
 }
 
-function FileContents({ file }: { file: JobFile }) {
-  const any = file.details.length || file.docs.length || file.images.length || file.others.length || file.refs.length || file.notes.length || file.hours;
+function FileContents({ file, onInvoice }: { file: JobFile; onInvoice: (inv: Invoice) => void }) {
+  const any = file.invoice || file.details.length || file.docs.length || file.images.length || file.others.length || file.refs.length || file.notes.length || file.hours;
   return (
     <>
       <section className="fd-sheet fd-cover">
@@ -254,6 +281,21 @@ function FileContents({ file }: { file: JobFile }) {
           <div><dt>Stage</dt><dd>{file.status}</dd></div>
         </dl>
       </section>
+
+      {file.invoice && (
+        <section className="fd-sheet fd-invoice">
+          <h3>Invoice</h3>
+          <div className="fd-invoice-row">
+            <div>
+              <b>{file.invoice.name}</b>
+              <span>Sent {file.invoice.sent}{file.invoice.to ? ` to ${file.invoice.to}` : ""}</span>
+            </div>
+            <em>{file.invoice.total}</em>
+            <span className={`fd-stamp${file.invoice.paid ? " fd-stamp-paid" : ""}`}>{file.invoice.status}</span>
+          </div>
+          <button type="button" className="btn" onClick={() => onInvoice(file.invoice!)}>View invoice</button>
+        </section>
+      )}
 
       {file.images.length > 0 && (
         <section className="fd-sheet">
@@ -270,7 +312,7 @@ function FileContents({ file }: { file: JobFile }) {
 
       {file.docs.length > 0 && (
         <section className="fd-sheet">
-          <h3>Quotes and invoices</h3>
+          <h3>{file.invoice ? "Other quotes and invoices" : "Quotes and invoices"}</h3>
           <ul className="fd-lines">
             {file.docs.map((d) => (
               <li key={d.id}>
