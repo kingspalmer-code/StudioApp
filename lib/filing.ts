@@ -1,5 +1,5 @@
-// The filing drawer (/filing): every finished job, filed behind a divider for the month it was
-// finished in. Shared by the page, the drawer and the file a job opens into.
+// Filing (/filing): every finished job, listed under the month it was finished in. Shared by the
+// page, the list and the file a job opens into.
 
 import type { Doc } from "@/lib/documents";
 
@@ -14,7 +14,7 @@ export function monthName(key: string, style: "long" | "short" = "long") {
   return new Date(Date.UTC(y, m - 1, 15)).toLocaleDateString("en-GB", { month: style, timeZone: "UTC" });
 }
 
-// One job card in the drawer.
+// One job's row in the list.
 export type FiledJob = {
   id: number;
   title: string;
@@ -28,7 +28,7 @@ export type FiledJob = {
   invoice: string | null;
 };
 
-// One divider: the month, and the jobs filed behind it, newest first.
+// One month, and the jobs filed under it, newest first.
 export type FiledMonth = { key: string; jobs: FiledJob[] };
 
 // Everything in a job's file, read when it's opened.

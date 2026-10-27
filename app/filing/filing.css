@@ -1,5 +1,5 @@
-/* Filing drawer. Line-drawn after Kingsley's references: dark ink on paper in light mode, cream
-   lines on dark in dark mode. Cards and the folder are solid; nothing here is glass. */
+/* Filing: a calm month-by-month list, with a filed-card tab on each row. The file a row opens is
+   line-drawn: dark ink on paper in light mode, cream lines on dark in dark mode. Nothing here is glass. */
 .fd {
   --ink: var(--label); --paper: var(--surface); --lw: 1.5px;
   --folder: #e7d3ae; --folder-edge: color-mix(in srgb, var(--ink) 70%, var(--folder));
@@ -8,67 +8,46 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fd { --folder: #3d2f28; } }
 :root[data-theme="dark"] .fd { --folder: #3d2f28; }
 
-.fd-head { margin: 4px 0 6px; }
+.fd-head { margin: 4px 0 18px; }
 .fd-title { font: 700 40px/1 var(--font-title); letter-spacing: -.02em; margin: 0; }
 .fd-sub { color: var(--label-2); margin: 10px 0 0; max-width: 62ch; font-size: 14px; }
+.fd-find { display: flex; align-items: center; gap: 8px; margin-top: 16px; max-width: 380px; padding: 0 12px; height: 40px; border-radius: 12px; background: var(--surface); border: 1px solid var(--sep, var(--fill)); color: var(--label-3); }
+.fd-find:focus-within { border-color: var(--label-2); color: var(--label-2); }
+.fd-find input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font: inherit; color: var(--label); }
+.fd-none { color: var(--label-2); font-size: 14px; margin: 4px 4px 14px; }
 
-/* The drawer: a well of cards with walls either side, and the front panel below. */
-.fd-drawer { margin: 22px 0 0; }
-.fd-well { position: relative; padding: 34px 14px 0; border-inline: var(--lw) solid var(--ink); margin: 0 18px; }
-.fd-card {
-  --in: 0px; --x: 30%;
-  position: relative; display: block; box-sizing: border-box; width: calc(100% - 2 * var(--in)); margin: 0 var(--in) -14px;
-  height: 44px; padding: 0; text-align: left; font: inherit; color: var(--ink); cursor: pointer;
-  background: var(--paper); border: var(--lw) solid var(--ink); border-bottom: 0; border-radius: 10px 10px 0 0;
-  transition: margin .3s ease, width .3s ease; -webkit-tap-highlight-color: transparent;
+/* A month: a quiet heading that folds its jobs away. */
+.fd-month { margin-bottom: 10px; }
+.fd-month-head {
+  width: 100%; display: flex; align-items: baseline; gap: 12px; padding: 12px 4px 10px; border: 0; border-bottom: 1px solid var(--sep, var(--fill));
+  background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer;
 }
-.fd-card:focus-visible { outline: none; }
-.fd-card:focus-visible .fd-tab-in { text-decoration: underline; text-underline-offset: 3px; }
-.fd-edge { height: 22px; cursor: default; }
-.fd-divider.fd-open { height: 128px; margin-bottom: -10px; }
+.fd-month-head:disabled { cursor: default; }
+.fd-month-head h2 { margin: 0; font: 700 22px/1.1 var(--font-title); letter-spacing: -.01em; }
+.fd-month-head h2 small { font: 500 14px var(--font); color: var(--label-3); margin-left: 4px; letter-spacing: 0; }
+.fd-month-meta { margin-left: auto; font-size: 13px; color: var(--label-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fd-chev { flex: none; align-self: center; color: var(--label-3); transform: rotate(-90deg); transition: transform .2s ease; }
+.fd-open .fd-chev { transform: none; }
 
-/* Tabs rise above the card's top edge, with slanted shoulders. */
-.fd-tab { position: absolute; bottom: 100%; left: var(--x); width: 28%; min-width: 150px; height: 24px; display: flex; transform: translateY(var(--lw)); }
-.fd-slant { flex: none; display: block; overflow: visible; }
-.fd-slant-r { transform: scaleX(-1); }
-.fd-slant-fill { fill: var(--paper); }
-.fd-slant-line { fill: none; stroke: var(--ink); stroke-width: var(--lw); }
-.fd-tab-in {
-  flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: 1px 4px 0; background: var(--paper); border-top: var(--lw) solid var(--ink);
-  font-size: 13px; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums;
+/* A job's row, with a little index-card tab for its number. */
+.fd-rows { list-style: none; margin: 8px 0 0; padding: 0; background: var(--paper); border-radius: 14px; overflow: hidden; }
+.fd-rows li + li { border-top: .5px solid var(--sep, var(--fill)); }
+.fd-row { width: 100%; display: flex; align-items: center; gap: 14px; padding: 12px 14px; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.fd-row:hover, .fd-row.fd-current { background: var(--surface-2); }
+.fd-tabno {
+  flex: none; position: relative; min-width: 46px; padding: 6px 6px 4px; margin-top: 4px; text-align: center; border: 1.25px solid var(--label-2); border-radius: 4px 4px 2px 2px;
+  font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--label-2); background: var(--paper);
 }
-.fd-tab-in b { font-weight: 500; flex: none; }
-.fd-tab-in span { overflow: hidden; text-overflow: ellipsis; }
-.fd-job .fd-tab-in span { text-align: right; }
-.fd-divider .fd-tab { width: 22%; min-width: 120px; }
-.fd-divider .fd-slant-fill, .fd-divider .fd-slant-line { fill: var(--ink); stroke: var(--ink); }
-.fd-divider .fd-slant-line { fill: none; }
-.fd-divider .fd-tab-in { background: var(--ink); color: var(--paper); font-weight: 600; letter-spacing: .02em; }
-.fd-divider .fd-tab-in b { font-weight: 700; }
-.fd-divider .fd-tab-in small { font-size: 11px; font-weight: 500; opacity: .7; }
+/* The tab rising off the card's top edge. */
+.fd-tabno::before { content: ""; position: absolute; left: 6px; top: -6px; width: 18px; height: 5px; border: 1.25px solid var(--label-2); border-bottom: 0; border-radius: 3px 3px 0 0; background: var(--paper); }
+.fd-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.fd-main b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fd-main span { font-size: 13px; color: var(--label-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fd-cover-thumb { flex: none; width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: var(--fill); }
+.fd-go { flex: none; color: var(--label-3); }
+.fd-row .fd-stamp { flex: none; font-size: 10.5px; padding: 2px 7px; border-width: 1.5px; }
 
-/* What the open month's divider says on its face. */
-.fd-face { position: absolute; inset: 22px 18px auto; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
-.fd-face strong { font: 700 24px/1.1 var(--font-title); letter-spacing: -.01em; }
-.fd-face span { color: var(--label-2); font-size: 13px; max-width: 40ch; }
-
-/* A job card's strip shows who it was for and when, under the tab of the card in front. */
-.fd-peek { position: absolute; left: 12px; top: 7px; display: flex; gap: 8px; font-size: 11px; color: var(--label-3); white-space: nowrap; max-width: calc(var(--x) - 20px); overflow: hidden; }
-.fd-peek span:first-child { overflow: hidden; text-overflow: ellipsis; }
-
-/* The drawer's front: a lip, then a panel narrowing to the floor, with a label and a pull. */
-.fd-front { position: relative; height: 128px; margin-top: 0; display: grid; place-items: center; align-content: center; gap: 16px; }
-.fd-front::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 14px; border: var(--lw) solid var(--ink); background: var(--paper); z-index: 1; }
-.fd-front-line { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.fd-front-line path { fill: var(--paper); stroke: var(--ink); stroke-width: var(--lw); }
-.fd-label {
-  position: relative; z-index: 1; margin-top: 12px; padding: 5px 14px; border: var(--lw) solid var(--ink); border-radius: 7px;
-  background: var(--oat-fill); color: var(--ink); font-size: 14px; font-weight: 500; transform: rotate(-.6deg); max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.fd-pull { position: relative; z-index: 1; width: 92px; height: 12px; border: var(--lw) solid var(--ink); border-top: 0; border-radius: 0 0 10px 10px; }
-
-/* The file, out of the drawer. */
+/* The job's file, opened from its row. */
 html.fd-locked, html.fd-locked body { overflow: hidden; }
 .fd-layer {
   position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 28px 16px;
@@ -130,7 +109,6 @@ html.fd-locked, html.fd-locked body { overflow: hidden; }
 .fd-invoice-row em { font-style: normal; font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; }
 .fd-stamp { padding: 3px 9px; border: 2px solid var(--label-2); border-radius: 5px; color: var(--label-2); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; transform: rotate(-4deg); }
 .fd-stamp-paid { border-color: var(--green); color: var(--green); }
-.fd-paid { color: var(--green); font-weight: 600; }
 /* The invoice opens above the folder. */
 .fd-locked .sheet-wrap { z-index: 90; }
 
@@ -152,12 +130,11 @@ html.fd-locked, html.fd-locked body { overflow: hidden; }
 
 @media (max-width: 640px) {
   .fd-title { font-size: 34px; }
-  .fd-well { margin: 0 8px; padding: 34px 6px 0; }
-  .fd-tab { width: 56%; min-width: 0; }
-  .fd-job .fd-tab { left: calc(var(--x) * 1.57 - 48%); }
-  .fd-divider .fd-tab { width: 46%; min-width: 0; left: calc(var(--x) * .72); }
-  .fd-peek { display: none; }
-  .fd-front { height: 104px; }
+  .fd-find { max-width: none; }
+  .fd-row { gap: 11px; padding: 11px 12px; }
+  .fd-tabno { min-width: 40px; }
+  .fd-cover-thumb { display: none; }
+  .fd-month-head h2 { font-size: 20px; }
   .fd-layer { padding: 0; place-items: end center; }
   .fd-folder { width: 100%; max-height: calc(100dvh - 60px); border-radius: 0 14px 0 0; border-bottom: 0; }
   .fd-folder-in { padding: 14px 12px calc(22px + env(safe-area-inset-bottom, 0px)); }
@@ -169,6 +146,6 @@ html.fd-locked, html.fd-locked body { overflow: hidden; }
   .fd-invoice-row div { grid-row: 1 / 3; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .fd-card, .fd-print { transition: none; }
+  .fd-chev, .fd-print { transition: none; }
   .fd-sheet:nth-child(n), .fd-stamp { transform: none; }
 }
