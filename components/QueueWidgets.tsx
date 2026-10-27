@@ -401,7 +401,7 @@ export function Pet({ pet: start, earnHint, business }: { pet: PetView | null; e
       <button
         type="button"
         ref={stageEl}
-        className={`lcd-stage ${act ?? mood}${act === "dance" && lv >= CARTWHEEL_AT ? " spin" : ""}${out ? " away" : ""}`}
+        className={`lcd-stage ${act ?? mood}${!act && !asleep ? " awake" : ""}${act === "dance" && lv >= CARTWHEEL_AT ? " spin" : ""}${out ? " away" : ""}`}
         onClick={fuss}
         onDoubleClick={() => (!act || act === "happy") && setOut("explore")}
         aria-label={`Pickle, level ${lv}${asleep ? ", asleep" : ""}. Click to give Pickle a fuss, double-click to let him out to explore`}
