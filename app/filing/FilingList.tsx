@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
-import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { monthName, type FiledJob, type FiledMonth, type JobFile } from "@/lib/filing";
 import { formatDate, money } from "@/lib/priority";
@@ -10,58 +10,32 @@ import PdfSheet, { type PdfRequest } from "@/components/PdfSheet";
 import Thumb from "@/components/Thumb";
 import { openFile } from "./actions";
 
-// A card-file drawer, after Kingsley's line-drawn references: month dividers with filled tabs,
-// job cards behind them with outlined tabs, staggered so every tab can be read. Tapping a divider
-// thumbs that month open; tapping a job pulls its card up and opens its file.
+// A calm list of finished work: one heading per month, newest first, and a row per job with a
+// small filed-card tab for its number and the invoice's stamp. The latest month with work in it
+// starts open; older months fold to one line until tapped. Typing in the box finds a job in any
+// month. A row opens the job's file.
 
-const pad = (n: number) => String(n).padStart(3, "0");
-// Where tabs sit along the card, as a share of its width: dividers step across, jobs alternate.
-const DIVIDER_AT = [2, 24, 48, 70];
-const JOB_AT = [33, 56];
-// Cards nearer the front of the drawer are a touch wider, as if seen from above.
-const DEPTH = 14;
-const STEP = 2.5;
+const has = (j: FiledJob, q: string) => `${j.id} ${j.title} ${j.biz} ${j.type}`.toLowerCase().includes(q);
 
-type Item =
-  | { kind: "divider"; m: FiledMonth; i: number }
-  | { kind: "job"; job: FiledJob; i: number; month: string }
-  | { kind: "edge"; key: string };
-
-function Slant({ side }: { side: "l" | "r" }) {
-  return (
-    <svg className={`fd-slant fd-slant-${side}`} viewBox="0 0 12 24" width="12" height="24" aria-hidden="true">
-      <path className="fd-slant-fill" d="M0 24V23.25C3 23.25 3.5 22 4.2 19L7.8 4.5C8.5 1.5 9.5.75 12 .75V24Z" />
-      <path className="fd-slant-line" d="M0 23.25C3 23.25 3.5 22 4.2 19L7.8 4.5C8.5 1.5 9.5.75 12 .75" />
-    </svg>
-  );
-}
-
-function Tab({ children }: { children: ReactNode }) {
-  return (
-    <span className="fd-tab">
-      <Slant side="l" />
-      <span className="fd-tab-in">{children}</span>
-      <Slant side="r" />
-    </span>
-  );
-}
-
-export default function FilingDrawer({ months, label, openId }: { months: FiledMonth[]; label: string; openId: number | null }) {
+export default function FilingList({ months, openId }: { months: FiledMonth[]; openId: number | null }) {
   const holding = (id: number | null) => months.find((m) => m.jobs.some((j) => j.id === id))?.key;
-  const [open, setOpen] = useState<string | null>(holding(openId) ?? months.find((m) => m.jobs.length)?.key ?? months[0]?.key ?? null);
+  const first = holding(openId) ?? months.find((m) => m.jobs.length)?.key ?? months[0]?.key;
+  const [open, setOpen] = useState<Set<string>>(() => new Set(first ? [first] : []));
+  const [find, setFind] = useState("");
   const [fileId, setFileId] = useState<number | null>(openId);
   const [file, setFile] = useState<JobFile | null>(null);
   const [failed, setFailed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [pdf, setPdf] = useState<{ id: number; title: string; request: PdfRequest } | null>(null);
   const reduce = useReducedMotion();
-  const thisYear = months[0]?.key.slice(0, 4);
   const total = months.reduce((n, m) => n + m.jobs.length, 0);
   const oldest = [...months].reverse().find((m) => m.jobs.length);
+  const q = find.trim().toLowerCase();
+  const shown = q ? months.map((m) => ({ ...m, jobs: m.jobs.filter((j) => has(j, q)) })).filter((m) => m.jobs.length) : months;
 
   useEffect(() => setMounted(true), []);
 
-  // Read the file when a card's pulled, and keep it in the address so a refresh or a shared link
+  // Read the file when a row's opened, and keep it in the address so a refresh or a shared link
   // opens the same one.
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -80,106 +54,68 @@ export default function FilingDrawer({ months, label, openId }: { months: FiledM
     };
   }, [fileId]);
 
-  const items: Item[] = [];
-  months.forEach((m, mi) => {
-    items.push({ kind: "divider", m, i: mi });
-    if (open === m.key) m.jobs.forEach((job, i) => items.push({ kind: "job", job, i, month: m.key }));
-    else for (let i = 0; i < Math.min(m.jobs.length, 6); i++) items.push({ kind: "edge", key: `${m.key}-${i}` });
-  });
-  const inset = (n: number) => Math.min(items.length - 1 - n, DEPTH) * STEP;
-  const spring = reduce ? { duration: 0 } : { type: "spring" as const, stiffness: 420, damping: 34 };
+  const toggle = (key: string) =>
+    setOpen((o) => {
+      const n = new Set(o);
+      if (n.has(key)) n.delete(key);
+      else n.add(key);
+      return n;
+    });
 
   return (
     <div className="fd">
       <header className="fd-head">
-        <div>
-          <h1 className="fd-title">Filing</h1>
-          <p className="fd-sub">
-            {total
-              ? `${total} finished job${total === 1 ? "" : "s"} filed by the month ${total === 1 ? "it was" : "they were"} finished${oldest ? `, back to ${monthName(oldest.key)} ${oldest.key.slice(0, 4)}` : ""}.`
-              : "Finished jobs file themselves here, behind a divider for the month they were finished."}{" "}
-            Tap a month to thumb through it, and a job to open its file.
-          </p>
-        </div>
+        <h1 className="fd-title">Filing</h1>
+        <p className="fd-sub">
+          {total
+            ? `${total} finished job${total === 1 ? "" : "s"}${oldest ? `, back to ${monthName(oldest.key)} ${oldest.key.slice(0, 4)}` : ""}.`
+            : "Finished jobs file themselves here, under the month they were finished."}
+        </p>
+        {total > 0 && (
+          <label className="fd-find">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+            <input type="search" value={find} onChange={(e) => setFind(e.target.value)} placeholder="Find a job, client or number" aria-label="Find a finished job" />
+          </label>
+        )}
       </header>
 
-      <div className="fd-drawer">
-        <div className="fd-well">
-          {items.map((it, n) => {
-            const style = { "--in": `${inset(n)}px` } as CSSProperties;
-            if (it.kind === "edge") return <motion.div layout="position" transition={spring} key={it.key} className="fd-card fd-edge" style={style} aria-hidden="true" />;
-            if (it.kind === "divider") {
-              const { m } = it;
-              const isOpen = open === m.key;
-              const people = new Set(m.jobs.map((j) => j.biz).filter(Boolean)).size;
-              const quoted = m.jobs.reduce((s, j) => s + (j.amount ?? 0), 0);
-              return (
-                <motion.button
-                  layout="position"
-                  transition={spring}
-                  key={m.key}
-                  type="button"
-                  className={`fd-card fd-divider${isOpen ? " fd-open" : ""}`}
-                  style={{ ...style, "--x": `${DIVIDER_AT[it.i % DIVIDER_AT.length]}%` } as CSSProperties}
-                  aria-expanded={isOpen}
-                  whileHover={reduce ? undefined : { y: -4 }}
-                  whileTap={reduce ? undefined : { y: -1 }}
-                  onClick={() => setOpen(isOpen ? null : m.key)}
-                >
-                  <Tab>
-                    <b>{monthName(m.key, "short")}{m.key.slice(0, 4) !== thisYear || it.i === 0 ? <small> ’{m.key.slice(2, 4)}</small> : null}</b>
-                    <span>{pad(m.jobs.length)}</span>
-                  </Tab>
-                  {isOpen && (
-                    <span className="fd-face">
-                      <strong>{monthName(m.key)} {m.key.slice(0, 4)}</strong>
-                      <span>
-                        {m.jobs.length
-                          ? [`${m.jobs.length} job${m.jobs.length === 1 ? "" : "s"} filed`, people > 1 ? `for ${people} clients` : "", quoted ? `${money(quoted)} quoted` : ""].filter(Boolean).join(" · ")
-                          : it.i === 0 ? "Nothing filed this month yet. Jobs land here as they’re finished." : "Nothing filed this month."}
+      {q && !shown.length && <p className="fd-none">Nothing filed matches “{find.trim()}”.</p>}
+
+      {shown.map((m, mi) => {
+        const isOpen = !!q || open.has(m.key);
+        const quoted = m.jobs.reduce((s, j) => s + (j.amount ?? 0), 0);
+        const meta = m.jobs.length ? [`${m.jobs.length} job${m.jobs.length === 1 ? "" : "s"}`, quoted ? `${money(quoted)} quoted` : ""].filter(Boolean).join(" · ") : "Nothing yet";
+        return (
+          <section key={m.key} className={`fd-month${isOpen ? " fd-open" : ""}`}>
+            <button type="button" className="fd-month-head" aria-expanded={isOpen} onClick={() => toggle(m.key)} disabled={!!q || !m.jobs.length}>
+              <h2>{monthName(m.key)} <small>{m.key.slice(0, 4)}</small></h2>
+              <span className="fd-month-meta">{meta}</span>
+              {m.jobs.length > 0 && !q && (
+                <svg className="fd-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+              )}
+            </button>
+            {isOpen && m.jobs.length === 0 && mi === 0 && <p className="fd-none">Jobs land here as they’re finished.</p>}
+            {isOpen && m.jobs.length > 0 && (
+              <ul className="fd-rows">
+                {m.jobs.map((job) => (
+                  <li key={job.id}>
+                    <button type="button" className={`fd-row${fileId === job.id ? " fd-current" : ""}`} onClick={() => setFileId(job.id)} aria-label={`Open the file for ${job.title}`}>
+                      <span className="fd-tabno">{job.id}</span>
+                      <span className="fd-main">
+                        <b>{job.title}</b>
+                        <span>{[job.biz, formatDate(job.finished)].filter(Boolean).join(" · ")}</span>
                       </span>
-                    </span>
-                  )}
-                </motion.button>
-              );
-            }
-            const { job } = it;
-            return (
-              <motion.button
-                layout="position"
-                transition={spring}
-                initial={reduce ? false : { opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: fileId === job.id && !reduce ? -18 : 0 }}
-                whileHover={reduce ? undefined : { y: fileId === job.id ? -18 : -6 }}
-                whileTap={reduce ? undefined : { y: -2 }}
-                key={job.id}
-                type="button"
-                className={`fd-card fd-job${fileId === job.id ? " fd-pulled" : ""}`}
-                style={{ ...style, "--x": `${JOB_AT[it.i % JOB_AT.length]}%` } as CSSProperties}
-                onClick={() => setFileId(job.id)}
-                aria-label={`Open the file for ${job.title}`}
-              >
-                <Tab>
-                  <b>{job.id}</b>
-                  <span>{job.title}</span>
-                </Tab>
-                <span className="fd-peek">
-                  {job.biz && <span>{job.biz}</span>}
-                  <span>{formatDate(job.finished)}</span>
-                  {job.invoice && <span className={job.invoice === "Paid" ? "fd-paid" : undefined}>{job.invoice}</span>}
-                </span>
-              </motion.button>
-            );
-          })}
-        </div>
-        <div className="fd-front">
-          <svg className="fd-front-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M0 0H100L96.5 100H3.5Z" vectorEffect="non-scaling-stroke" />
-          </svg>
-          <span className="fd-label">{label}</span>
-          <span className="fd-pull" aria-hidden="true" />
-        </div>
-      </div>
+                      {job.invoice && <span className={`fd-stamp${job.invoice === "Paid" ? " fd-stamp-paid" : ""}`}>{job.invoice}</span>}
+                      {job.cover ? <img className="fd-cover-thumb" src={job.cover} alt="" loading="lazy" /> : null}
+                      <svg className="fd-go" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        );
+      })}
 
       {mounted &&
         createPortal(
@@ -213,7 +149,7 @@ export default function FilingDrawer({ months, label, openId }: { months: FiledM
   );
 }
 
-// The job's file, out of the drawer: a folder with its papers inside.
+// The job's file, opened from its row: a folder with its papers inside.
 type Invoice = NonNullable<JobFile["invoice"]>;
 
 function Folder({ id, file, failed, onClose, onInvoice, reduce }: { id: number; file: JobFile | null; failed: boolean; onClose: () => void; onInvoice: (inv: Invoice) => void; reduce: boolean }) {

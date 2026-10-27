@@ -6,12 +6,12 @@ import { isDone, todayISO } from "@/lib/priority";
 import { asClient, requireMember } from "@/lib/session";
 import { withMine } from "@/lib/workspace";
 import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
-import FilingDrawer from "./FilingDrawer";
+import FilingList from "./FilingList";
 import "./filing.css";
 
-// The filing drawer: every finished job someone can see, filed behind a divider for the month it
-// was finished in. This month's divider is always there, so a new one appears as each month
-// starts; earlier months only show once something's filed in them. Read-only: a job's card opens
+// Filing: every finished job someone can see, listed under the month it was finished in. This
+// month is always there, so a new one appears as each month starts; earlier months only show
+// once something's filed in them. Read-only: a job's row opens
 // into its file, with its details, quotes and invoices, images and notes.
 export default async function FilingPage({ searchParams }: { searchParams: Promise<{ file?: string }> }) {
   const { file } = await searchParams;
@@ -26,7 +26,7 @@ export default async function FilingPage({ searchParams }: { searchParams: Promi
     .sort((a, b) => b.when.localeCompare(a.when) || b.id - a.id);
   // Money only shows to the studio.
   const studio = member.role === "designer";
-  // Which jobs had an invoice go out, so their cards can say so.
+  // Which jobs had an invoice go out, so their rows can stamp it.
   const [covers, { data: invoices }] = await Promise.all([
     coversFor(supabase, finished.map((t) => t.id)),
     studio
@@ -57,10 +57,9 @@ export default async function FilingPage({ searchParams }: { searchParams: Promi
   }
   months.sort((a, b) => b.key.localeCompare(a.key));
 
-  const owner = member.role === "client" ? businesses.find((b) => b.id === member.business_id)?.name : workspace.owner_name || workspace.name;
   return (
     <Shell {...shell}>
-      <FilingDrawer months={months} label={owner ? `${owner}’s files` : "Finished files"} openId={Number(file) || null} />
+      <FilingList months={months} openId={Number(file) || null} />
     </Shell>
   );
 }
