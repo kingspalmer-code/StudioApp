@@ -9,6 +9,18 @@ import { activeHref } from "@/lib/menu";
 
 type TabLink = { href: string; label: string; icon?: string; match?: string[] };
 
+const MORE = "#more";
+
+// New always sits in the middle of the bar, whichever sections are picked for it (Settings > Menu)
+// and with More counted as one of the buttons.
+function middle(tabs: TabLink[]): TabLink[] {
+  const at = tabs.findIndex((t) => t.href === "/portal");
+  if (at === -1) return tabs;
+  const rest = tabs.filter((_, i) => i !== at);
+  const mid = Math.floor(tabs.length / 2);
+  return [...rest.slice(0, mid), tabs[at], ...rest.slice(mid)];
+}
+
 // The section links as an iPhone-style tab bar along the bottom. Only shown on phones; bigger
 // screens have the sidebar rail. The middle button opens the create sheet, and the sections that
 // don't fit wait under More, which opens a short list from the bottom.
@@ -19,14 +31,20 @@ export default function TabBar({ links, more = [], canCreate = true }: { links: 
   if (links.length + more.length < 2) return null;
   const current = activeHref([...links, ...more], path);
   const inMore = more.some((l) => l.href === current);
+  const tabs = [...links, ...(more.length ? [{ href: MORE, label: "More" }] : [])];
   return (
     <>
       <nav className="tabbar" aria-label="Sections">
-        {links.map((l) =>
+        {middle(tabs).map((l) =>
           l.href === "/portal" && canCreate ? (
             <button key={l.href} type="button" className="add" onClick={openCreate} data-tour="new" aria-haspopup="dialog">
               <NavIcon href={l.href} strokeWidth={2.4} />
               <span>New</span>
+            </button>
+          ) : l.href === MORE ? (
+            <button key={l.href} type="button" className={inMore ? "more on" : "more"} onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" /></svg>
+              <span>More</span>
             </button>
           ) : (
             <Link key={l.href} href={l.href} aria-current={l.href === current ? "page" : undefined}>
@@ -34,12 +52,6 @@ export default function TabBar({ links, more = [], canCreate = true }: { links: 
               <span>{l.label}</span>
             </Link>
           )
-        )}
-        {more.length > 0 && (
-          <button type="button" className={inMore ? "more on" : "more"} onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" /></svg>
-            <span>More</span>
-          </button>
         )}
       </nav>
       {open && (
