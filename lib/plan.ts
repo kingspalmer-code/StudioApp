@@ -131,6 +131,14 @@ export function planSpan(i: Pick<PlanItem, "on_date" | "end_date" | "at_time">, 
   return i.at_time ? `${span} · ${hhmm(i.at_time)}` : span;
 }
 
+// Something that happens rather than something to do: it has a day and a time, a place, runs
+// over several days, or is the kind of thing you go to (a shoot, a gig, an appointment). A to-do
+// with a day ("call printer friday") is still a to-do: Today asks you to do it; an event Today
+// only reminds you of, and once it has been it quietly drops off instead of waiting on your plate.
+const EVENT_WORDS = /\b(photo ?shoot|shoot|session|gig|meeting|appointment|appt|dentist|doctor|gp|hospital|vet|haircut|interview|party|wedding|dinner|lunch|drinks|concert|festival|class|lesson|workshop|flight|train|trip|holiday|launch|exhibition|opening|rehearsal|recording|booking|booked|viewing|fitting|playing|performing)\b/i;
+export const isEvent = (i: Pick<PlanItem, "on_date" | "end_date" | "at_time" | "place" | "title">) =>
+  i.on_date !== null && (i.at_time !== null || i.place.trim() !== "" || (i.end_date !== null && i.end_date > i.on_date) || EVENT_WORDS.test(i.title));
+
 // Calendar order within a day: timed things first by time, then the rest by priority.
 export const byTime = (a: PlanItem, b: PlanItem) =>
   (a.at_time ?? "99").localeCompare(b.at_time ?? "99") || a.rank - b.rank || a.id - b.id;

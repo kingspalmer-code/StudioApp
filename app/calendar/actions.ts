@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { parseQuickAdd } from "@/lib/quickadd";
+import { parseCapture } from "@/lib/quickadd";
 import { requireEditor } from "@/lib/session";
 import { CARD_COLOURS, CARD_SIZES, PLAN_COLUMNS, type CardSize, type PlanItem } from "@/lib/plan";
 
@@ -91,16 +91,29 @@ export async function removePlanItem(id: number): Promise<Result> {
   return error ? { error: error.message } : {};
 }
 
-// The + button's Task: typed like "Call supplier tomorrow !". A day puts it on the calendar, and
-// "!" puts it at the top of the list instead of the bottom.
-export async function quickAddToDo(formData: FormData): Promise<Result> {
+// "What's on your mind?" on Today and in the + sheet. One note can hold several things, each
+// with its own day ("photoshoot 5th Nov, gig 14th at Bam Bam"): each goes in on its own, on the
+// calendar when it has a day. "!" puts them at the top of the list instead of the bottom.
+export async function quickAddToDo(formData: FormData): Promise<{ items?: PlanItem[]; error?: string }> {
   const raw = clean(formData.get("title"), 300);
   if (!raw) return { error: "Give it a name." };
-  const { title, due, flagged } = parseQuickAdd(raw);
+  const parsed = parseCapture(raw).filter((p) => p.title).slice(0, 12);
   const { supabase, member } = await requireEditor(["designer", "staff"]);
+  const flagged = parsed.some((p) => p.flagged);
   const { data: ends } = await supabase.from("plan_items").select("rank").eq("owner", member.email).is("parent_id", null).eq("gone", false).order("rank", { ascending: flagged }).limit(1).returns<{ rank: number }[]>();
   const end = ends?.[0]?.rank ?? 0;
-  const r = await addPlanItem({ title, on_date: due, rank: flagged ? end - 1 : end + 1 });
+  const rows = parsed.map((p, n) => ({
+    title: p.title.slice(0, 300),
+    owner: member.email,
+    on_date: dateOrNull(p.due),
+    at_time: p.due ? timeOrNull(p.time) : null,
+    place: p.place.slice(0, 200),
+    remind: 0,
+    // Flagged ones go above the top in the order typed; the rest after the end.
+    rank: flagged ? end - parsed.length + n : end + 1 + n,
+  }));
+  const { data, error } = await supabase.from("plan_items").insert(rows).select(PLAN_COLUMNS).returns<PlanItem[]>();
+  if (error) return { error: error.message };
   revalidatePath("/calendar");
-  return r;
+  return { items: data ?? [] };
 }

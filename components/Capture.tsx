@@ -3,17 +3,18 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { quickAddToDo } from "@/app/calendar/actions";
-import type { PlanItem } from "@/lib/plan";
+import { planWhen, type PlanItem } from "@/lib/plan";
 import { flashSaved } from "./Saved";
 
 // Where Tell Oatcake keeps what's been typed (app/calendar/BrainDump.tsx), so text started here
 // carries over when it opens.
 const DRAFT_KEY = "oatcake-tell-draft";
 
-// Get it out of your head: one box, no sorting. Enter puts it on your To-do (with a day if you
-// said one, like "call printer friday"); Tell Oatcake takes the whole lot, however messy, and
+// Get it out of your head: one box, no sorting. Enter puts it on your To-do, or on the calendar
+// when you said a day ("call printer friday", "gig 14th Nov at 8pm"), split into separate things
+// when one note holds several days; Tell Oatcake takes the whole lot, however messy, and
 // sorts it into to-dos, calendar days and routines for you to check. On Today and in the + sheet.
-export default function Capture({ brain, onAdded, autoFocus = false, placeholder = "What's on your mind?" }: { brain: boolean; onAdded?: (item: PlanItem) => void; autoFocus?: boolean; placeholder?: string }) {
+export default function Capture({ brain, onAdded, autoFocus = false, placeholder = "What's on your mind?" }: { brain: boolean; onAdded?: (items: PlanItem[]) => void; autoFocus?: boolean; placeholder?: string }) {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
@@ -27,10 +28,10 @@ export default function Capture({ brain, onAdded, autoFocus = false, placeholder
       const fd = new FormData();
       fd.set("title", title);
       const r = await quickAddToDo(fd);
-      if (r.error || !r.item) return setError(r.error ?? "That didn't save. Try again.");
+      if (r.error || !r.items?.length) return setError(r.error ?? "That didn't save. Try again.");
       setText("");
-      flashSaved("On your To-do");
-      onAdded?.(r.item);
+      flashSaved(addedLine(r.items));
+      onAdded?.(r.items);
     });
   }
 
@@ -59,7 +60,7 @@ export default function Capture({ brain, onAdded, autoFocus = false, placeholder
       </form>
       {error && <p className="capture-error" role="alert">{error}</p>}
       <p className="capture-foot">
-        Say when if you like, such as &ldquo;call printer friday&rdquo;.
+        Say when if you like, such as &ldquo;call printer friday&rdquo; or &ldquo;gig 14th Nov at 8pm&rdquo;. Days go on your calendar.
         {brain && (
           <>
             {" "}Lots on your mind?{" "}
@@ -69,4 +70,12 @@ export default function Capture({ brain, onAdded, autoFocus = false, placeholder
       </p>
     </div>
   );
+}
+
+// "On your calendar: Thu 5 Nov", "3 on your calendar", "On your To-do".
+function addedLine(items: PlanItem[]): string {
+  const dated = items.filter((i) => i.on_date);
+  if (items.length === 1) return dated.length ? `On your calendar: ${planWhen(dated[0].on_date, dated[0].at_time)}` : "On your To-do";
+  if (dated.length === items.length) return `${items.length} on your calendar`;
+  return `${items.length} added, ${dated.length} on your calendar`;
 }
