@@ -446,6 +446,7 @@ function EaseCard({ h, n, onAnswer }: { h: Habit; n: Nudge; onAnswer: (take: boo
 }
 
 // Slide right to log, left to skip. The knob sits in the middle and springs back if let go early.
+// With nothing to skip (logging another) it starts at the left, like the original iPhone unlock.
 function Slider({ h, onDone, onSkip, doneText = "slide to log", disabled }: { h: Habit; onDone: () => void; onSkip?: () => void; doneText?: string; disabled?: boolean }) {
   const track = useRef<HTMLDivElement>(null);
   const [x, setX] = useState(0);
@@ -453,6 +454,7 @@ function Slider({ h, onDone, onSkip, doneText = "slide to log", disabled }: { h:
   const [landed, setLanded] = useState<"done" | "skip" | null>(null);
   const [tick, haptic] = useTick();
   const knob = 64;
+  const solo = !onSkip;
   function down(e: React.PointerEvent) {
     if (disabled || landed) return;
     const r = track.current!.getBoundingClientRect();
@@ -461,14 +463,16 @@ function Slider({ h, onDone, onSkip, doneText = "slide to log", disabled }: { h:
   }
   function move(e: React.PointerEvent) {
     if (!drag) return;
-    const dx = Math.max(onSkip ? -drag.half : 0, Math.min(drag.half, e.clientX - drag.start));
+    const dx = solo
+      ? Math.max(0, Math.min(drag.half * 2, e.clientX - drag.start))
+      : Math.max(-drag.half, Math.min(drag.half, e.clientX - drag.start));
     setX(dx);
   }
   function up() {
     if (!drag) return;
-    const share = x / drag.half;
+    const share = solo ? x / (drag.half * 2) : x / drag.half;
     setDrag(null);
-    if (share > 0.82) { setX(drag.half); setLanded("done"); tick(); setTimeout(onDone, 160); }
+    if (share > 0.82) { setX(solo ? drag.half * 2 : drag.half); setLanded("done"); tick(); setTimeout(onDone, 160); }
     else if (share < -0.82 && onSkip) { setX(-drag.half); setLanded("skip"); tick(); setTimeout(onSkip, 160); }
     else setX(0);
   }
@@ -478,13 +482,15 @@ function Slider({ h, onDone, onSkip, doneText = "slide to log", disabled }: { h:
     if (e.key === "ArrowLeft" && onSkip) { setLanded("skip"); tick(); onSkip(); }
   }
   const half = track.current ? (track.current.getBoundingClientRect().width - knob) / 2 - 4 : 1;
-  const share = x / (half || 1);
+  const share = solo ? x / (half * 2 || 1) : x / (half || 1);
   return (
-    <div ref={track} className={`hb-slide${disabled ? " off" : ""}`} style={paint(h.colour)}>
+    <div ref={track} className={`hb-slide${solo ? " solo" : ""}${disabled ? " off" : ""}`} style={paint(h.colour)}>
       {haptic}
       {onSkip && <span className="hb-slide-l" style={{ opacity: 1 - Math.max(0, share) * 1.4 }}>‹ skip today</span>}
-      <span className="hb-slide-r" style={{ opacity: 1 + Math.min(0, share) * 1.4 }}>{doneText} ›</span>
-      <span className="hb-slide-fill" style={{ left: share >= 0 ? "50%" : `calc(50% + ${x}px - 32px)`, width: `${Math.abs(x) + 32}px`, marginLeft: share >= 0 ? -32 : 0, background: share < 0 ? "var(--label-3)" : undefined }} />
+      <span className="hb-slide-r" style={{ opacity: solo ? 1 - share * 1.4 : 1 + Math.min(0, share) * 1.4 }}>{doneText} ›</span>
+      {solo
+        ? <span className="hb-slide-fill" style={{ left: 4, width: `${x + knob}px` }} />
+        : <span className="hb-slide-fill" style={{ left: share >= 0 ? "50%" : `calc(50% + ${x}px - 32px)`, width: `${Math.abs(x) + 32}px`, marginLeft: share >= 0 ? -32 : 0, background: share < 0 ? "var(--label-3)" : undefined }} />}
       <span
         className={`hb-knob${drag ? " dragging" : ""}`}
         role="slider"
@@ -589,18 +595,22 @@ function LogSheet({ h, s, date, today, day, readOnly, onClose, onLog, onUndo, on
   const [taps, setTaps] = useState(0);
   const [feel, setFeel] = useState<HabitLog["feel"]>(null);
   const [note, setNote] = useState("");
-  const [after, setAfter] = useState<"done" | "skip" | "more" | null>(null);
+  const [after, setAfter] = useState<"done" | "skip" | "more" | "again" | null>(null);
+  // Already logged, logging another one (a second yoga session, more spending).
+  const [again, setAgain] = useState(false);
   const isToday = date === today;
   const when = isToday ? "today" : new Date(date + "T12:00:00Z").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
   const already = Math.min(h.per_day, Math.round(day.amount));
-  const finished = day.done || day.skipped;
+  const finished = (day.done || day.skipped) && !again;
+  const doneLogs = day.logs.filter((l) => l.status === "done");
+  const lastAmount = doneLogs.length ? doneLogs[doneLogs.length - 1].amount : null;
 
   async function done() {
     let extra: Partial<HabitLog> = {};
     if (h.kind === "session") extra = { amount: amount || null, feel, note };
     if (h.kind === "count") extra = { amount: taps || Math.max(1, h.per_day - already), note };
     if (h.kind === "money") extra = { amount, note };
-    setAfter("done");
+    setAfter(again ? "again" : "done");
     const ok = await onLog("done", extra);
     if (ok) setTimeout(onClose, 1500);
     else setAfter(null);
@@ -609,6 +619,13 @@ function LogSheet({ h, s, date, today, day, readOnly, onClose, onLog, onUndo, on
   async function more() {
     setAfter("more");
     const ok = await onLog("done", { amount: 1 });
+    if (ok) setTimeout(onClose, 1500);
+    else setAfter(null);
+  }
+  // Slide again on a finished session: logs another of the same length straight away.
+  async function another() {
+    setAfter("again");
+    const ok = await onLog("done", { amount: lastAmount ?? s.usual ?? null });
     if (ok) setTimeout(onClose, 1500);
     else setAfter(null);
   }
@@ -639,6 +656,18 @@ function LogSheet({ h, s, date, today, day, readOnly, onClose, onLog, onUndo, on
         </div>
       </Sheet>
     );
+  if (after === "again") {
+    const n = Math.max(2, doneLogs.length);
+    return (
+      <Sheet onClose={onClose} label={`${h.name} logged`}>
+        <div className="hb-landed" style={paint(h.colour)}>
+          <OatcakeBiscuit eating className="hb-landed-mark" />
+          <h2>{h.kind === "money" ? `Added to ${when}` : `${h.name}, ${n === 2 ? "twice" : `${n} times`} ${when}`}</h2>
+          <p>{h.kind === "money" ? "Every bit logged counts." : "An extra one. Going above and beyond."}</p>
+        </div>
+      </Sheet>
+    );
+  }
   if (after === "skip")
     return (
       <Sheet onClose={onClose} label={`${h.name} skipped`}>
@@ -652,7 +681,7 @@ function LogSheet({ h, s, date, today, day, readOnly, onClose, onLog, onUndo, on
   return (
     <Sheet onClose={onClose} label={`Log ${h.name}`}>
       <div className="hb-log" style={paint(h.colour)}>
-        <p className="hb-eyebrow">{finished ? (day.done ? "Logged" : "Skipped") : `Log it · ${when}`}</p>
+        <p className="hb-eyebrow">{finished ? (day.done ? "Logged" : "Skipped") : again ? `Log another · ${when}` : `Log it · ${when}`}</p>
         <h2 className="hb-log-title"><span className="hb-ic"><HabitIcon name={h.icon} /></span>{h.name}</h2>
         <p className="hb-log-sub">{paceLabel(h)}{h.freq === "times" ? ` · ${s.periodDone} of ${s.periodGoal} so far` : ""}</p>
 
@@ -663,7 +692,17 @@ function LogSheet({ h, s, date, today, day, readOnly, onClose, onLog, onUndo, on
               <p className="hb-hint">{Math.round(day.amount)} of {h.per_day}{day.amount > h.per_day ? `, ${Math.round(day.amount - h.per_day)} extra` : ""}. Did more? Slide to add one.</p>
             )}
             {!readOnly && day.done && h.kind === "count" && <Slider h={h} onDone={more} doneText="slide to add one more" />}
-            {!readOnly && <button type="button" className="btn plain" onClick={() => { onUndo(); onClose(); }}>Undo {when}</button>}
+            {!readOnly && day.done && h.kind === "session" && (
+              <>
+                <Slider h={h} onDone={another} doneText="slide to log another" />
+                <button type="button" className="hb-again link" onClick={() => { if (lastAmount != null) setAmount(Number(lastAmount)); setAgain(true); }}>
+                  {lastAmount != null ? `Another ${amountLabel(h, Number(lastAmount))}. Change it first` : "Add details first"}
+                </button>
+              </>
+            )}
+            {!readOnly && day.done && h.kind === "money" && (
+              <button type="button" className="btn plain" onClick={() => { setAmount(0); setAgain(true); }}>Add more spending</button>
+            )}
           </div>
         ) : (
           <>
@@ -715,10 +754,19 @@ function LogSheet({ h, s, date, today, day, readOnly, onClose, onLog, onUndo, on
             {h.kind !== "count" && (
               <input className="hb-note" placeholder="Add a note" value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} />
             )}
-            {!readOnly && <Slider h={h} onDone={done} onSkip={skip} />}
+            {!readOnly && <Slider h={h} onDone={done} onSkip={again ? undefined : skip} doneText={again ? "slide to log another" : undefined} />}
           </>
         )}
-        {!readOnly && <button type="button" className="hb-edit link" onClick={onEdit}>Edit habit</button>}
+        {!readOnly && (
+          <div className="hb-log-links">
+            {again ? (
+              <button type="button" className="link" onClick={() => setAgain(false)}>Back</button>
+            ) : finished ? (
+              <button type="button" className="link" onClick={() => { onUndo(); onClose(); }}>Undo {when}</button>
+            ) : null}
+            <button type="button" className="link" onClick={onEdit}>Edit habit</button>
+          </div>
+        )}
       </div>
     </Sheet>
   );
