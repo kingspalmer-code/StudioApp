@@ -10,13 +10,16 @@ import { HabitIcon } from "@/app/habits/Habits";
 import { logHabit } from "@/app/habits/actions";
 import { amountLabel, indexLogs, mondayOf, paint, statsFor, weekday, type Habit, type HabitLog } from "@/lib/habits";
 import type { PetView } from "@/lib/pet";
-import { addDays, hhmm, planSpan, type PlanItem } from "@/lib/plan";
+import { addDays, hhmm, isEvent, mapsLink, planSpan, type PlanItem } from "@/lib/plan";
 import { formatDate } from "@/lib/priority";
 import Focus from "./Focus";
 import Reset from "./Reset";
 
 // How many things Today asks of you. More can be on for today; Today only puts three up front.
 const THREE = 3;
+// How far ahead "Coming up" looks, and how many it shows before pointing to the calendar.
+const AHEAD = 14;
+const SOON = 5;
 const RESET_KEY = "oatcake-reset-";
 
 type NextJob = { id: number; title: string; due: string | null };
@@ -77,9 +80,19 @@ export default function Today({
   const stepsOf = (id: number) => items.filter((i) => i.parent_id === id).sort((a, b) => a.rank - b.rank);
   const last = (i: PlanItem) => i.end_date ?? i.on_date!;
   const byTime = (a: PlanItem, b: PlanItem) => (a.at_time ?? "99").localeCompare(b.at_time ?? "99") || a.rank - b.rank;
-  const onToday = tops.filter((i) => i.on_date && i.on_date <= today && last(i) >= today).sort(byTime);
-  // Things from earlier days wait here quietly: no red, no count of days gone by.
-  const plate = tops.filter((i) => i.on_date && last(i) < today).sort((a, b) => b.on_date!.localeCompare(a.on_date!));
+  // Events (a shoot, a gig, anything with a time or a place) are on the calendar, not things to
+  // tick: Today shows them under Coming up instead of in the three.
+  const onToday = tops.filter((i) => i.on_date && i.on_date <= today && last(i) >= today && !isEvent(i)).sort(byTime);
+  // Things from earlier days wait here quietly: no red, no count of days gone by. An event that
+  // has been and gone just drops off.
+  const plate = tops.filter((i) => i.on_date && last(i) < today && !isEvent(i)).sort((a, b) => b.on_date!.localeCompare(a.on_date!));
+  // What's on the calendar from today for the next two weeks: today's events, then anything with
+  // a day after today, soonest first.
+  const horizon = addDays(today, AHEAD);
+  const coming = tops
+    .filter((i) => i.on_date && (isEvent(i) ? last(i) >= today : i.on_date > today) && i.on_date <= horizon)
+    .sort((a, b) => (a.on_date! < today ? today : a.on_date!).localeCompare(b.on_date! < today ? today : b.on_date!) || byTime(a, b));
+  const soon = coming.slice(0, SOON);
   const anyTime = tops.filter((i) => !i.on_date).sort((a, b) => a.rank - b.rank);
   const three = onToday.slice(0, THREE);
   const extra = onToday.length - three.length;
@@ -134,7 +147,7 @@ export default function Today({
         <h1 className="td-title">{name ? `${hello}, ${name}.` : `${hello}.`}</h1>
       </header>
 
-      {!readOnly && <Capture brain={brain} onAdded={(item) => setItems((all) => [...all, item])} />}
+      {!readOnly && <Capture brain={brain} onAdded={(added) => setItems((all) => [...all, ...added])} />}
 
       {resetDue && (
         <section className="td-reset" aria-label="Weekly reset">
@@ -204,6 +217,49 @@ export default function Today({
           </Link>
         )}
       </section>
+
+      {soon.length > 0 && (
+        <section className="td-section" aria-labelledby="td-soon">
+          <div className="td-section-head">
+            <h2 id="td-soon">Coming up</h2>
+            <Link href="/calendar" className="td-link">Calendar ›</Link>
+          </div>
+          <ul className="td-cal">
+            {soon.map((i) => {
+              const day = i.on_date! < today ? today : i.on_date!;
+              const d = new Date(day + "T12:00:00Z");
+              return (
+                <li key={i.id} className={day === today ? "now" : ""}>
+                  <span className="td-cal-day" aria-hidden="true">
+                    <b>{d.getUTCDate()}</b>
+                    <span>{d.toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" })}</span>
+                  </span>
+                  <div className="td-item-body">
+                    <Link href={`/calendar?item=${i.id}`} className="td-item-title">{i.title}</Link>
+                    <span className="td-item-meta">
+                      {planSpan(i, today)}
+                      {i.place && (
+                        <>
+                          {" · "}
+                          <a href={mapsLink(i.place)} target="_blank" rel="noreferrer" className="td-cal-place">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></svg>
+                            {i.place}
+                          </a>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {coming.length > soon.length && (
+            <p className="td-more">
+              {coming.length - soon.length} more in the next two weeks, on <Link href="/calendar">your calendar</Link>.
+            </p>
+          )}
+        </section>
+      )}
 
       {plate.length > 0 && (
         <section className="td-section td-plate" aria-labelledby="td-plate">

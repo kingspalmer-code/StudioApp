@@ -93,3 +93,15 @@
   .focus-title { font-size: 30px; }
 }
 @media (prefers-reduced-motion: reduce) { .td-item { transition: none; } }
+
+/* Coming up: the next two weeks of the calendar, like days torn off a desk calendar. */
+.td-cal { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.td-cal li { display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 10px; border-radius: 14px; background: var(--surface-2); }
+.td-cal-day { flex: none; width: 44px; display: grid; justify-items: center; line-height: 1; padding: 6px 0 5px; border: 1.5px solid var(--sep); border-radius: 10px; color: var(--label); }
+.td-cal-day b { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.td-cal-day span { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--label-2); margin-top: 3px; }
+.td-cal li.now .td-cal-day { border-color: var(--green); }
+.td-cal li.now .td-cal-day span { color: var(--green); }
+.td-cal-place { color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 3px; }
+.td-cal-place:hover { text-decoration: underline; }
+.td-cal-place svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
