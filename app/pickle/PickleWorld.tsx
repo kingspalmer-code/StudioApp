@@ -127,7 +127,7 @@ function Shop({ pet, trying, onTry, onPet, onSay }: { pet: PetView; trying: Item
       </div>
       <div className="pw-try" aria-live="polite">
         {!t ? (
-          <p>{shelf === "Paints" && !owned.has("screen-colour") ? "Paints need the Colour screen, on the Screens shelf." : "Tap something to try it on."}</p>
+          <p>Tap something to try it on.</p>
         ) : (
           <>
             <p><b>{t.name}</b>{t.note ? ` · ${t.note}` : ""}{locked ? ` · needs the ${ITEM[t.needs!].name} first` : ""}</p>
@@ -156,7 +156,7 @@ function Shop({ pet, trying, onTry, onPet, onSay }: { pet: PetView; trying: Item
 function ItemPic({ item }: { item: Item }) {
   if (item.shell) return <span className="pw-swatch" style={{ background: item.shell.body }} />;
   if (item.screen) return <span className={`pw-swatch lcd screen-${item.screen}`} />;
-  const look = lookOf({ [item.slot]: item.id, ...(item.paint ? { screen: "screen-colour" } : {}) });
+  const look = lookOf({ [item.slot]: item.id });
   return (
     <span className={`pw-pic lcd screen-${look.screen}`}>
       <Blob mood="happy" stage="kid" hat={hatOf(look.wear, null)} wear={look.wear} paint={look.paint} />

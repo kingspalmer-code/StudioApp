@@ -10,7 +10,7 @@ import { payPickleGame } from "./actions";
 // just ends the run; whatever you scored turns into oatcakes (GAMES.dash in the catalogue).
 // Space, a click or a tap jumps. Tuning lives in TUNE so it can be changed in one place.
 const TUNE = { w: 320, h: 96, ground: 80, start: 2.2, top: 5, ramp: 1400, gravity: 0.32, jump: 5.4, gap: [50, 120], cakeEvery: 0.3, cakePoints: 25 };
-const SCREEN: Record<Look["screen"], string> = { classic: "#b4b9a2", amber: "#c9b77e", ice: "#a9bcc0", colour: "#c8d0b6" };
+const SCREEN: Record<Look["screen"], string> = { classic: "#b4b9a2", amber: "#c9b77e", ice: "#a9bcc0" };
 
 type Thing = { kind: "fork" | "cake"; x: number; h: number; got?: boolean };
 type Run = { y: number; vy: number; t: number; speed: number; score: number; things: Thing[]; next: number; state: "ready" | "running" | "over" };
