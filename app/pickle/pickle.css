@@ -1,0 +1,71 @@
+/* Pickle's World (page.tsx). The device keeps the LCD look from the widget (.lcd in globals.css);
+   its casing takes the shell colour bought in the shop as --shell. Everything around it is the
+   app's own surfaces. */
+.pw { max-width: 980px; margin: 0 auto; display: grid; gap: 16px; }
+.pw-empty { color: var(--label-2); }
+.pw-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.pw-kicker { margin: 0 0 4px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--label-2); font-weight: 600; }
+.pw-kicker a { color: inherit; text-decoration: none; }
+.pw-title { margin: 0; font: 700 38px/1 var(--font-title); letter-spacing: -.02em; }
+.pw-tin { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 99px; background: var(--surface); box-shadow: var(--shadow); font-size: 15px; font-variant-numeric: tabular-nums; }
+.pw-oc { width: 18px; height: 18px; flex: none; }
+
+.pw-device { --shell: #e9e4d6; --shell-ink: #8d8670; background: var(--shell); border-radius: 28px; padding: 16px 16px 12px; box-shadow: inset 0 -6px 0 rgba(0,0,0,.12), inset 0 2px 0 rgba(255,255,255,.4), var(--shadow); transition: background .3s; }
+.pw-screen.lcd { position: relative; display: block; height: 220px; padding: 0; font-size: 12px; overflow: hidden; }
+.pw-name { position: absolute; left: 10px; top: 9px; text-transform: none; }
+.pw-name small { opacity: .7; margin-left: 4px; font-size: 10px; }
+.pw-says { position: absolute; right: 10px; top: 9px; }
+.pw-screen::after { content: ""; position: absolute; left: 0; right: 0; bottom: 26px; border-top: 2px dashed rgba(29,32,26,.3); }
+.pw-walk { position: absolute; bottom: 28px; display: grid; place-items: end center; transition: left 1.2s steps(10); }
+.pw-walk .lcd-blob { width: 96px; animation: pw-hop 1.4s steps(1) infinite; }
+@keyframes pw-hop { 50% { transform: translateY(-4px); } }
+.pw-buttons { display: flex; justify-content: center; gap: 18px; margin-top: 10px; }
+.pw-buttons i { width: 22px; height: 22px; border-radius: 50%; background: var(--shell-ink); box-shadow: inset 0 -3px 0 rgba(0,0,0,.25); }
+@media (prefers-reduced-motion: reduce) { .pw-walk { transition: none; } .pw-walk .lcd-blob { animation: none; } }
+@media (max-width: 600px) { .pw-screen.lcd { height: 180px; } .pw-walk .lcd-blob { width: 80px; } .pw-title { font-size: 32px; } }
+
+.pw-places, .pw-shelves { display: flex; flex-wrap: wrap; gap: 6px; }
+.pw-places button, .pw-shelves button { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 99px; padding: 9px 16px; background: var(--surface); box-shadow: var(--shadow); color: var(--label); font: 600 14px var(--font); cursor: pointer; }
+.pw-shelves button { padding: 7px 13px; box-shadow: none; background: var(--fill); font-size: 13px; }
+.pw-places button[aria-pressed="true"], .pw-shelves button[aria-selected="true"], .pw-shelves button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.pw-places svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+.pw-place { display: grid; gap: 12px; }
+.pw-blurb { margin: 0; color: var(--label-2); font-size: 14px; max-width: 62ch; }
+.pw-soon { margin: 0; font-size: 13px; color: var(--label-3); }
+.pw-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.pw-item { display: grid; gap: 6px; justify-items: start; text-align: left; padding: 10px; border: 0; border-radius: var(--r); background: var(--surface); box-shadow: var(--shadow); color: var(--label); font: 14px var(--font); cursor: pointer; }
+.pw-item[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+.pw-item b { font-weight: 600; }
+.pw-swatch, .pw-pic { width: 100%; height: 64px; border-radius: 8px; }
+.pw-swatch.lcd, .pw-pic.lcd { display: grid; place-items: center; padding: 0; }
+.pw-pic .lcd-blob { width: auto; height: 54px; }
+.pw-price, .pw-owned { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--label-2); }
+.pw-price .pw-oc { width: 14px; height: 14px; }
+.pw-owned { color: var(--green); font-weight: 600; }
+.pw-try { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; border-radius: var(--r); background: var(--surface-2); }
+.pw-try p { margin: 0; flex: 1 1 220px; font-size: 14px; }
+.pw-short { font-size: 13px; color: var(--label-2); }
+
+.pw-game { display: grid; gap: 8px; padding: 14px; border-radius: var(--r); background: var(--surface); box-shadow: var(--shadow); }
+.pw-game h2, .pw-panel h2 { margin: 0; font-size: 16px; }
+.pw-canvas { display: block; width: 100%; max-width: 720px; height: auto; border-radius: 10px; image-rendering: pixelated; box-shadow: inset 0 0 0 2px rgba(29,32,26,.35); touch-action: manipulation; cursor: pointer; }
+.pw-hud { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--label-2); font-variant-numeric: tabular-nums; }
+
+.pw-lab { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); align-items: start; }
+@media (max-width: 760px) { .pw-lab { grid-template-columns: minmax(0, 1fr); } }
+.pw-panel { display: grid; gap: 10px; padding: 14px; border-radius: var(--r); background: var(--surface); box-shadow: var(--shadow); min-width: 0; }
+.pw-slider { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 10px; font-size: 14px; }
+.pw-slider small { display: block; font-size: 12px; color: var(--label-2); }
+.pw-slider output { font-variant-numeric: tabular-nums; font-weight: 600; }
+.pw-slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--green); }
+.pw-totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.pw-totals span { padding: 10px; border-radius: 10px; background: var(--surface-2); }
+.pw-totals small { display: block; font-size: 12px; color: var(--label-2); }
+.pw-totals b { font-size: 28px; font-variant-numeric: tabular-nums; }
+.pw-bars { display: grid; gap: 6px; }
+.pw-bar { display: grid; grid-template-columns: minmax(0, 9em) minmax(0, 1fr) 7em; gap: 8px; align-items: center; font-size: 13px; }
+.pw-bar span:last-child { text-align: right; color: var(--label-2); font-variant-numeric: tabular-nums; }
+.pw-track { height: 10px; border-radius: 5px; background: var(--fill); overflow: hidden; }
+.pw-track i { display: block; height: 100%; border-radius: 5px; background: var(--green); }
+.pw-track i.slow { background: var(--orange); }

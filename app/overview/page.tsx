@@ -54,7 +54,7 @@ async function ClientOverview({ session, business }: { session: Session; busines
   const petBiz = only?.id ?? member.business_id ?? myBizes[0]?.id;
   const [{ data }, earned, { data: sharedRows }] = await Promise.all([
     supabase.from("tickets").select(LIST_COLUMNS).in("business_id", ids).order("deadline").returns<ListTicket[]>(),
-    previewing || !petBiz ? Promise.resolve(0) : businessOatcakes(supabase, petBiz, ctx),
+    previewing || !petBiz ? Promise.resolve({ n: 0, w: 0 }) : businessOatcakes(supabase, petBiz, ctx),
     // Other businesses' jobs the studio has shared with them, kept apart from their own.
     previewing || only
       ? Promise.resolve({ data: [] as ListTicket[] })
@@ -70,7 +70,7 @@ async function ClientOverview({ session, business }: { session: Session; busines
     .sort((a, b) => (b.delivered_at ?? b.deadline ?? b.updated_at).localeCompare(a.delivered_at ?? a.deadline ?? a.updated_at));
   const [widgets, { data: draftRows }] = await Promise.all([
     // While the studio previews a client, Pickle stays out of it: it's the client's own pet.
-    loadWidgets(supabase, all, ctx, byId, previewing || !petBiz ? undefined : { earned, base: Math.min(0, earned - STARTER_OATCAKES), owner: { business: petBiz } }),
+    loadWidgets(supabase, all, ctx, byId, previewing || !petBiz ? undefined : { earned, base: Math.min(0, earned.n - STARTER_OATCAKES), owner: { business: petBiz } }),
     open.length
       ? supabase.from("ticket_drafts").select("ticket_id, final_at").in("ticket_id", open.map((t) => t.id)).returns<{ ticket_id: number; final_at: string | null }[]>()
       : Promise.resolve({ data: [] }),

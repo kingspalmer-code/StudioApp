@@ -4,7 +4,7 @@ import type QueueWidgets from "@/components/QueueWidgets";
 import type { WeekDay } from "@/components/QueueWidgets";
 import { brandFor } from "./brands";
 import { coversFor } from "./deliveries";
-import { visitPet, type PetOwner } from "./pet";
+import { visitPet, type Earned, type PetOwner } from "./pet";
 import { isDone, todayISO, type Ctx } from "./priority";
 import type { Business, ListTicket } from "./types";
 
@@ -16,7 +16,7 @@ export async function loadWidgets(
   all: ListTicket[],
   ctx: Ctx,
   byId: Record<string, Business>,
-  pet?: { earned: number; base: number; owner?: PetOwner },
+  pet?: { earned: Earned; base: number; owner?: PetOwner },
 ): Promise<Omit<ComponentProps<typeof QueueWidgets>, "earnHint" | "petBusiness">> {
   const today = todayISO();
   const dayAt = (n: number) => new Date(Date.parse(today) + n * 86_400_000).toISOString().slice(0, 10);

@@ -9,7 +9,8 @@ import ViewSwitch from "@/components/ViewSwitch";
 import PageBlocks from "@/components/PageBlocks";
 import Walkthrough from "@/components/Walkthrough";
 import { BLOCKS, defaultLayout, layoutFor, type BlockId, type PageKey } from "@/lib/layouts";
-import { bonusOatcakes, hatchBase, oatcakesEarned } from "@/lib/pet";
+import { bonusOatcakes, earnedFrom, hatchBase, oatcakesEarned } from "@/lib/pet";
+import { EARN } from "@/lib/pickle/catalogue";
 import { dueOf, dueWithin, formatDate, isAtRisk, isDone, money, sortQueue, startBy, stageColor } from "@/lib/priority";
 import type { requireMember } from "@/lib/session";
 import type { ListTicket } from "@/lib/types";
@@ -57,7 +58,7 @@ export async function homeBlocks({
     // The owner's Pickle earns an oatcake for every job delivered; a manager's, for every request they
     // send. Everyone's also earns from their habits and to-dos.
     widgets: async () => {
-      const earned = member.role === "designer" ? done.length + (await bonusOatcakes(supabase, member.email)) : await oatcakesEarned(supabase, member, ctx);
+      const earned = member.role === "designer" ? earnedFrom(done.length, EARN.job, await bonusOatcakes(supabase, member.email)) : await oatcakesEarned(supabase, member, ctx);
       const props = await loadWidgets(supabase, all, ctx, byId, { earned, base: hatchBase(member, earned) });
       return <QueueWidgets {...props} earnHint={member.role === "designer" ? undefined : "Send a request or do a habit to earn an oatcake"} />;
     },
