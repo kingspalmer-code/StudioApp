@@ -8,12 +8,13 @@ import type { PetView } from "@/lib/pet";
 import { hatOf } from "@/lib/pickle/art";
 import { CATALOGUE, GAME_CAP, ITEM, SHELVES, lookOf, type Item, type Shelf, type Worn } from "@/lib/pickle/catalogue";
 import { buyPickleItem, wearPickleItem } from "./actions";
+import Bakery from "./Bakery";
 import Dash from "./Dash";
 import Lab from "./Lab";
 
 const pixel = Silkscreen({ weight: "400", subsets: ["latin"] });
 
-type Place = "shop" | "arcade" | "lab";
+type Place = "shop" | "arcade" | "bakery" | "lab";
 
 // Pickle's World: his device up top (the shell colour is one of the things you can buy), and the
 // places underneath. Trying something on shows it on him straight away; Buy keeps it.
@@ -34,6 +35,7 @@ export default function PickleWorld({ pet: start, lab }: { pet: PetView | null; 
   const places: { key: Place; label: string; icon: React.ReactNode }[] = [
     { key: "shop", label: "Shop", icon: <path d="M5 8h14l-1 12H6zM9 8a3 3 0 016 0" /> },
     { key: "arcade", label: "Arcade", icon: <><rect x="3" y="7" width="18" height="11" rx="4" /><path d="M8 11v3M6.5 12.5h3" /></> },
+    { key: "bakery", label: "Bakery", icon: <path d="M4 13c0-4 3.6-7 8-7s8 3 8 7v5H4zM9 9.5l1 3M14 9.5l-1 3" /> },
     ...(lab ? [{ key: "lab" as const, label: "Lab", icon: <path d="M9 3h6M10 3v6l-5 9a2 2 0 002 3h10a2 2 0 002-3l-5-9V3M7.5 15h9" /> }] : []),
   ];
 
@@ -74,7 +76,12 @@ export default function PickleWorld({ pet: start, lab }: { pet: PetView | null; 
         <section className="pw-place">
           <p className="pw-blurb">Games pay 1 oatcake for every 100 points, up to {GAME_CAP} a day, so playing is a treat and never beats the real work.</p>
           <Dash pet={pet} look={look} font={pixel.style.fontFamily} onPet={setPet} onSay={setSay} />
-          <p className="pw-soon">Coming next: Trolley Launch, then Pickle&apos;s Bakery.</p>
+          <p className="pw-soon">Coming next: Trolley Launch.</p>
+        </section>
+      )}
+      {place === "bakery" && (
+        <section className="pw-place">
+          <Bakery pet={pet} look={look} font={pixel.style.fontFamily} onPet={setPet} onSay={setSay} />
         </section>
       )}
       {place === "lab" && <Lab />}

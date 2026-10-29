@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { finalStage, todayISO, type Ctx } from "./priority";
 import { dayOf, indexLogs, LOG_COLUMNS, type Habit, type HabitLog } from "./habits";
+import { cashable, cleanBakery, CRUMBS_PER_OATCAKE, type Bakery } from "./pickle/bakery";
 import { EARN, FREE, GAMES, GAME_CAP, ITEM, type GameId, type Slot, type Worn } from "./pickle/catalogue";
 import type { Member } from "./types";
 
@@ -32,6 +33,7 @@ export type PetRow = {
   games_total?: number; // oatcakes won in the arcade, all time
   game_day?: string | null; // the London day game_paid counts
   game_paid?: number; // oatcakes won in the arcade that day
+  bakery?: Bakery | Record<string, never>; // Pickle's Bakery, saved as it was left
 };
 
 // What fills the tin: how many things earned an oatcake (n, the old economy, one each) and what
@@ -59,6 +61,7 @@ export type PetView = {
   owned: string[];
   worn: Worn;
   gamePaid: number; // won in the arcade today
+  bakery: Bakery;
 };
 
 export const STARTER_OATCAKES = 3;
@@ -107,6 +110,7 @@ export function petView(row: PetRow, earned: Earned, now = Date.now()): PetView 
     owned: [...new Set([...FREE, ...(row.owned ?? [])])],
     worn: row.worn ?? {},
     gamePaid: row.game_day === londonDay() ? row.game_paid ?? 0 : 0,
+    bakery: cleanBakery(row.bakery, londonDay()),
   };
 }
 
@@ -230,6 +234,22 @@ export async function payGame(supabase: SupabaseClient, earned: Earned, game: Ga
   const won = Math.max(0, Math.min(Math.floor(Math.max(0, score) / GAMES[game].per), GAMES[game].cap, GAME_CAP - paid));
   if (!won) return { won, pet: petView(row, earned) };
   const change = { games_total: (row.games_total ?? 0) + won, game_day: today, game_paid: paid + won };
+  await savePet(supabase, undefined, row, change);
+  return { won, pet: petView({ ...row, ...change }, earned) };
+}
+
+// Keep the bakery as it was left in the browser (tidied up by cleanBakery). With `cash`, also
+// turn crumbs into oatcakes, as many as today's cap allows; they count with the arcade's winnings.
+export async function saveBakery(supabase: SupabaseClient, earned: Earned, raw: unknown, cash = false): Promise<{ won: number; pet: PetView } | null> {
+  const row = await loadReady(supabase, undefined, earned);
+  if (!row || !isNew(row)) return null;
+  const bakery = cleanBakery(raw, londonDay());
+  const won = cash ? cashable(bakery) : 0;
+  if (won) {
+    bakery.crumbs -= won * CRUMBS_PER_OATCAKE;
+    bakery.cashed += won;
+  }
+  const change = { bakery, ...(won ? { games_total: (row.games_total ?? 0) + won } : {}) };
   await savePet(supabase, undefined, row, change);
   return { won, pet: petView({ ...row, ...change }, earned) };
 }
