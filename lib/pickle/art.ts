@@ -131,7 +131,20 @@ const SCARF = {
     "..............#a#a#...",
   ],
 };
-const TEE = { y: 12, rows: ["..##....#....#....##..", "....#....####....#....", "....#............#...."] };
+// A t-shirt: short sleeves poking out at the sides, a round neck, a little oatcake on the chest
+// and a darker hem. The body under it is filled from TEE.y down, except the neck hole.
+const TEE = {
+  y: 11,
+  neck: [7, 14], // the neck hole on the top row
+  rows: [
+    "#######........#######",
+    "#a#b....######....b#a#",
+    "#aa#..............#aa#",
+    "####.....cc.......####",
+    "........cwwc..........",
+    ".........cc...........",
+  ],
+};
 // Sunglasses from the shop: two dark lenses with a glint, and a grin.
 const SHADES = ["###########", "#w###.#w###", ".###...###.", "....###...."];
 
@@ -145,17 +158,19 @@ export function pickleLayers({ mood, feet, hat, wear = {}, paint = null }: { moo
     for (let x = 0; x < W; x++) {
       if (!inside(x, y) || rim(x, y)) continue;
       const dark = shaded(x, y);
-      if (wear.shirt && y >= TEE.y) (dark ? (teeShade += px(x, y)) : (tee += px(x, y)));
+      if (wear.shirt && y >= TEE.y && !(y === TEE.y && x >= TEE.neck[0] && x <= TEE.neck[1])) (dark || y >= H - 2 ? (teeShade += px(x, y)) : (tee += px(x, y)));
       else if (dark) shade += px(x, y);
       else fill += px(x, y);
     }
   const layers: Layer[] = [];
   if (paint) layers.push({ d: fill + shade, fill: paint });
   layers.push({ d: shade, tone: "shade", ...(paint ? { fill: darker(paint), opacity: 0.6 } : {}) });
-  if (wear.shirt) layers.push({ d: tee, fill: wear.shirt }, { d: teeShade, fill: darker(wear.shirt, 0.82) }, ...paintRows(TEE.rows, 0, TEE.y));
+  if (wear.shirt) layers.push({ d: tee, fill: wear.shirt }, { d: teeShade, fill: darker(wear.shirt, 0.82) });
   const shades = wear.shades && mood !== "sleep" && mood !== "eat";
   layers.push({ d: BODY.ink + (shades ? "" : face(FACES[mood])) + (feet ? sprite(FEET, 2, H - 1) : "") });
   if (shades) layers.push(...paintRows(SHADES, 5, 7));
+  // Sleeves and neckline go over his outline, so they stick out past his sides.
+  if (wear.shirt) layers.push(...paintRows(TEE.rows, 0, TEE.y, { a: wear.shirt, b: darker(wear.shirt, 0.82), c: darker(wear.shirt, 0.55), w: "#f4efe0" }));
   if (wear.scarf) layers.push(...paintRows(SCARF.rows, 0, SCARF.y, { a: wear.scarf, c: "#f4efe0" }));
   if (hat) layers.push(...paintRows(hat.rows, hat.dx, -top, hat.pal));
   return { layers, viewBox: `0 ${-top * PX} ${W * PX} ${(H + top + (feet ? 2 : 0)) * PX}` };
