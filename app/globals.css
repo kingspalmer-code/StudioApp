@@ -846,6 +846,10 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 .drafts > :first-child.draft { padding-top: 0; border-top: 0; }
 .draft-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .draft-head b { font-size: 16px; }
+.download-all { display: inline-flex; align-items: baseline; gap: 10px; flex-wrap: wrap; justify-content: flex-end; margin: 0 4px; font-size: 13px; }
+.download-all .link { font-size: 13px; }
+.download-all .error { margin: 0; }
+.draft-head .download-all { margin-left: auto; }
 .draft-final { background: var(--fill); color: var(--accent); }
 .draft .deliv-grid { margin-bottom: 0; }
 .draft-actions { display: flex; align-items: center; justify-content: flex-end; gap: 16px; margin-top: 12px; }
