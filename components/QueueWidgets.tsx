@@ -5,7 +5,7 @@ import { Silkscreen } from "next/font/google";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { createPortal } from "react-dom";
 import { feedPickle } from "@/app/queue/pet";
-import { GOLDEN_COST, XP_PER_LEVEL, type PetView } from "@/lib/pet";
+import { DAILY_OATCAKES, GOLDEN_COST, XP_PER_LEVEL, type PetView } from "@/lib/pet";
 import { createClient } from "@/lib/supabase/client";
 import Thumb from "./Thumb";
 
@@ -326,7 +326,8 @@ export function Pet({ pet: start, earnHint, business }: { pet: PetView | null; e
       setAct("levelup");
       setTimeout(() => setAct(null), partyMs(start.level));
     } else if (!Number.isNaN(seen) && start.tin > seen) {
-      setNews(`+${start.tin - seen} in the tin!`);
+      // Today's first visit drops two daily oatcakes in the tin.
+      setNews(start.gift && start.tin - seen === DAILY_OATCAKES ? `Day ${start.streak}! +${DAILY_OATCAKES}` : `+${start.tin - seen} in the tin!`);
       // Fresh oatcakes from a finished job: Pickle hops out of the screen and explores the page.
       if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) setOut("explore");
     }
