@@ -24,6 +24,7 @@ import { docName, gbp, round2, STATUS_LABEL } from "@/lib/documents";
 import { asDoc } from "@/lib/docs-server";
 import Deliveries from "@/components/Deliveries";
 import Thumb from "@/components/Thumb";
+import DownloadAll from "@/components/DownloadAll";
 import FileMenu from "@/components/FileMenu";
 import { signDeliveries, type Delivery, type Draft, type DraftFile } from "@/lib/deliveries";
 import SaveForm from "@/components/SaveForm";
@@ -164,7 +165,10 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   const deliveriesUp = delivered.length > 0 || (isDesigner && done);
   const deliveries = (isDesigner || delivered.length > 0) && (
     <>
-      <p className="eyebrow">Finished files</p>
+      <div className="eyebrow-row">
+        <p className="eyebrow">Finished files</p>
+        <DownloadAll name={t.title} files={delivered.map((f) => ({ name: f.name, href: f.path ? f.view : null }))} />
+      </div>
       <Deliveries ticketId={t.id} businessId={t.business_id} files={delivered} canEdit={isDesigner && !viewing} canEmail={isDesigner && !viewing} clientName={biz?.name ?? `the ${terms.client}`} />
     </>
   );
@@ -207,6 +211,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                 <span className="when">{formatDate(d.created_at)}</span>
                 {d.final_at && <span className="chip draft-final">Sent as final</span>}
                 {approval && <span className="chip draft-approved">Approved by {approval.author_name || approval.author_email}</span>}
+                <DownloadAll name={`${t.title} draft ${round}`} files={draftFiles.filter((f) => f.draft_id === d.id).map((f) => ({ name: f.name, href: f.path ? f.view : null }))} />
               </div>
               {d.message && <div className="copy">{d.message}</div>}
               <Deliveries ticketId={t.id} businessId={t.business_id} files={draftFiles.filter((f) => f.draft_id === d.id)} canEdit={false} canEmail={isDesigner && !viewing} clientName="" />
@@ -382,7 +387,10 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
 
         {(signed.length > 0 || canAddFiles) && (
           <>
-            <p className="eyebrow" id="files">{filesField?.label ?? "Files"}</p>
+            <div className="eyebrow-row">
+              <p className="eyebrow" id="files">{filesField?.label ?? "Files"}</p>
+              <DownloadAll name={`${t.title} ${filesField?.label ?? "files"}`} files={(files ?? []).map((f, i) => ({ name: f.name, href: signed[i]?.signedUrl ?? null }))} />
+            </div>
             {signed.length > 0 && (
             <div className="group">
               <div className="row stack">
