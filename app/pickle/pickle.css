@@ -69,3 +69,7 @@
 .pw-track { height: 10px; border-radius: 5px; background: var(--fill); overflow: hidden; }
 .pw-track i { display: block; height: 100%; border-radius: 5px; background: var(--green); }
 .pw-track i.slow { background: var(--orange); }
+
+/* The bakery (Bakery.tsx): a wider scene, and its buttons in a row that wraps. */
+.pw-canvas.pw-bake { max-width: 900px; box-shadow: inset 0 0 0 2px rgba(42,32,28,.35); }
+.pw-bake-row { display: flex; flex-wrap: wrap; gap: 8px; }
