@@ -1343,7 +1343,6 @@ html.embedded .settings-back { display: none; }
 /* Screen colours from the shop (lib/pickle/catalogue.ts). */
 .lcd.screen-amber { background-color: #c9b77e; }
 .lcd.screen-ice { background-color: #a9bcc0; }
-.lcd.screen-colour { background-color: #c8d0b6; }
 .lcd-keys button:disabled { opacity: .4; cursor: default; }
 .lcd-keys b { font-weight: inherit; }
 @keyframes lcd-blink { 50% { opacity: 0; } }

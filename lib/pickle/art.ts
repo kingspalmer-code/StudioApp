@@ -41,46 +41,130 @@ export function sprite(rows: string[], dx: number, dy: number) {
 export const face = (rows: string[]) => sprite(rows, 5, 7);
 export const FEET = ["..###.......###...", ".####......####..."];
 
-// Hats sit on his head; sink is how many of their rows overlap the top of it.
-export type Hat = { rows: string[]; dx: number; sink?: number; colour?: string };
+// Pixel art in a few colours: # is ink, letters are colours from a palette (a main, b its shade,
+// c an accent, w a glint), . is see-through. Without a palette, letters draw in the LCD's shade.
+export type Pal = Partial<Record<"a" | "b" | "c" | "w", string>>;
+function paintRows(rows: string[], dx: number, dy: number, pal?: Pal): Layer[] {
+  const by: Record<string, string> = {};
+  rows.forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== ".") by[ch] = (by[ch] ?? "") + px(x + dx, y + dy); }));
+  return Object.entries(by).map(([ch, d]): Layer => {
+    if (ch === "#") return { d, tone: "ink" };
+    const fill = pal?.[ch as keyof Pal];
+    return fill ? { d, fill } : ch === "w" ? { d, fill: "#fff", opacity: 0.5 } : { d, tone: "shade" };
+  });
+}
+// A darker version of a colour, for the shaded side of clothes.
+export function darker(hex: string, by = 0.72) {
+  const n = parseInt(hex.slice(1), 16);
+  const c = (v: number) => Math.round(v * by).toString(16).padStart(2, "0");
+  return `#${c(n >> 16)}${c((n >> 8) & 255)}${c(n & 255)}`;
+}
+
+// Hats sit on his head; sink is how many of their rows overlap the top of it. pal colours a shop
+// hat (a from the item's colour, b worked out from it).
+export type Hat = { rows: string[]; dx: number; sink?: number; pal?: Pal };
 export const HATS: Record<string, Hat> = {
   crown: { rows: ["#..#..#", "##.#.##", "#######", "#######"], dx: 7 },
   party: { rows: ["..#..", ".###.", ".#.#.", "##.##", "#####"], dx: 8, sink: 1 },
   bow: { rows: ["##...##", "###.###", "#######", "###.###", "##...##"], dx: 13, sink: 3 },
   wizard: { rows: ["....#....", "...###...", "..#.#.#..", "..#...#..", ".#..#..#.", "#########"], dx: 6, sink: 1 },
-  beanie: { rows: [".....#.....", "....###....", "..#######..", ".#########.", "#.#.#.#.#.#"], dx: 5, sink: 2 },
-  tophat: { rows: [".#######.", ".#######.", ".#.....#.", ".#######.", "#########"], dx: 6, sink: 1 },
-  cap: { rows: ["..#######...", ".#########..", "#############"], dx: 3, sink: 1 },
-  phones: { rows: ["....#######....", "..##.......##..", ".#...........#.", "##...........##", "##...........##"], dx: 3, sink: 4 },
+  // A knitted beanie pulled down to his eyebrows: bobble, a rounded crown, and a ribbed turn-up.
+  beanie: {
+    rows: [
+      ".......####.......",
+      "......#cccc#......",
+      ".......####.......",
+      ".....########.....",
+      "...##aaaaaaaa##...",
+      "..#aawaaaaaaaab#..",
+      ".#aawaaaaaaaaabb#.",
+      "#aaaaaaaaaaaaaabb#",
+      "##################",
+      "#b#b#b#b#b#b#b#b##",
+      "##################",
+    ],
+    dx: 2, sink: 6,
+  },
+  tophat: {
+    rows: ["..########..", "..#aaaaaw#..", "..#aaaaaa#..", "..#aaaaaa#..", "..########..", "..#cccccc#..", "############"],
+    dx: 5, sink: 3,
+  },
+  // A baseball cap, peak to the right, sitting down on his forehead.
+  cap: {
+    rows: [
+      "......#########.......",
+      "....##aaaaaaaaa##.....",
+      "...#aaaawaaaaaaab#....",
+      "..#aaaaaaaaaaaaabb#...",
+      ".##################bb#",
+      "..................####",
+    ],
+    dx: 0, sink: 6,
+  },
+  // Headphones: a band hugging the top of his head and a cup over each side.
+  phones: {
+    rows: [
+      ".......########.......",
+      ".....##........##.....",
+      "....#............#....",
+      "...#..............#...",
+      "..#................#..",
+      "####..............####",
+      "#aa#..............#aa#",
+      "#aw#..............#wa#",
+      "#ab#..............#ba#",
+      "####..............####",
+    ],
+    dx: 0, sink: 9,
+  },
 };
+
+// Clothes drawn over his body, on the same grid. Rows start at y (from the top of his head).
+const SCARF = {
+  y: 12,
+  rows: [
+    ".####################.",
+    "#aaccaaccaaccaaccaacc#",
+    "#aaccaaccaaccaaccaacc#",
+    ".##############aaa###.",
+    "..............#ccc#...",
+    "..............#a#a#...",
+  ],
+};
+const TEE = { y: 12, rows: ["..##....#....#....##..", "....#....####....#....", "....#............#...."] };
+// Sunglasses from the shop: two dark lenses with a glint, and a grin.
+const SHADES = ["###########", "#w###.#w###", ".###...###.", "....###...."];
 
 // The layers that make up Pickle, back to front. A layer without a fill uses the LCD's ink or
 // shade (class names), so it follows the screen; clothes and paint bring their own colours.
 export type Layer = { d: string; tone?: "ink" | "shade"; fill?: string; opacity?: number };
 export function pickleLayers({ mood, feet, hat, wear = {}, paint = null }: { mood: Mood; feet: boolean; hat: Hat | null; wear?: Wear; paint?: string | null }) {
   const top = hat ? hat.rows.length - (hat.sink ?? 0) : 0;
-  let fill = "", shade = "", tee = "", hem = "", scarf = "";
+  let fill = "", shade = "", tee = "", teeShade = "";
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
       if (!inside(x, y) || rim(x, y)) continue;
-      if (wear.shirt && y >= 12) (y === 12 ? (hem += px(x, y)) : (tee += px(x, y)));
-      else if (wear.scarf && y === 11) scarf += px(x, y);
-      else if (shaded(x, y)) shade += px(x, y);
+      const dark = shaded(x, y);
+      if (wear.shirt && y >= TEE.y) (dark ? (teeShade += px(x, y)) : (tee += px(x, y)));
+      else if (dark) shade += px(x, y);
       else fill += px(x, y);
     }
   const layers: Layer[] = [];
   if (paint) layers.push({ d: fill + shade, fill: paint });
-  layers.push({ d: shade, tone: "shade" });
-  if (wear.shirt) layers.push({ d: tee + hem, fill: wear.shirt }, { d: hem, tone: "ink", opacity: 0.5 });
-  if (wear.scarf) layers.push({ d: scarf, fill: wear.scarf });
-  layers.push({ d: BODY.ink + face(FACES[wear.shades && mood !== "sleep" && mood !== "eat" ? "cool" : mood]) + (feet ? sprite(FEET, 2, H - 1) : "") });
-  if (hat) layers.push(hat.colour ? { d: sprite(hat.rows, hat.dx, -top), fill: hat.colour } : { d: sprite(hat.rows, hat.dx, -top), tone: "ink" });
+  layers.push({ d: shade, tone: "shade", ...(paint ? { fill: darker(paint), opacity: 0.6 } : {}) });
+  if (wear.shirt) layers.push({ d: tee, fill: wear.shirt }, { d: teeShade, fill: darker(wear.shirt, 0.82) }, ...paintRows(TEE.rows, 0, TEE.y));
+  const shades = wear.shades && mood !== "sleep" && mood !== "eat";
+  layers.push({ d: BODY.ink + (shades ? "" : face(FACES[mood])) + (feet ? sprite(FEET, 2, H - 1) : "") });
+  if (shades) layers.push(...paintRows(SHADES, 5, 7));
+  if (wear.scarf) layers.push(...paintRows(SCARF.rows, 0, SCARF.y, { a: wear.scarf, c: "#f4efe0" }));
+  if (hat) layers.push(...paintRows(hat.rows, hat.dx, -top, hat.pal));
   return { layers, viewBox: `0 ${-top * PX} ${W * PX} ${(H + top + (feet ? 2 : 0)) * PX}` };
 }
 
 // The hat to draw: a worn one from the shop wins over the one he's earned by levelling up.
 export function hatOf(wear: Wear | undefined, earned: Hat | null): Hat | null {
-  if (wear?.hat && HATS[wear.hat]) return { ...HATS[wear.hat], colour: wear.hatColour };
+  const h = wear?.hat ? HATS[wear.hat] : undefined;
+  if (h) return wear!.hatColour ? { ...h, pal: { a: wear!.hatColour, b: darker(wear!.hatColour), c: "#f4efe0", w: "#ffffff" } } : { ...h, pal: { a: "#33363d", b: "#22252b", c: "#c0392b", w: "#6b6f78" } };
   return earned;
 }
 

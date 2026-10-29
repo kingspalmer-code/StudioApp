@@ -35,8 +35,8 @@ export type Item = {
   name: string;
   price: number;
   shell?: { body: string; ink: string }; // device casing
-  screen?: "classic" | "amber" | "ice" | "colour"; // LCD tint
-  paint?: string; // body colour, needs the colour screen
+  screen?: "classic" | "amber" | "ice"; // LCD tint
+  paint?: string; // body colour
   wear?: Wear;
   needs?: string; // another item you must own first
   note?: string;
@@ -53,12 +53,12 @@ export const CATALOGUE: Item[] = [
   { id: "screen-classic", shelf: "Screens", slot: "screen", name: "Classic screen", price: 0, screen: "classic" },
   { id: "screen-amber", shelf: "Screens", slot: "screen", name: "Amber screen", price: 60, screen: "amber" },
   { id: "screen-ice", shelf: "Screens", slot: "screen", name: "Ice screen", price: 60, screen: "ice" },
-  { id: "screen-colour", shelf: "Screens", slot: "screen", name: "Colour screen", price: 300, screen: "colour", note: "Lets you paint Pickle" },
 
-  { id: "paint-pickle", shelf: "Paints", slot: "paint", name: "Pickle green", price: 40, paint: "#8fc06a", needs: "screen-colour" },
-  { id: "paint-peach", shelf: "Paints", slot: "paint", name: "Peach", price: 40, paint: "#f2b48c", needs: "screen-colour" },
-  { id: "paint-lilac", shelf: "Paints", slot: "paint", name: "Lilac", price: 40, paint: "#b9a3e3", needs: "screen-colour" },
-  { id: "paint-golden", shelf: "Paints", slot: "paint", name: "Golden", price: 150, paint: "#e3c35a", needs: "screen-colour" },
+  { id: "paint-pickle", shelf: "Paints", slot: "paint", name: "Pickle green", price: 40, paint: "#8fc06a" },
+  { id: "paint-peach", shelf: "Paints", slot: "paint", name: "Peach", price: 40, paint: "#f2b48c" },
+  { id: "paint-lilac", shelf: "Paints", slot: "paint", name: "Lilac", price: 40, paint: "#b9a3e3" },
+  { id: "paint-golden", shelf: "Paints", slot: "paint", name: "Golden", price: 150, paint: "#e3c35a" },
+  { id: "paint-sky", shelf: "Paints", slot: "paint", name: "Sky blue", price: 40, paint: "#9cc7e8" },
 
   { id: "wear-shades", shelf: "Clothes", slot: "face", name: "Sunglasses", price: 50, wear: { shades: true } },
   { id: "wear-tee", shelf: "Clothes", slot: "top", name: "Oat t-shirt", price: 70, wear: { shirt: "#f4efe0" } },
@@ -86,5 +86,5 @@ export function lookOf(worn: Worn | null | undefined): Look {
   const screen = pick("screen")?.screen ?? "classic";
   const wear: Wear = {};
   for (const s of ["hat", "face", "top", "neck"] as const) Object.assign(wear, pick(s)?.wear);
-  return { shell: (pick("shell") ?? ITEM["shell-oat"]).shell, screen, paint: screen === "colour" ? pick("paint")?.paint ?? null : null, wear };
+  return { shell: (pick("shell") ?? ITEM["shell-oat"]).shell, screen, paint: pick("paint")?.paint ?? null, wear };
 }
