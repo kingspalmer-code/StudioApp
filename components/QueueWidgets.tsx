@@ -402,56 +402,58 @@ export function Pet({ pet: start, earnHint, business }: { pet: PetView | null; e
     play("happy", 1600);
   };
   return (
-    <div className={`lcd screen-${look.screen} ${pixel.className}${pet.glowing ? " glowing" : ""}${asleep ? " night" : ""}`}>
-      <button
-        type="button"
-        ref={stageEl}
-        className={`lcd-stage ${act ?? mood}${!act && !asleep ? " awake" : ""}${act === "dance" && lv >= CARTWHEEL_AT ? " spin" : ""}${out ? " away" : ""}`}
-        onClick={fuss}
-        onDoubleClick={() => (!act || act === "happy") && setOut("explore")}
-        aria-label={`Pickle, level ${lv}${asleep ? ", asleep" : ""}. Click to give Pickle a fuss, double-click to let him out to explore`}
-      >
-        <span className="lcd-name">Pickle <small>LV {lv}</small></span>
-        <span className="lcd-says">{says}</span>
-        <Props level={lv} />
-        <span className="lcd-walk" ref={walkEl}>
-          {act === "pickle" ? <Gherkin /> : <Blob mood={mood} stage={stage} hat={hat} wear={look.wear} paint={look.paint} />}
-          {lv >= BALL_AT && act !== "pickle" && <Ball />}
-          {lv >= PIP_AT && act !== "pickle" && !asleep && <Pip head={headHeight(stage, hat)} />}
-          {(act === "eat" || act === "golden") && <Snack golden={act === "golden"} />}
-          {act === "golden" && <span className="lcd-sparkle" aria-hidden="true">✦ ✧ ✦</span>}
-          {act === "pickle" && <span className="lcd-poof" aria-hidden="true">* *</span>}
-        </span>
-        {act === "levelup" && <Confetti big={lv % 5 === 0} />}
-      </button>
-      {out && <Roam key={out} mode={out} stage={stage} hat={hat} look={look} home={() => stageEl.current?.getBoundingClientRect() ?? null} onHome={() => { setOut(null); play("happy", 1600); }} />}
-      <div className="lcd-meters">
-        {meters.map(([label, v]) => (
-          <span key={label} className="lcd-meter" title={`${label} ${Math.round(v * 100)}%`}>
-            {label}
-            <i>{[0, 1, 2, 3].map((n) => <b key={n} className={v > n / 4 + 0.05 ? "on" : undefined} />)}</i>
+    <div className="pet-shell" style={look.shell ? { ["--shell" as string]: look.shell.body } : undefined}>
+      <div className={`lcd screen-${look.screen} ${pixel.className}${pet.glowing ? " glowing" : ""}${asleep ? " night" : ""}`}>
+        <button
+          type="button"
+          ref={stageEl}
+          className={`lcd-stage ${act ?? mood}${!act && !asleep ? " awake" : ""}${act === "dance" && lv >= CARTWHEEL_AT ? " spin" : ""}${out ? " away" : ""}`}
+          onClick={fuss}
+          onDoubleClick={() => (!act || act === "happy") && setOut("explore")}
+          aria-label={`Pickle, level ${lv}${asleep ? ", asleep" : ""}. Click to give Pickle a fuss, double-click to let him out to explore`}
+        >
+          <span className="lcd-name">Pickle <small>LV {lv}</small></span>
+          <span className="lcd-says">{says}</span>
+          <Props level={lv} />
+          <span className="lcd-walk" ref={walkEl}>
+            {act === "pickle" ? <Gherkin /> : <Blob mood={mood} stage={stage} hat={hat} wear={look.wear} paint={look.paint} />}
+            {lv >= BALL_AT && act !== "pickle" && <Ball />}
+            {lv >= PIP_AT && act !== "pickle" && !asleep && <Pip head={headHeight(stage, hat)} />}
+            {(act === "eat" || act === "golden") && <Snack golden={act === "golden"} />}
+            {act === "golden" && <span className="lcd-sparkle" aria-hidden="true">✦ ✧ ✦</span>}
+            {act === "pickle" && <span className="lcd-poof" aria-hidden="true">* *</span>}
           </span>
-        ))}
-      </div>
-      <div className="lcd-keys">
-        <button type="button" onClick={() => feed("oatcake")} disabled={busy || !!act || !!out || !pet.tin || pet.full} title={pet.full ? "Pickle's full. Try again in a few hours" : pet.tin ? "Give Pickle an oatcake" : earnHint}>
-          Feed <b>×{pet.tin}</b>
+          {act === "levelup" && <Confetti big={lv % 5 === 0} />}
         </button>
-        <button type="button" onClick={() => feed("golden")} disabled={busy || !!act || !!out || pet.tin < pet.goldenCost} title={`Swap ${pet.goldenCost} oatcakes for a golden one`}>
-          ★ Gold
-        </button>
-        {pet.shop && !business ? (
-          <Link href="/pickle" title="Pickle's World: the shop and the arcade">World</Link>
-        ) : (
-          <button type="button" onClick={() => play("dance", 3200)} disabled={!!act || !!out || !canDance} title={canDance ? "Make Pickle dance" : "Pickle needs feeding before he'll dance"}>
-            Dance
+        {out && <Roam key={out} mode={out} stage={stage} hat={hat} look={look} home={() => stageEl.current?.getBoundingClientRect() ?? null} onHome={() => { setOut(null); play("happy", 1600); }} />}
+        <div className="lcd-meters">
+          {meters.map(([label, v]) => (
+            <span key={label} className="lcd-meter" title={`${label} ${Math.round(v * 100)}%`}>
+              {label}
+              <i>{[0, 1, 2, 3].map((n) => <b key={n} className={v > n / 4 + 0.05 ? "on" : undefined} />)}</i>
+            </span>
+          ))}
+        </div>
+        <div className="lcd-keys">
+          <button type="button" onClick={() => feed("oatcake")} disabled={busy || !!act || !!out || !pet.tin || pet.full} title={pet.full ? "Pickle's full. Try again in a few hours" : pet.tin ? "Give Pickle an oatcake" : earnHint}>
+            Feed <b>×{pet.tin}</b>
           </button>
-        )}
-      </div>
-      <div className="lcd-bar" title={`${XP_PER_LEVEL - eaten} more oatcake${XP_PER_LEVEL - eaten === 1 ? "" : "s"} to LV ${lv + 1}`}>
-        LV {lv}
-        <i>{Array.from({ length: XP_PER_LEVEL }, (_, n) => <b key={n} className={n < eaten ? "on" : undefined} />)}</i>
-        <span>LV {lv + 1}<em> · {next}</em></span>
+          <button type="button" onClick={() => feed("golden")} disabled={busy || !!act || !!out || pet.tin < pet.goldenCost} title={`Swap ${pet.goldenCost} oatcakes for a golden one`}>
+            ★ Gold
+          </button>
+          {pet.shop && !business ? (
+            <Link href="/pickle" title="Pickle's World: the shop and the arcade">World</Link>
+          ) : (
+            <button type="button" onClick={() => play("dance", 3200)} disabled={!!act || !!out || !canDance} title={canDance ? "Make Pickle dance" : "Pickle needs feeding before he'll dance"}>
+              Dance
+            </button>
+          )}
+        </div>
+        <div className="lcd-bar" title={`${XP_PER_LEVEL - eaten} more oatcake${XP_PER_LEVEL - eaten === 1 ? "" : "s"} to LV ${lv + 1}`}>
+          LV {lv}
+          <i>{Array.from({ length: XP_PER_LEVEL }, (_, n) => <b key={n} className={n < eaten ? "on" : undefined} />)}</i>
+          <span>LV {lv + 1}<em> · {next}</em></span>
+        </div>
       </div>
     </div>
   );

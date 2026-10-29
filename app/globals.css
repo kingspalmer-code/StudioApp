@@ -1290,7 +1290,7 @@ html.embedded .settings-back { display: none; }
 
 /* Pickle: a little LCD screen, greenish grey with its pixel grid, ink pixels on top. */
 .w-pet { padding: 8px; } .w-pet h4 { display: none; }
-.lcd { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: 8px; border-radius: 10px; padding: 6px; color: #1d201a; background-color: #b4b9a2; background-image: linear-gradient(rgba(29,32,26,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(29,32,26,.07) 1px, transparent 1px); background-size: 4px 4px; box-shadow: inset 0 0 0 1.5px rgba(29,32,26,.35), inset 0 2px 6px rgba(29,32,26,.18); font-size: 8.5px; line-height: 1; text-transform: uppercase; }
+.lcd { --screen: #b4b9a2; flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: 8px; border-radius: 10px; padding: 6px; color: #1d201a; background-color: var(--screen); background-image: linear-gradient(rgba(29,32,26,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(29,32,26,.07) 1px, transparent 1px); background-size: 4px 4px; box-shadow: inset 0 0 0 1.5px rgba(29,32,26,.35), inset 0 2px 6px rgba(29,32,26,.18); font-size: 8.5px; line-height: 1; text-transform: uppercase; }
 /* Pickle's stage takes most of the screen; he wanders across it. */
 .lcd-stage { position: relative; min-height: 0; min-width: 0; overflow: hidden; border: 0; padding: 0; background: none; cursor: pointer; color: inherit; font: inherit; text-transform: inherit; }
 .lcd-name { position: absolute; left: 4px; top: 3px; font-size: 11px; text-transform: none; }
@@ -1320,7 +1320,7 @@ html.embedded .settings-back { display: none; }
 .lcd-snack { position: absolute; width: 14px; height: 14px; left: calc(100% - 4px); bottom: 18px; animation: lcd-snack 1.2s steps(1) forwards; }
 .lcd-snack.golden { width: 22px; height: 22px; animation-duration: 2.6s; }
 .lcd-snack.golden .lcd-ink { fill: #8a6a12; }
-.lcd.glowing { background-color: #c3bf98; }
+.lcd.glowing { background-color: color-mix(in srgb, var(--screen) 72%, #e3c35a); }
 .lcd-sparkle { position: absolute; left: 50%; top: -2px; transform: translateX(-50%); font-size: 12px; white-space: nowrap; animation: lcd-blink .4s steps(1) 8; }
 .lcd-poof { position: absolute; left: calc(50% + 30px); top: 6px; transform: translateX(-50%); font-size: 12px; white-space: nowrap; animation: lcd-blink .3s steps(1) 4 forwards; }
 /* Small segmented meters instead of long bars. */
@@ -1341,8 +1341,14 @@ html.embedded .settings-back { display: none; }
 .lcd-keys button, .lcd-keys a { display: grid; place-items: center; text-decoration: none; font: inherit; font-size: 8.5px; text-transform: uppercase; color: #1d201a; background: rgba(29,32,26,.08); border: 0; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(29,32,26,.55); padding: 0 8px; min-width: 58px; cursor: pointer; }
 .lcd-keys button:hover:not(:disabled), .lcd-keys a:hover { background: #1d201a; color: #b4b9a2; }
 /* Screen colours from the shop (lib/pickle/catalogue.ts). */
-.lcd.screen-amber { background-color: #c9b77e; }
-.lcd.screen-ice { background-color: #a9bcc0; }
+.lcd.screen-amber { --screen: #c9b77e; }
+.lcd.screen-ice { --screen: #a9bcc0; }
+/* The widget sits in Pickle's device, in the shell colour bought in Pickle's World, like his page there. */
+.pet-shell { --shell: #e9e4d6; flex: 1; display: flex; min-height: 0; padding: 5px; border-radius: 12px; background: var(--shell); box-shadow: inset 0 -3px 0 rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.45); }
+.pet-shell .lcd { border-radius: 8px; }
+.w-pet { background: none; padding: 0; }
+.w-pet .pet-shell { border-radius: var(--r); padding: 6px; }
+.lcd-stage::after { content: ""; position: absolute; left: 0; right: 0; bottom: 1px; border-top: 1.5px dashed rgba(29,32,26,.28); pointer-events: none; }
 .lcd-keys button:disabled { opacity: .4; cursor: default; }
 .lcd-keys b { font-weight: inherit; }
 @keyframes lcd-blink { 50% { opacity: 0; } }
@@ -1362,7 +1368,7 @@ html.embedded .settings-back { display: none; }
 @keyframes lcd-dance { 0% { transform: translateY(0) rotate(-10deg); } 25% { transform: translateY(-8px) rotate(0); } 50% { transform: translateY(0) rotate(10deg); } 75% { transform: translateY(-8px) scaleX(-1); } }
 @keyframes lcd-snack { 0% { transform: translateY(-30px); } 20% { transform: none; } 50% { transform: translateX(-8px); clip-path: inset(0 0 0 30%); } 75% { transform: translateX(-12px); clip-path: inset(0 0 0 65%); } 90%, 100% { opacity: 0; } }
 /* Something new each level: eggshell, sprout, ball, bedtime, Pip the bird, cartwheels, confetti. */
-.lcd.night { background-color: #a3a88f; }
+.lcd.night { background-color: color-mix(in srgb, var(--screen) 86%, #1d201a); }
 .lcd-shell { position: absolute; left: 12%; bottom: 2px; width: 24px; }
 .lcd-sprout { position: absolute; right: 10px; bottom: 2px; width: 15px; }
 .lcd-ball { position: absolute; left: calc(100% - 4px); bottom: 2px; width: 12px; }
