@@ -1,0 +1,76 @@
+/* Hours: a calm ledger. Solid surfaces, tabular numbers, nothing shouting. */
+.hrs { max-width: 980px; margin: 0 auto; }
+.hrs-head { margin: 4px 0 18px; }
+.hrs-title { font: 700 40px/1 var(--font-title); letter-spacing: -.02em; margin: 0; }
+.hrs-sub { color: var(--label-2); margin: 10px 0 0; max-width: 62ch; font-size: 14px; }
+.hrs-note { color: var(--label-2); font-size: 13px; margin: 8px 4px; }
+.hrs-error { color: var(--red); font-size: 13px; margin: 8px 4px; }
+.hrs-empty { color: var(--label-2); font-size: 14px; margin: 18px 4px; }
+
+/* The logging box: fields side by side on a computer, stacked on a phone. */
+.hrs-form { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px 12px; padding: 14px 16px; background: var(--surface); border-radius: var(--r, 14px); }
+.hrs-f { display: flex; flex-direction: column; gap: 4px; grid-column: span 2; min-width: 0; }
+.hrs-f-small { grid-column: span 1; }
+.hrs-f-wide { grid-column: span 3; }
+.hrs-f-note { grid-column: span 4; }
+.hrs-f > span { font-size: 12px; color: var(--label-2); }
+.hrs-f input, .hrs-f select { width: 100%; min-width: 0; height: 38px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--sep, var(--fill)); background: var(--surface-2, var(--fill)); color: var(--label); font: inherit; font-size: 15px; outline: none; }
+.hrs-f input:focus, .hrs-f select:focus { border-color: var(--label-2); }
+.hrs-f input[aria-invalid="true"] { border-color: var(--red); }
+.hrs-f-go { grid-column: 1 / -1; display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; }
+.hrs-preview { margin-right: auto; font-size: 13px; color: var(--label-2); font-variant-numeric: tabular-nums; }
+.hrs-remove { color: var(--red); }
+.hrs-form .hrs-error { grid-column: 1 / -1; margin: 0; }
+
+.hrs-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 12px; }
+
+/* Totals for what's showing. */
+.hrs-sum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.hrs-sum > div { background: var(--surface); border-radius: var(--r, 14px); padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+.hrs-sum span { font-size: 12px; color: var(--label-2); }
+.hrs-sum b { font: 700 24px/1.15 var(--font-title); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+
+/* One row per person, with what they're owed and a way for the owner to mark it paid. */
+.hrs-people, .hrs-groups, .hrs-entries { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: var(--r, 14px); overflow: hidden; }
+.hrs-people li, .hrs-groups li { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
+.hrs-people li + li, .hrs-groups li + li, .hrs-entries li + li { border-top: .5px solid var(--sep, var(--fill)); }
+.hrs-person { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; border: 0; background: none; padding: 0; color: var(--label); font: inherit; text-align: left; cursor: pointer; }
+.hrs-person span { font-size: 13px; color: var(--label-2); font-variant-numeric: tabular-nums; }
+.hrs-owed { display: flex; align-items: center; gap: 10px; font-size: 13px; font-variant-numeric: tabular-nums; flex-wrap: wrap; justify-content: flex-end; }
+.hrs-owed-one { justify-content: flex-start; margin: 12px 4px 0; font-size: 14px; }
+.hrs-paidup { color: var(--label-3); }
+
+.hrs-cols { display: grid; grid-template-columns: 3fr 2fr; gap: 0 18px; }
+.hrs-g-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.hrs-g-main b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hrs-g-main span { font-size: 12.5px; color: var(--label-2); }
+.hrs-g-num { flex: none; min-width: 62px; text-align: right; font-size: 14px; font-variant-numeric: tabular-nums; }
+
+/* Each entry; tap one of yours to change it. */
+.hrs-entry { width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 0; background: none; color: var(--label); font: inherit; text-align: left; cursor: pointer; }
+.hrs-entry:hover:not(:disabled) { background: var(--surface-2); }
+.hrs-entry:disabled { cursor: default; opacity: 1; }
+.hrs-e-day { flex: none; width: 92px; font-size: 13px; color: var(--label-2); }
+.hrs-e-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.hrs-e-main b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hrs-e-main span { font-size: 12.5px; color: var(--label-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hrs-e-time { flex: none; font-size: 14px; font-variant-numeric: tabular-nums; }
+.hrs-e-pay { flex: none; min-width: 74px; display: flex; flex-direction: column; align-items: flex-end; font-size: 14px; font-variant-numeric: tabular-nums; }
+.hrs-e-pay small { font-size: 11.5px; color: var(--label-3); }
+.hrs-e-pay i { font-style: normal; font-size: 12.5px; color: var(--label-3); }
+.hrs-stamp { flex: none; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border: 1.5px solid currentColor; border-radius: 4px; color: var(--green, #2f8a4f); transform: rotate(-4deg); }
+.hrs-editing { padding: 4px 0; background: var(--surface-2); }
+.hrs-editing .hrs-form { background: transparent; }
+
+@media (max-width: 700px) {
+  .hrs-title { font-size: 32px; }
+  .hrs-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hrs-f, .hrs-f-wide, .hrs-f-note { grid-column: 1 / -1; }
+  .hrs-f-small { grid-column: span 1; }
+  .hrs-sum { gap: 6px; }
+  .hrs-sum b { font-size: 19px; }
+  .hrs-cols { grid-template-columns: 1fr; }
+  .hrs-e-day { width: 56px; }
+  .hrs-entry { gap: 10px; padding: 10px 12px; }
+  .hrs-filters .seg { max-width: 100%; }
+}

@@ -94,6 +94,8 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean,
   const habits = { href: "/habits", label: "Habits" };
   // The front door: what's on today, somewhere to jot things down, today's habits and Pickle.
   const today = { href: "/today", label: "Today" };
+  // Hours worked and the pay they add up to, for the owner and every employee.
+  const hours = { href: "/hours", label: "Hours" };
   if (member.role === "manager")
     return [
       main,
@@ -125,12 +127,13 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean,
       todo,
       ...(allows(a, "requests", "edit") ? [{ href: "/portal", label: `New ${terms.job}` }] : []),
       habits,
+      hours,
       ...(work.length ? [workButton(work)] : []),
       { href: "/apps", label: "Apps" },
       ...(allows(a, "settings") || allows(a, "quotes") ? [{ href: "/settings", label: "Settings" }] : []),
     ];
   }
-  if (member.role === "staff") return [today, todo, habits, { href: "/apps", label: "Apps" }];
+  if (member.role === "staff") return [today, todo, habits, hours, { href: "/apps", label: "Apps" }];
   // Settings is a section of its own, last, so it's always a click away (it used to hide behind your account).
   const settings = { href: "/settings", label: "Settings" };
   if (viewing) return [main, { href: "/overview", label: "Overview" }, ...clientsOf(workspace), { href: "/gallery", label: "Gallery" }, filing, { href: "/apps", label: "Apps" }, settings];
@@ -146,6 +149,7 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean,
       filing,
       { href: "/apps", label: "Apps" },
       { href: "/team", label: "Team" },
+      hours,
       settings,
     ];
   // The owner's sections follow the day: Today, To-do, the + (New on phones, which opens the
@@ -157,6 +161,7 @@ export function linksFor(member: Member, workspace: Workspace, viewing: boolean,
     { href: "/portal", label: `New ${terms.job}` },
     habits,
     workButton(workLinks(member, workspace)),
+    hours,
     // Tools made for one client each, such as a pattern recolourer, and a way to ask for new ones.
     { href: "/apps", label: "Apps" },
     settings,
