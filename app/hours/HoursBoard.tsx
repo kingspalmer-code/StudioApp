@@ -7,6 +7,7 @@ import { flashSaved } from "@/components/Saved";
 import { gbp } from "@/lib/documents";
 import { fmtMinutes, groupLogs, minutesOf, parseDuration, payOf, payTotals, PERIODS, periodRange, type PayLog, type Period } from "@/lib/hours";
 import { logHours, removeTimeLog, setPaid, updateHours } from "./actions";
+import HoursTimer from "./HoursTimer";
 
 const OFFLINE = "Couldn't save that. Check your connection.";
 type Job = { id: number; title: string; done: boolean };
@@ -45,12 +46,15 @@ export default function HoursBoard({
   const [who, setWho] = useState<string>("all");
   const [editing, setEditing] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [typing, setTyping] = useState(false);
   const [pending, startTransition] = useTransition();
   const now = Date.now();
 
   const jobTitle = (id: number | null) => (id ? (jobs.find((j) => j.id === id)?.title ?? `Job #${id}`) : "No job");
   const nameOf = (email: string) => (email === me ? "You" : (names[email] ?? email.split("@")[0]));
   const myRate = logs.find((l) => l.who === me && l.rate != null)?.rate ?? null;
+  const running = logs.find((l) => l.who === me && l.minutes == null && l.started_at);
+  const recent = useMemo(() => [...new Set(logs.filter((l) => l.who === me && l.ticket_id).map((l) => l.ticket_id!))].slice(0, 6), [logs, me]);
   const types = useMemo(() => [...new Set(logs.map((l) => l.work_type).filter(Boolean))].sort(), [logs]);
 
   const [from, to] = periodRange(period, today);
@@ -91,20 +95,27 @@ export default function HoursBoard({
     <div className="hrs">
       <header className="hrs-head">
         <h1 className="hrs-title">Hours</h1>
-        <p className="hrs-sub">
-          Log the time you work, what job it was for and your hourly rate. It adds up {seesAll ? "for everyone" : "for you"}, per job, with the pay owed.
-        </p>
       </header>
+
+      {!readOnly && <HoursTimer running={running} jobs={jobs} recent={recent} onChange={put} onGone={(id) => setLogs((all) => all.filter((l) => l.id !== id))} />}
+
+      <div className="hrs-below">
+        <p className="eyebrow">{seesAll ? "Hours and pay" : "Your hours and pay"}</p>
+        {!readOnly && !notReady && !typing && (
+          <button type="button" className="btn plain small" onClick={() => setTyping(true)}>Type in hours instead</button>
+        )}
+      </div>
 
       {notReady && <p className="hrs-note">Hours and pay are nearly ready. Rates and types of work switch on shortly.</p>}
 
-      {!readOnly && !notReady && (
+      {!readOnly && !notReady && typing && (
         <HoursForm
           jobs={jobs}
           types={types}
           today={today}
           startRate={myRate}
           pending={pending}
+          onCancel={() => setTyping(false)}
           onSave={(input, done) =>
             startTransition(async () => {
               const r = await logHours(input).catch(() => ({ error: OFFLINE, log: undefined }));
@@ -112,6 +123,7 @@ export default function HoursBoard({
               setError("");
               put([r.log]);
               done();
+              setTyping(false);
               flashSaved(`Logged ${fmtMinutes(r.log.minutes ?? 0)}`);
             })
           }
