@@ -169,3 +169,29 @@ export async function setPaid(ids: number[], paid: boolean): Promise<{ logs?: Pa
   revalidatePath("/hours");
   return { logs: data ?? [] };
 }
+
+// Stops the Hours page timer and files it under a job (or none), in one go. The time counts up to
+// when Stop was pressed, not when the job was picked, so taking a while to choose costs nothing.
+export async function finishTimer(id: number, input: { ticket_id: number | null; ended_at?: string }): Promise<PayResult> {
+  const { supabase, member } = await requireEditor(["designer", "staff"]);
+  const { data: running } = await supabase
+    .from("time_logs")
+    .select("id, started_at")
+    .eq("id", id)
+    .eq("who", member.email)
+    .is("minutes", null)
+    .eq("gone", false)
+    .maybeSingle<{ id: number; started_at: string | null }>();
+  if (!running?.started_at) return { error: "That timer isn't running any more." };
+  const start = Date.parse(running.started_at);
+  const now = Date.now();
+  const asked = Date.parse(String(input.ended_at ?? ""));
+  const end = Number.isFinite(asked) ? Math.min(now, Math.max(start, asked)) : now;
+  const minutes = Math.min(10080, Math.max(1, Math.round((end - start) / 60000)));
+  const ticket_id = Number(input.ticket_id) || null;
+  const { data, error } = await supabase.from("time_logs").update({ minutes, ticket_id }).eq("id", id).select(PAY_COLUMNS).maybeSingle<PayLog>();
+  if (error) return { error: /isn't one of yours/.test(error.message) ? "That job can't take hours." : error.message };
+  if (!data) return { error: "Couldn't save that." };
+  refresh(ticket_id);
+  return { log: data };
+}

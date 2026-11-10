@@ -22,6 +22,35 @@
 .hrs-remove { color: var(--red); }
 .hrs-form .hrs-error { grid-column: 1 / -1; margin: 0; }
 
+/* The timer: one big round Start button. Running, a big clock and a Stop. Stopped, it asks which
+   job and offers them as big rows to tap. */
+.hrs-timer { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; padding: 34px 16px 30px; margin-bottom: 26px; background: var(--surface); border-radius: calc(var(--r, 12px) + 10px); }
+.hrs-go { width: 196px; height: 196px; border-radius: 50%; border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--accent); color: var(--accent-ink); cursor: pointer; box-shadow: var(--shadow); transition: transform .12s ease; -webkit-tap-highlight-color: transparent; }
+.hrs-go span { font: 700 34px/1 var(--font-title); letter-spacing: -.01em; }
+.hrs-go:active:not(:disabled) { transform: scale(.96); }
+.hrs-go:disabled { opacity: .6; cursor: default; }
+.hrs-go:focus-visible { outline: 3px solid var(--label-3); outline-offset: 4px; }
+.hrs-stop { width: 132px; height: 132px; background: var(--surface-2); color: var(--red); border: 2px solid var(--red); box-shadow: none; }
+.hrs-stop span { font-size: 24px; }
+.hrs-hint { margin: 0; font-size: 14px; color: var(--label-2); max-width: 40ch; }
+.hrs-clock { margin: 0; font: 700 64px/1 var(--font-title); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.hrs-clock.is-still { font-size: 44px; }
+.hrs-ask { margin: 0; font: 700 22px/1.2 var(--font-title); max-width: 24ch; }
+.hrs-find { width: min(440px, 100%); height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--sep); background: var(--surface-2); color: var(--label); font: inherit; font-size: 16px; outline: none; }
+.hrs-find:focus { border-color: var(--label-2); }
+.hrs-picks { width: min(440px, 100%); display: flex; flex-direction: column; gap: 8px; }
+.hrs-pick { width: 100%; min-height: 52px; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-radius: 14px; border: 1px solid var(--sep); background: var(--surface-2); color: var(--label); font: inherit; font-size: 16px; font-weight: 600; text-align: left; cursor: pointer; }
+.hrs-pick span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hrs-pick small { flex: none; font-size: 12px; font-weight: 500; color: var(--label-2); }
+.hrs-pick:hover:not(:disabled) { border-color: var(--label-3); }
+.hrs-pick:active:not(:disabled) { background: var(--fill); }
+.hrs-pick:disabled { opacity: .6; cursor: default; }
+.hrs-pick-none { font-weight: 500; color: var(--label-2); border-style: dashed; }
+.hrs-ask-foot { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 14px; }
+.hrs-timer .hrs-error, .hrs-timer .hrs-note { margin: 0; }
+.hrs-below { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 0 0 10px; }
+.hrs-below .eyebrow { margin: 0; }
+
 .hrs-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 12px; }
 
 /* Totals for what's showing. */
@@ -64,6 +93,10 @@
 
 @media (max-width: 700px) {
   .hrs-title { font-size: 32px; }
+  .hrs-timer { padding: 28px 14px 24px; }
+  .hrs-go { width: 172px; height: 172px; }
+  .hrs-stop { width: 120px; height: 120px; }
+  .hrs-clock { font-size: 54px; }
   .hrs-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hrs-f, .hrs-f-wide, .hrs-f-note { grid-column: 1 / -1; }
   .hrs-f-small { grid-column: span 1; }
