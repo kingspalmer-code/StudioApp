@@ -49,39 +49,43 @@ export async function addToGallery(businessId: string, files: Upload[], caption:
   return { ids };
 }
 
-// Changes who's tagged; only people newly tagged hear about it.
-export async function setGalleryTags(id: number, tagged: string[]): Promise<Result> {
+const asIds = (id: number | number[]) => [...new Set((Array.isArray(id) ? id : [id]).map(Number).filter(Number.isFinite))].slice(0, 500);
+
+// Changes who's tagged, on one picture or a whole folder of them; only people newly tagged hear about it.
+export async function setGalleryTags(id: number | number[], tagged: string[]): Promise<Result> {
   const { supabase, member, workspace } = await requireEditor(["designer"], "requests");
+  const ids = asIds(id);
   const tags = cleanTags(tagged);
-  const { data: before } = await supabase.from("gallery_items").select("tagged").eq("id", id).maybeSingle<{ tagged: string[] }>();
-  if (!before) return { error: "That's gone. Refresh the page." };
-  const { error } = await supabase.from("gallery_items").update({ tagged: tags }).eq("id", id);
+  const { data: before } = await supabase.from("gallery_items").select("tagged").in("id", ids).returns<{ tagged: string[] }[]>();
+  if (!before?.length) return { error: "That's gone. Refresh the page." };
+  const { error } = await supabase.from("gallery_items").update({ tagged: tags }).in("id", ids);
   if (error) return { error: `That didn't save. ${error.message}` };
-  const fresh = tags.filter((e) => !before.tagged.includes(e));
-  if (fresh.length) after(() => tellTagged(supabase, [id], fresh, { name: workspace.name, replyTo: member.email, by: member.full_name || workspace.name }).catch(() => {}));
-  revalidatePath("/gallery");
-  revalidatePath(`/gallery/${id}`);
-  return { ids: [id] };
+  const had = new Set(before.flatMap((b) => b.tagged));
+  const fresh = tags.filter((e) => !had.has(e));
+  if (fresh.length) after(() => tellTagged(supabase, ids, fresh, { name: workspace.name, replyTo: member.email, by: member.full_name || workspace.name }).catch(() => {}));
+  revalidatePath("/gallery", "layout");
+  return { ids };
 }
 
-export async function setGalleryCaption(id: number, caption: string): Promise<Result> {
+export async function setGalleryCaption(id: number | number[], caption: string): Promise<Result> {
   const { supabase } = await requireEditor(["designer"], "requests");
-  const { error } = await supabase.from("gallery_items").update({ caption: caption.trim().slice(0, 1000) }).eq("id", id);
+  const ids = asIds(id);
+  const { error } = await supabase.from("gallery_items").update({ caption: caption.trim().slice(0, 1000) }).in("id", ids);
   if (error) return { error: `That didn't save. ${error.message}` };
-  revalidatePath("/gallery");
-  revalidatePath(`/gallery/${id}`);
-  return { ids: [id] };
+  revalidatePath("/gallery", "layout");
+  return { ids };
 }
 
-// Takes it out of the Gallery, with its file and preview.
-export async function removeFromGallery(id: number): Promise<Result> {
+// Takes one picture, or a whole folder, out of the Gallery, with the files and their previews.
+export async function removeFromGallery(id: number | number[]): Promise<Result> {
   const { supabase } = await requireEditor(["designer"], "requests");
-  const { data: item } = await supabase.from("gallery_items").select("path").eq("id", id).maybeSingle<{ path: string }>();
-  if (!item) return {};
-  const { error } = await supabase.from("gallery_items").delete().eq("id", id);
+  const ids = asIds(id);
+  const { data: items } = await supabase.from("gallery_items").select("path").in("id", ids).returns<{ path: string }[]>();
+  if (!items?.length) return {};
+  const { error } = await supabase.from("gallery_items").delete().in("id", ids);
   if (error) return { error: `That didn't remove. ${error.message}` };
-  await supabase.storage.from("deliveries").remove(withPreviews([item.path]));
-  revalidatePath("/gallery");
+  await supabase.storage.from("deliveries").remove(withPreviews(items.map((i) => i.path)));
+  revalidatePath("/gallery", "layout");
   return {};
 }
 
@@ -101,10 +105,11 @@ async function tellTagged(supabase: SupabaseClient, ids: number[], emails: strin
   if (!told.length) return;
   const what = first.caption.trim() || (ids.length > 1 ? `${ids.length} pictures` : "a picture");
   const subject = `${studio.by} tagged you in the Gallery`;
-  const link = `${await origin()}/gallery/${first.id}`;
+  const where = ids.length > 1 ? `/gallery/folder/${first.id}` : `/gallery/${first.id}`;
+  const link = `${await origin()}${where}`;
   const line = `${studio.by} tagged you in ${ids.length > 1 ? `${ids.length} pictures` : "a picture"} in ${studio.name}'s Gallery${first.caption.trim() ? `: "${first.caption.trim().slice(0, 200)}"` : "."}`;
   await Promise.all([
     ...told.map((p) => email(p.email, subject, [p.full_name ? `Hi ${p.full_name.split(" ")[0]},` : "Hi,", line], link, "See it in Oatcake", studio.name, studio.replyTo)),
-    sendAlert(told.map((p) => p.email), { title: subject, body: what.slice(0, 120), url: `/gallery/${first.id}`, tag: `gallery-${first.id}` }),
+    sendAlert(told.map((p) => p.email), { title: subject, body: what.slice(0, 120), url: where, tag: `gallery-${first.id}` }),
   ]);
 }
