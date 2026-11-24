@@ -8,7 +8,7 @@ import { asClient, requireMember } from "@/lib/session";
 import { LIST_COLUMNS, type ListTicket } from "@/lib/types";
 import type { Ticket } from "@/lib/types";
 import Thumb from "@/components/Thumb";
-import { galleryItems, taggablePeople, tagNames } from "@/lib/gallery";
+import { FOLDER_ICON_PATH, galleryItems, inFolders, taggablePeople, tagNames } from "@/lib/gallery";
 import { canPreview } from "@/lib/preview";
 import AddToGallery from "./AddToGallery";
 
@@ -17,7 +17,8 @@ import AddToGallery from "./AddToGallery";
 // Employees never see jobs, so they have no gallery. On wide screens a job opens in the panel on
 // the right, like a job beside the queue.
 // The studio can also add pictures straight to the Gallery and tag people on them (lib/gallery.ts):
-// those mix in by date, and anyone tagged sees them too, whatever business they're for.
+// those mix in by date, and anyone tagged sees them too, whatever business they're for. Pictures
+// added together sit in one folder tile (a cover, a stack behind it and how many), not a tile each.
 export default async function GalleryPage({ searchParams }: { searchParams: Promise<{ year?: string; type?: string; business?: string }> }) {
   const { year, type, business } = await searchParams;
   const { supabase, member, businesses, self, ctx, terms, workspace, shell } = asClient(await requireMember(["manager", "designer", "client"], "requests"));
@@ -54,7 +55,7 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
   const tagsOf = (id: number) => names.filter((n) => n.item_id === id);
   const cards = [
     ...shown.map((t) => ({ kind: "job" as const, when: t.when, t })),
-    ...shownPieces.map((i) => ({ kind: "piece" as const, when: i.created_at, i })),
+    ...inFolders(shownPieces).map((f) => ({ kind: "piece" as const, when: f[0].created_at, i: f[0], f })),
   ].sort((a, b) => b.when.localeCompare(a.when));
   const href = (b?: string, y?: string, ty?: string) => {
     const q = new URLSearchParams();
@@ -96,18 +97,25 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
         <div className="gallery">
           {cards.map((c) => {
             if (c.kind === "piece") {
-              const i = c.i;
-              const tags = tagsOf(i.id);
-              const me = i.tagged.includes(member.email);
+              const { i, f } = c;
+              const many = f.length > 1;
+              const tags = [...new Map(f.flatMap((x) => tagsOf(x.id)).map((t) => [t.email, t])).values()];
+              const me = f.some((x) => x.tagged.includes(member.email));
               return (
-                <Link key={`g${i.id}`} href={`/gallery/${i.id}`} className="gallery-card">
+                <Link key={`g${i.id}`} href={many ? `/gallery/folder/${i.id}` : `/gallery/${i.id}`} className={`gallery-card${many ? " gallery-stack" : ""}`}>
                   <span className="gallery-img">
                     {canPreview(i.mime, i.name) ? <Thumb bucket="deliveries" path={i.path} full={i.view} video={i.mime.startsWith("video/")} canMake={studio} /> : <span>{i.name}</span>}
+                    {many && (
+                      <span className="gallery-count" aria-label={`${f.length} pictures`}>
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={FOLDER_ICON_PATH} /></svg>
+                        {f.length}
+                      </span>
+                    )}
                   </span>
-                  <b>{i.caption || i.name}</b>
+                  <b>{f.find((x) => x.caption.trim())?.caption || i.name}</b>
                   <small className="when gallery-biz">
                     <BizBadge biz={byId[i.business_id]} size={16} />
-                    {byId[i.business_id]?.name ?? (client ? "" : "My business")} · {formatDate(i.created_at)}
+                    {byId[i.business_id]?.name ?? (client ? "" : "My business")} · {formatDate(i.created_at)}{many ? ` · ${f.length} pictures` : ""}
                   </small>
                   {tags.length > 0 && (
                     <small className="when gallery-tags">

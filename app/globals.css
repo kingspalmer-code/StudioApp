@@ -822,6 +822,23 @@ fieldset.read-only :is(input, select, textarea, button) { opacity: .55; cursor: 
 .gallery-piece-actions { justify-content: flex-start; margin: 10px 0 18px; }
 .gallery-piece { border-radius: var(--r); overflow: hidden; background: var(--surface); box-shadow: 0 0 0 .5px var(--sep); }
 .gallery-piece img, .gallery-piece video { display: block; width: 100%; max-height: 75vh; object-fit: contain; }
+/* A folder of pictures added together (lib/gallery.ts inFolders): two cards peek out behind the
+   cover, and a small count sits on it. Its page lists them all; a picture steps through the rest. */
+.gallery-stack .gallery-img { position: relative; overflow: visible; box-shadow: none; }
+.gallery-stack .gallery-img::before, .gallery-stack .gallery-img::after { content: ""; position: absolute; inset: 0; border-radius: var(--r); box-shadow: 0 0 0 .5px var(--sep); z-index: 0; transition: transform .25s; }
+.gallery-stack .gallery-img::before { background: color-mix(in srgb, var(--label) 10%, var(--surface)); transform: translateY(-10px) scaleX(.84); }
+.gallery-stack .gallery-img::after { background: color-mix(in srgb, var(--label) 20%, var(--surface)); transform: translateY(-5px) scaleX(.92); }
+.gallery-stack .gallery-img > img, .gallery-stack .gallery-img > span:not(.gallery-count), .gallery-stack .gallery-img > video { position: relative; z-index: 1; width: 100%; height: 100%; border-radius: var(--r); box-shadow: 0 0 0 .5px var(--sep); }
+.gallery-stack .gallery-img > img { object-fit: cover; }
+.gallery-stack:hover .gallery-img img { transform: none; }
+.gallery-stack:hover .gallery-img::before { transform: translateY(-13px) scaleX(.84); }
+.gallery-stack:hover .gallery-img::after { transform: translateY(-7px) scaleX(.92); }
+.gallery-img > .gallery-count { position: absolute; z-index: 2; left: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px 3px 7px; border-radius: 999px; font-size: 12.5px; font-weight: 650; color: #fff; background: rgba(20,14,12,.62); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.gallery-folder-title { display: flex; align-items: center; gap: 10px; }
+.gallery-folder-title svg { flex: none; color: var(--label-2); }
+.gallery-folder { margin-bottom: 22px; }
+.gallery-step { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 10px 0 0; }
+.gallery-step span[aria-hidden] { opacity: .35; pointer-events: none; }
 .archive-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 .portal-foot { margin-top: 26px; text-align: center; }
 @media (max-width: 700px) { .gallery { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; } }

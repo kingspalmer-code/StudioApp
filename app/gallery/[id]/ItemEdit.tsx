@@ -8,8 +8,11 @@ import { removeFromGallery, setGalleryCaption, setGalleryTags } from "../actions
 import TagPicker, { type TagPerson } from "../TagPicker";
 
 // The studio's controls on a picture in the Gallery: who's tagged (saved as soon as a name is
-// tapped, and only people newly tagged hear about it), the caption, and taking it out.
-export default function ItemEdit({ id, caption, tagged, people, businessId }: { id: number; caption: string; tagged: string[]; people: TagPerson[]; businessId: string }) {
+// tapped, and only people newly tagged hear about it), the caption, and taking it out. On a folder
+// (pictures added together) `id` is all of them, and each change goes to the whole folder.
+// `back` is where to go once it's taken out.
+export default function ItemEdit({ id, caption, tagged, people, businessId, back = "/gallery" }: { id: number | number[]; caption: string; tagged: string[]; people: TagPerson[]; businessId: string; back?: string }) {
+  const folder = Array.isArray(id) && id.length > 1;
   const router = useRouter();
   const [tags, setTags] = useState(tagged);
   const [text, setText] = useState(caption);
@@ -53,17 +56,18 @@ export default function ItemEdit({ id, caption, tagged, people, businessId }: { 
           <div className="ctl"><TagPicker people={people} businessId={businessId} value={tags} onChange={retag} disabled={busy} /></div>
         </div>
       </div>
-      <p className="when">Tapping a name tags them straight away. They get a notification, an email and a phone alert.</p>
+      <p className="when">{folder ? "Caption and tags go on every picture in the folder. " : ""}Tapping a name tags them straight away. They get a notification, an email and a phone alert.</p>
       {problem && <p className="error">{problem}</p>}
       <div className="gallery-piece-actions">
         <ConfirmButton
-          label="Take out of Gallery"
-          ask="Take it out of the Gallery?"
+          label={folder ? "Take folder out of Gallery" : "Take out of Gallery"}
+          ask={folder ? `Take all ${(id as number[]).length} out of the Gallery?` : "Take it out of the Gallery?"}
           yes="Take out"
           onConfirm={async () => {
             const r = await removeFromGallery(id);
             if (r.error) return setProblem(r.error);
-            router.push("/gallery");
+            router.push(back);
+            router.refresh();
           }}
         />
       </div>
